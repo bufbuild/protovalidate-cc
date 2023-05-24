@@ -1,9 +1,11 @@
 #include "buf/validate/validator.h"
 
 #include "buf/validate/conformance/cases/bool.pb.h"
+#include "buf/validate/conformance/cases/custom_constraints/custom_constraints.pb.h"
 #include "eval/public/activation.h"
 #include "eval/public/builtin_func_registrar.h"
 #include "eval/public/cel_expr_builder_factory.h"
+#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "parser/parser.h"
 
@@ -50,6 +52,24 @@ TEST(ValidatorTest, ValidateBool) {
   EXPECT_TRUE(violations_or.ok()) << violations_or.status();
   // TODO(afuller): This should report a violation.
   EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
+TEST(ValidatorTest, MessageConstraint) {
+  conformance::cases::custom_constraints::MessageExpressions message_expressions;
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(message_expressions);
+  EXPECT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 2);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "message_expression_scalar");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "a must be less than b");
+  EXPECT_EQ(violations_or.value().violations(1).field_path(), "");
+  EXPECT_EQ(violations_or.value().violations(1).constraint_id(), "message_expression_enum");
+  EXPECT_EQ(violations_or.value().violations(1).message(), "c must not equal d");
 }
 
 } // namespace

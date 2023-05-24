@@ -67,3 +67,10 @@ local_repository(
     name = "com_github_bufbuild_protovalidate_api",
     path = "../protovalidate-api",
 )
+
+http_archive(
+    name = "dev_fmt",
+    build_file = "//bazel:fmt.BUILD.bazel",
+    strip_prefix = "fmt-master",
+    urls = ["https://github.com/fmtlib/fmt/archive/master.zip"],
+)

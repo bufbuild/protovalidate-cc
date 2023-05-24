@@ -6,27 +6,12 @@
 #include "eval/public/cel_expr_builder_factory.h"
 #include "eval/public/cel_value.h"
 #include "eval/public/structs/cel_proto_wrapper.h"
+#include "fmt/core.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "parser/parser.h"
 
 namespace buf::validate::internal {
 namespace cel = google::api::expr;
-
-absl::Status ConstraintSet::Add(
-    google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint) {
-  auto pexpr_or = cel::parser::Parse(constraint.expression());
-  if (!pexpr_or.ok()) {
-    return pexpr_or.status();
-  }
-  cel::v1alpha1::ParsedExpr pexpr = std::move(pexpr_or).value();
-  auto expr_or = builder.CreateExpression(pexpr.mutable_expr(), pexpr.mutable_source_info());
-  if (!expr_or.ok()) {
-    return expr_or.status();
-  }
-  std::unique_ptr<cel::runtime::CelExpression> expr = std::move(expr_or).value();
-  exprs_.emplace_back(CompiledConstraint{std::move(constraint), std::move(expr)});
-  return absl::OkStatus();
-}
 
 namespace {
 
@@ -66,6 +51,22 @@ absl::Status ProcessConstraint(
 
 } // namespace
 
+absl::Status ConstraintSet::Add(
+    google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint) {
+  auto pexpr_or = cel::parser::Parse(constraint.expression());
+  if (!pexpr_or.ok()) {
+    return pexpr_or.status();
+  }
+  cel::v1alpha1::ParsedExpr pexpr = std::move(pexpr_or).value();
+  auto expr_or = builder.CreateExpression(pexpr.mutable_expr(), pexpr.mutable_source_info());
+  if (!expr_or.ok()) {
+    return expr_or.status();
+  }
+  std::unique_ptr<cel::runtime::CelExpression> expr = std::move(expr_or).value();
+  exprs_.emplace_back(CompiledConstraint{std::move(constraint), std::move(expr)});
+  return absl::OkStatus();
+}
+
 absl::Status ConstraintSet::Validate(
     ConstraintContext& ctx, google::api::expr::runtime::Activation& activation) {
   activation.InsertValue("rules", rules_);
@@ -100,11 +101,14 @@ MessageConstraints NewMessageConstraints(
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
   std::vector<MessageConstraint> result;
-  if (!descriptor->options().HasExtension(buf::validate::message)) {
+  fmt::println("Processing constraints for message: {}", descriptor->full_name());
+  if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
+    fmt::println("Message level constraints: {}", msgLvl.ShortDebugString());
     if (msgLvl.disabled()) {
       return result;
     }
+    // TODO: Explicitly give ownership to caller instead of using a shared_ptr.
     auto msgSet = std::make_shared<ConstraintSet>();
     for (const auto& constraint : msgLvl.cel()) {
       auto status = msgSet->Add(builder, constraint);
@@ -120,11 +124,26 @@ MessageConstraints NewMessageConstraints(
     });
   }
 
-  // TODO: Add any message level constraints.
   for (int i = 0; i < descriptor->field_count(); i++) {
     const google::protobuf::FieldDescriptor* field = descriptor->field(i);
-    // TODO: Add any field level constraints.
+    if (!field->options().HasExtension(buf::validate::field)) {
+      continue;
+    }
+    const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
+    // TODO(afuller): Add field level constraints.
+    fmt::println("Field level constraints: {}", fieldLvl.ShortDebugString());
   }
+
+  for (int i = 0; i < descriptor->oneof_decl_count(); i++) {
+    const google::protobuf::OneofDescriptor* oneof = descriptor->oneof_decl(i);
+    if (!oneof->options().HasExtension(buf::validate::oneof)) {
+      continue;
+    }
+    const auto& oneofLvl = oneof->options().GetExtension(buf::validate::oneof);
+    // TODO(afuller): Apply oneof level constraints.
+    fmt::println("Oneof level constraints: {}", oneofLvl.ShortDebugString());
+  }
+
   return result;
 }
 
