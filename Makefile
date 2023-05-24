@@ -57,11 +57,6 @@ checkgenerate: generate
 	@# Used in CI to verify that `make generate` doesn't produce a diff.
 	test -z "$$(git status --porcelain | tee /dev/stderr)"
 
-.PHONY: upgrade-go
-upgrade-go:
-	cd ./tools/internal/gen && $(GO) get -u -t ./... && go mod tidy -v
-	cd ./tools && $(GO) get -u -t ./... && go mod tidy -v
-
 $(BIN):
 	@mkdir -p $(BIN)
 
