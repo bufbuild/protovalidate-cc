@@ -5,20 +5,22 @@
 namespace buf::validate {
 
 absl::StatusOr<Violations> Validator::Validate(const google::protobuf::Message& message) {
-  Violations violations;
   const auto& constraints_or = factory_->GetMessageConstraints(message.GetDescriptor());
   if (!constraints_or.ok()) {
     return constraints_or.status();
   }
+  internal::ConstraintContext ctx;
+  ctx.failFast = failFast_;
+  ctx.arena = arena_;
   for (const auto& constraint : constraints_or.value()) {
-    auto status = constraint(message, violations);
+    auto status = constraint(ctx, message);
     if (!status.ok()) {
       return status;
-    } else if (failFast_ && violations.violations_size() > 0) {
-      return violations;
+    } else if (failFast_ && ctx.violations.violations_size() > 0) {
+      return std::move(ctx.violations);
     }
   }
-  return violations;
+  return std::move(ctx.violations);
 }
 
 absl::StatusOr<std::unique_ptr<ValidatorFactory>> ValidatorFactory::New() {
