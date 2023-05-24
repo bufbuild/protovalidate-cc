@@ -17,6 +17,7 @@ namespace {
 
 absl::Status ProcessConstraint(
     ConstraintContext& ctx,
+    absl::string_view fieldPath,
     const google::api::expr::runtime::BaseActivation& activation,
     const CompiledConstraint& expr) {
   auto result_or = expr.expr->Evaluate(activation, ctx.arena);
@@ -28,7 +29,7 @@ absl::Status ProcessConstraint(
     if (!result.BoolOrDie()) {
       // Add violation with the constraint message.
       Violation& violation = *ctx.violations.add_violations();
-      *violation.mutable_field_path() = ctx.fieldPath;
+      *violation.mutable_field_path() = fieldPath;
       violation.set_message(expr.constraint.message());
       violation.set_constraint_id(expr.constraint.id());
     }
@@ -36,7 +37,7 @@ absl::Status ProcessConstraint(
     if (!result.StringOrDie().value().empty()) {
       // Add violation with custom message.
       Violation& violation = *ctx.violations.add_violations();
-      *violation.mutable_field_path() = ctx.fieldPath;
+      *violation.mutable_field_path() = fieldPath;
       violation.set_message(std::string(result.StringOrDie().value()));
       violation.set_constraint_id(expr.constraint.id());
     }
@@ -68,11 +69,13 @@ absl::Status ConstraintSet::Add(
 }
 
 absl::Status ConstraintSet::Validate(
-    ConstraintContext& ctx, google::api::expr::runtime::Activation& activation) {
+    ConstraintContext& ctx,
+    std::string_view fieldPath,
+    google::api::expr::runtime::Activation& activation) {
   activation.InsertValue("rules", rules_);
   absl::Status status = absl::OkStatus();
   for (const auto& expr : exprs_) {
-    status = ProcessConstraint(ctx, activation, expr);
+    status = ProcessConstraint(ctx, fieldPath, activation, expr);
     if (!status.ok() || (ctx.failFast && ctx.violations.violations_size() != 0)) {
       break;
     }
@@ -104,7 +107,6 @@ MessageConstraints NewMessageConstraints(
   fmt::println("Processing constraints for message: {}", descriptor->full_name());
   if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
-    fmt::println("Message level constraints: {}", msgLvl.ShortDebugString());
     if (msgLvl.disabled()) {
       return result;
     }
@@ -116,11 +118,14 @@ MessageConstraints NewMessageConstraints(
         return status;
       }
     };
-    result.emplace_back([msgSet](ConstraintContext& ctx, const google::protobuf::Message& message) {
+    result.emplace_back([msgSet](
+                            ConstraintContext& ctx,
+                            std::string_view fieldPath,
+                            const google::protobuf::Message& message) {
       google::api::expr::runtime::Activation activation;
       activation.InsertValue(
           "this", cel::runtime::CelProtoWrapper::CreateMessage(&message, ctx.arena));
-      return msgSet->Validate(ctx, activation);
+      return msgSet->Validate(ctx, fieldPath, activation);
     });
   }
 

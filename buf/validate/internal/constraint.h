@@ -21,7 +21,6 @@ struct ConstraintContext {
   ConstraintContext(const ConstraintContext&) = delete;
   void operator=(const ConstraintContext&) = delete;
 
-  std::string_view fieldPath;
   bool failFast;
   google::protobuf::Arena* arena;
   Violations violations;
@@ -30,7 +29,10 @@ struct ConstraintContext {
 // A set of constraints that can be evaluated together.
 class ConstraintSet {
  public:
-  absl::Status Validate(ConstraintContext& ctx, google::api::expr::runtime::Activation& activation);
+  absl::Status Validate(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      google::api::expr::runtime::Activation& activation);
 
   absl::Status Add(
       google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint);
@@ -50,8 +52,8 @@ class ConstraintSet {
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder();
 
-using MessageConstraint =
-    std::function<absl::Status(ConstraintContext& ctx, const google::protobuf::Message&)>;
+using MessageConstraint = std::function<absl::Status(
+    ConstraintContext& ctx, std::string_view fieldPath, const google::protobuf::Message&)>;
 
 using MessageConstraints = absl::StatusOr<std::vector<MessageConstraint>>;
 
