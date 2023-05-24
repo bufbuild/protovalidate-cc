@@ -76,7 +76,7 @@ absl::Status ConstraintSet::Validate(
   absl::Status status = absl::OkStatus();
   for (const auto& expr : exprs_) {
     status = ProcessConstraint(ctx, fieldPath, activation, expr);
-    if (!status.ok() || (ctx.failFast && ctx.violations.violations_size() != 0)) {
+    if (ctx.shouldReturn(status)) {
       break;
     }
   }

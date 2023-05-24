@@ -29,7 +29,12 @@ class Validator {
   Validator(ValidatorFactory* factory, google::protobuf::Arena* arena, bool failFast) noexcept
       : factory_(factory), arena_(arena), failFast_(failFast) {}
 
-  absl::Status ValidateImpl(
+  absl::Status ValidateMessage(
+      internal::ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message);
+
+  absl::Status ValidateFields(
       internal::ConstraintContext& ctx,
       std::string_view fieldPath,
       const google::protobuf::Message& message);

@@ -4,7 +4,7 @@
 
 namespace buf::validate {
 
-absl::Status Validator::ValidateImpl(
+absl::Status Validator::ValidateMessage(
     internal::ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) {
@@ -14,15 +14,20 @@ absl::Status Validator::ValidateImpl(
   }
   for (const auto& constraint : constraints_or.value()) {
     auto status = constraint(ctx, fieldPath, message);
-    if (!status.ok() || (failFast_ && ctx.violations.violations_size() > 0)) {
+    if (!status.ok() || (ctx.failFast && ctx.violations.violations_size() > 0)) {
       return status;
     }
   }
+  return ValidateFields(ctx, fieldPath, message);
+}
 
+absl::Status Validator::ValidateFields(
+    internal::ConstraintContext& ctx,
+    std::string_view fieldPath,
+    const google::protobuf::Message& message) {
   // Validate any set fields that are messages.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
   message.GetReflection()->ListFields(message, &fields);
-  std::string subFieldPath;
   for (const auto& field : fields) {
     if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
       continue;
@@ -37,17 +42,15 @@ absl::Status Validator::ValidateImpl(
     if (field->is_repeated()) {
       int size = message.GetReflection()->FieldSize(message, field);
       for (int i = 0; i < size; i++) {
-        const auto& sub_message = message.GetReflection()->GetRepeatedMessage(message, field, i);
         std::string elemPath = absl::StrCat(subFieldPath, ".", i);
-        auto status = ValidateImpl(ctx, elemPath, sub_message);
-        if (!status.ok() || (failFast_ && ctx.violations.violations_size() > 0)) {
+        const auto& subMsg = message.GetReflection()->GetRepeatedMessage(message, field, i);
+        if (auto status = ValidateMessage(ctx, elemPath, subMsg); ctx.shouldReturn(status)) {
           return status;
         }
       }
     } else {
-      const auto& sub_message = message.GetReflection()->GetMessage(message, field);
-      auto status = ValidateImpl(ctx, subFieldPath, sub_message);
-      if (!status.ok() || (failFast_ && ctx.violations.violations_size() > 0)) {
+      const auto& subMsg = message.GetReflection()->GetMessage(message, field);
+      if (auto status = ValidateMessage(ctx, subFieldPath, subMsg); ctx.shouldReturn(status)) {
         return status;
       }
     }
@@ -60,7 +63,7 @@ absl::StatusOr<Violations> Validator::Validate(
   internal::ConstraintContext ctx;
   ctx.failFast = failFast_;
   ctx.arena = arena_;
-  auto status = ValidateImpl(ctx, fieldPath, message);
+  auto status = ValidateMessage(ctx, fieldPath, message);
   if (!status.ok()) {
     return status;
   }

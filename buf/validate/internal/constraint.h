@@ -24,6 +24,10 @@ struct ConstraintContext {
   bool failFast;
   google::protobuf::Arena* arena;
   Violations violations;
+
+  [[nodiscard]] bool shouldReturn(const absl::Status status) {
+    return !status.ok() || (failFast && violations.violations_size() > 0);
+  }
 };
 
 // A set of constraints that can be evaluated together.
