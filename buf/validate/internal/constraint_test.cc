@@ -41,9 +41,8 @@ class ExpressionTest : public testing::Test {
       google::api::expr::runtime::Activation& activation,
       std::vector<Violation>& violations) {
     ConstraintContext ctx;
-    ctx.fieldPath = fieldPath;
     ctx.arena = &arena_;
-    auto status = constraints_.Validate(ctx, activation);
+    auto status = constraints_.Validate(ctx, fieldPath, activation);
     if (!status.ok()) {
       return status;
     }
