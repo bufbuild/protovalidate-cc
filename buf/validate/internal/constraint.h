@@ -36,7 +36,7 @@ class ConstraintSet {
   absl::Status Validate(
       ConstraintContext& ctx,
       std::string_view fieldPath,
-      google::api::expr::runtime::Activation& activation);
+      google::api::expr::runtime::Activation& activation) const;
 
   absl::Status Add(
       google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint);
@@ -47,6 +47,11 @@ class ConstraintSet {
   [[nodiscard]] const google::api::expr::runtime::CelValue& getRules() const { return rules_; }
   [[nodiscard]] google::api::expr::runtime::CelValue& getRules() { return rules_; }
 
+  absl::Status ValidateMessage(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message) const;
+
  private:
   google::api::expr::runtime::CelValue rules_;
   std::vector<CompiledConstraint> exprs_;
@@ -56,10 +61,7 @@ class ConstraintSet {
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder();
 
-using MessageConstraint = std::function<absl::Status(
-    ConstraintContext& ctx, std::string_view fieldPath, const google::protobuf::Message&)>;
-
-using MessageConstraints = absl::StatusOr<std::vector<MessageConstraint>>;
+using MessageConstraints = absl::StatusOr<std::vector<ConstraintSet>>;
 
 MessageConstraints NewMessageConstraints(
     google::api::expr::runtime::CelExpressionBuilder& builder,

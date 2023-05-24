@@ -71,7 +71,7 @@ absl::Status ConstraintSet::Add(
 absl::Status ConstraintSet::Validate(
     ConstraintContext& ctx,
     std::string_view fieldPath,
-    google::api::expr::runtime::Activation& activation) {
+    google::api::expr::runtime::Activation& activation) const {
   activation.InsertValue("rules", rules_);
   absl::Status status = absl::OkStatus();
   for (const auto& expr : exprs_) {
@@ -103,7 +103,7 @@ NewConstraintBuilder() {
 MessageConstraints NewMessageConstraints(
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
-  std::vector<MessageConstraint> result;
+  std::vector<ConstraintSet> result;
   fmt::println("Processing constraints for message: {}", descriptor->full_name());
   if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
@@ -111,22 +111,13 @@ MessageConstraints NewMessageConstraints(
       return result;
     }
     // TODO: Explicitly give ownership to caller instead of using a shared_ptr.
-    auto msgSet = std::make_shared<ConstraintSet>();
+    result.emplace_back();
     for (const auto& constraint : msgLvl.cel()) {
-      auto status = msgSet->Add(builder, constraint);
+      auto status = result.back().Add(builder, constraint);
       if (!status.ok()) {
         return status;
       }
     };
-    result.emplace_back([msgSet](
-                            ConstraintContext& ctx,
-                            std::string_view fieldPath,
-                            const google::protobuf::Message& message) {
-      google::api::expr::runtime::Activation activation;
-      activation.InsertValue(
-          "this", cel::runtime::CelProtoWrapper::CreateMessage(&message, ctx.arena));
-      return msgSet->Validate(ctx, fieldPath, activation);
-    });
   }
 
   for (int i = 0; i < descriptor->field_count(); i++) {
@@ -135,8 +126,53 @@ MessageConstraints NewMessageConstraints(
       continue;
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
-    // TODO(afuller): Add field level constraints.
     fmt::println("Field level constraints: {}", fieldLvl.ShortDebugString());
+    switch (fieldLvl.type_case()) {
+      case FieldConstraints::kBool:
+        break;
+      case FieldConstraints::kFloat:
+        break;
+      case FieldConstraints::kDouble:
+        break;
+      case FieldConstraints::kInt32:
+        break;
+      case FieldConstraints::kInt64:
+        break;
+      case FieldConstraints::kUint32:
+        break;
+      case FieldConstraints::kUint64:
+        break;
+      case FieldConstraints::kSint32:
+        break;
+      case FieldConstraints::kSint64:
+        break;
+      case FieldConstraints::kFixed32:
+        break;
+      case FieldConstraints::kFixed64:
+        break;
+      case FieldConstraints::kSfixed32:
+        break;
+      case FieldConstraints::kSfixed64:
+        break;
+      case FieldConstraints::kString:
+        break;
+      case FieldConstraints::kBytes:
+        break;
+      case FieldConstraints::kEnum:
+        break;
+      case FieldConstraints::kRepeated:
+        break;
+      case FieldConstraints::kMap:
+        break;
+      case FieldConstraints::kAny:
+        break;
+      case FieldConstraints::kDuration:
+        break;
+      case FieldConstraints::kTimestamp:
+        break;
+      default:
+        return absl::InvalidArgumentError("unknown field validator type");
+    }
   }
 
   for (int i = 0; i < descriptor->oneof_decl_count(); i++) {
@@ -150,6 +186,15 @@ MessageConstraints NewMessageConstraints(
   }
 
   return result;
+}
+
+absl::Status ConstraintSet::ValidateMessage(
+    ConstraintContext& ctx,
+    std::string_view fieldPath,
+    const google::protobuf::Message& message) const {
+  google::api::expr::runtime::Activation activation;
+  activation.InsertValue("this", cel::runtime::CelProtoWrapper::CreateMessage(&message, ctx.arena));
+  return Validate(ctx, fieldPath, activation);
 }
 
 } // namespace buf::validate::internal

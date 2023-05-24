@@ -13,7 +13,7 @@ absl::Status Validator::ValidateMessage(
     return constraints_or.status();
   }
   for (const auto& constraint : constraints_or.value()) {
-    auto status = constraint(ctx, fieldPath, message);
+    auto status = constraint.ValidateMessage(ctx, fieldPath, message);
     if (!status.ok() || (ctx.failFast && ctx.violations.violations_size() > 0)) {
       return status;
     }
@@ -32,13 +32,8 @@ absl::Status Validator::ValidateFields(
     if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
       continue;
     }
-
-    std::string subFieldPath;
-    if (fieldPath.empty()) {
-      subFieldPath = field->name();
-    } else {
-      subFieldPath = absl::StrCat(fieldPath, ".", field->name());
-    }
+    std::string subFieldPath =
+        fieldPath.empty() ? field->name() : absl::StrCat(fieldPath, ".", field->name());
     if (field->is_repeated()) {
       int size = message.GetReflection()->FieldSize(message, field);
       for (int i = 0; i < size; i++) {
