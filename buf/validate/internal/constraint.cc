@@ -1,17 +1,19 @@
 #include "buf/validate/internal/constraint.h"
 
 #include "absl/status/statusor.h"
+#include "buf/validate/validate.pb.h"
 #include "eval/public/builtin_func_registrar.h"
 #include "eval/public/cel_expr_builder_factory.h"
 #include "eval/public/cel_value.h"
+#include "eval/public/structs/cel_proto_wrapper.h"
+#include "google/protobuf/descriptor.pb.h"
 #include "parser/parser.h"
 
 namespace buf::validate::internal {
 namespace cel = google::api::expr;
 
-absl::Status
-ConstraintSet::Add(google::api::expr::runtime::CelExpressionBuilder &builder,
-                   Constraint constraint) {
+absl::Status ConstraintSet::Add(
+    google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint) {
   auto pexpr_or = cel::parser::Parse(constraint.expression());
   if (!pexpr_or.ok()) {
     return pexpr_or.status();
