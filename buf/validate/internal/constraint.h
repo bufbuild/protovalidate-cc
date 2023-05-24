@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <string_view>
 
 #include "buf/validate/expression.pb.h"
 #include "eval/public/activation.h"
@@ -16,7 +17,11 @@ struct CompiledConstraint {
 };
 
 struct ConstraintContext {
-  std::string fieldPath;
+  ConstraintContext() : failFast(false), arena(nullptr) {}
+  ConstraintContext(const ConstraintContext&) = delete;
+  void operator=(const ConstraintContext&) = delete;
+
+  std::string_view fieldPath;
   bool failFast;
   google::protobuf::Arena* arena;
   Violations violations;

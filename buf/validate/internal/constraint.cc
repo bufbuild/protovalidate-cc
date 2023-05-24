@@ -28,7 +28,7 @@ absl::Status ProcessConstraint(
     if (!result.BoolOrDie()) {
       // Add violation with the constraint message.
       Violation& violation = *ctx.violations.add_violations();
-      violation.set_field_path(ctx.fieldPath);
+      *violation.mutable_field_path() = ctx.fieldPath;
       violation.set_message(expr.constraint.message());
       violation.set_constraint_id(expr.constraint.id());
     }
@@ -36,7 +36,7 @@ absl::Status ProcessConstraint(
     if (!result.StringOrDie().value().empty()) {
       // Add violation with custom message.
       Violation& violation = *ctx.violations.add_violations();
-      violation.set_field_path(ctx.fieldPath);
+      *violation.mutable_field_path() = ctx.fieldPath;
       violation.set_message(std::string(result.StringOrDie().value()));
       violation.set_constraint_id(expr.constraint.id());
     }

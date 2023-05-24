@@ -5,7 +5,6 @@
 #include "eval/public/activation.h"
 #include "eval/public/builtin_func_registrar.h"
 #include "eval/public/cel_expr_builder_factory.h"
-#include "gmock/gmock.h"
 #include "gtest/gtest.h"
 #include "parser/parser.h"
 
@@ -56,6 +55,7 @@ TEST(ValidatorTest, ValidateBool) {
 
 TEST(ValidatorTest, MessageConstraint) {
   conformance::cases::custom_constraints::MessageExpressions message_expressions;
+  message_expressions.mutable_e();
   auto factory_or = ValidatorFactory::New();
   ASSERT_TRUE(factory_or.ok()) << factory_or.status();
   auto factory = std::move(factory_or).value();
@@ -63,13 +63,16 @@ TEST(ValidatorTest, MessageConstraint) {
   auto validator = factory->NewValidator(&arena, false);
   auto violations_or = validator->Validate(message_expressions);
   EXPECT_TRUE(violations_or.ok()) << violations_or.status();
-  EXPECT_EQ(violations_or.value().violations_size(), 2);
+  ASSERT_EQ(violations_or.value().violations_size(), 3);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "");
   EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "message_expression_scalar");
   EXPECT_EQ(violations_or.value().violations(0).message(), "a must be less than b");
   EXPECT_EQ(violations_or.value().violations(1).field_path(), "");
   EXPECT_EQ(violations_or.value().violations(1).constraint_id(), "message_expression_enum");
   EXPECT_EQ(violations_or.value().violations(1).message(), "c must not equal d");
+  EXPECT_EQ(violations_or.value().violations(2).field_path(), "e");
+  EXPECT_EQ(violations_or.value().violations(2).constraint_id(), "message_expression_nested");
+  EXPECT_EQ(violations_or.value().violations(2).message(), "a must be greater than b");
 }
 
 } // namespace

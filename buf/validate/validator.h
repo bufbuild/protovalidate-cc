@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string_view>
 
 #include "buf/validate/expression.pb.h"
 #include "buf/validate/internal/constraint.h"
@@ -15,17 +16,21 @@ class ValidatorFactory;
 /// google.protobuf.Message objects.
 class Validator {
  public:
-  absl::StatusOr<Violations> Validate(const google::protobuf::Message& message);
+  absl::StatusOr<Violations> Validate(
+      const google::protobuf::Message& message, std::string_view fieldPath = {});
 
  private:
   friend class ValidatorFactory;
 
-  Validator(ValidatorFactory* factory, google::protobuf::Arena* arena, bool failFast) noexcept
-      : factory_(factory), arena_(arena), failFast_(failFast) {}
-
   ValidatorFactory* factory_;
   google::protobuf::Arena* arena_;
   bool failFast_;
+
+  Validator(ValidatorFactory* factory, google::protobuf::Arena* arena, bool failFast) noexcept
+      : factory_(factory), arena_(arena), failFast_(failFast) {}
+
+  absl::Status ValidateImpl(
+      internal::ConstraintContext& ctx, const google::protobuf::Message& message);
 };
 
 /// A factory that stores shared state for creating validators.
