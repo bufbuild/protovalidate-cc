@@ -1,0 +1,10 @@
+/.tmp/
+*.pprof
+*.svg
+cover.out
+/bazel-*
+.clangd
+clang.bazelrc
+user.bazelrc
+local_tsan.bazelrc
+/.clwb/
