@@ -30,7 +30,9 @@ class Validator {
       : factory_(factory), arena_(arena), failFast_(failFast) {}
 
   absl::Status ValidateImpl(
-      internal::ConstraintContext& ctx, const google::protobuf::Message& message);
+      internal::ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message);
 };
 
 /// A factory that stores shared state for creating validators.
