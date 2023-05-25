@@ -142,14 +142,17 @@ absl::Status BuildMessageConstraintSet(
   return absl::OkStatus();
 }
 
-absl::Status BuildBoolConstraintSet(
+template <typename R>
+absl::Status BuildConstraintSet(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
-    const BoolRules& rules,
+    const R& rules,
     ConstraintSet& result) {
   result.setRules(&rules, arena);
+
+  // Look for constraints on the set fields.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
-  rules.GetReflection()->ListFields(rules, &fields);
+  R::GetReflection()->ListFields(rules, &fields);
   for (const auto* field : fields) {
     if (!field->options().HasExtension(buf::validate::priv::field)) {
       continue;
@@ -191,55 +194,81 @@ Constraints NewMessageConstraints(
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
     fmt::println("Field level constraints: {}", fieldLvl.ShortDebugString());
+    absl::Status status = absl::UnimplementedError("Not implemented");
     switch (fieldLvl.type_case()) {
       case FieldConstraints::kBool:
-        if (auto status = BuildBoolConstraintSet(
-                arena, builder, fieldLvl.bool_(), result.emplace_back(field));
-            !status.ok()) {
-          return status;
-        }
+        status = BuildConstraintSet(arena, builder, fieldLvl.bool_(), result.emplace_back(field));
+        break;
       case FieldConstraints::kFloat:
+        status = BuildConstraintSet(arena, builder, fieldLvl.float_(), result.emplace_back(field));
         break;
       case FieldConstraints::kDouble:
+        status = BuildConstraintSet(arena, builder, fieldLvl.double_(), result.emplace_back(field));
         break;
       case FieldConstraints::kInt32:
+        status = BuildConstraintSet(arena, builder, fieldLvl.int32(), result.emplace_back(field));
         break;
       case FieldConstraints::kInt64:
+        status = BuildConstraintSet(arena, builder, fieldLvl.int64(), result.emplace_back(field));
         break;
       case FieldConstraints::kUint32:
+        status = BuildConstraintSet(arena, builder, fieldLvl.uint32(), result.emplace_back(field));
         break;
       case FieldConstraints::kUint64:
+        status = BuildConstraintSet(arena, builder, fieldLvl.uint64(), result.emplace_back(field));
         break;
       case FieldConstraints::kSint32:
+        status = BuildConstraintSet(arena, builder, fieldLvl.sint32(), result.emplace_back(field));
         break;
       case FieldConstraints::kSint64:
+        status = BuildConstraintSet(arena, builder, fieldLvl.sint64(), result.emplace_back(field));
         break;
       case FieldConstraints::kFixed32:
+        status = BuildConstraintSet(arena, builder, fieldLvl.fixed32(), result.emplace_back(field));
         break;
       case FieldConstraints::kFixed64:
+        status = BuildConstraintSet(arena, builder, fieldLvl.fixed64(), result.emplace_back(field));
         break;
       case FieldConstraints::kSfixed32:
+        status =
+            BuildConstraintSet(arena, builder, fieldLvl.sfixed32(), result.emplace_back(field));
         break;
       case FieldConstraints::kSfixed64:
+        status =
+            BuildConstraintSet(arena, builder, fieldLvl.sfixed64(), result.emplace_back(field));
         break;
       case FieldConstraints::kString:
+        status = BuildConstraintSet(arena, builder, fieldLvl.string(), result.emplace_back(field));
         break;
       case FieldConstraints::kBytes:
+        status = BuildConstraintSet(arena, builder, fieldLvl.bytes(), result.emplace_back(field));
         break;
       case FieldConstraints::kEnum:
+        status = BuildConstraintSet(arena, builder, fieldLvl.enum_(), result.emplace_back(field));
         break;
       case FieldConstraints::kRepeated:
+        status =
+            BuildConstraintSet(arena, builder, fieldLvl.repeated(), result.emplace_back(field));
         break;
       case FieldConstraints::kMap:
+        status = BuildConstraintSet(arena, builder, fieldLvl.map(), result.emplace_back(field));
         break;
       case FieldConstraints::kAny:
+        status = BuildConstraintSet(arena, builder, fieldLvl.any(), result.emplace_back(field));
         break;
       case FieldConstraints::kDuration:
+        status =
+            BuildConstraintSet(arena, builder, fieldLvl.duration(), result.emplace_back(field));
         break;
       case FieldConstraints::kTimestamp:
+        status =
+            BuildConstraintSet(arena, builder, fieldLvl.timestamp(), result.emplace_back(field));
         break;
       default:
         return absl::InvalidArgumentError("unknown field validator type");
+    }
+    if (!status.ok()) {
+      return status;
     }
   }
 
