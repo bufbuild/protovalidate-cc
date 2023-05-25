@@ -13,7 +13,7 @@ absl::Status Validator::ValidateMessage(
     return constraints_or.status();
   }
   for (const auto& constraint : constraints_or.value()) {
-    auto status = constraint.ValidateMessage(ctx, fieldPath, message);
+    auto status = constraint.Apply(ctx, fieldPath, message);
     if (!status.ok() || (ctx.failFast && ctx.violations.violations_size() > 0)) {
       return status;
     }
@@ -73,7 +73,7 @@ absl::StatusOr<std::unique_ptr<ValidatorFactory>> ValidatorFactory::New() {
   return std::unique_ptr<ValidatorFactory>(new ValidatorFactory(std::move(builder_or).value()));
 }
 
-const internal::MessageConstraints& ValidatorFactory::GetMessageConstraints(
+const internal::Constraints& ValidatorFactory::GetMessageConstraints(
     const google::protobuf::Descriptor* desc) {
   {
     absl::ReaderMutexLock lock(&mutex_);
@@ -87,7 +87,8 @@ const internal::MessageConstraints& ValidatorFactory::GetMessageConstraints(
   if (iter != constraints_.end()) {
     return iter->second;
   }
-  auto itr = constraints_.emplace(desc, internal::NewMessageConstraints(*builder_, desc)).first;
+  auto itr =
+      constraints_.emplace(desc, internal::NewMessageConstraints(&arena_, *builder_, desc)).first;
   return itr->second;
 }
 

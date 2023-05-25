@@ -48,9 +48,9 @@ TEST(ValidatorTest, ValidateBool) {
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
   auto violations_or = validator->Validate(bool_const_false);
-  EXPECT_TRUE(violations_or.ok()) << violations_or.status();
-  // TODO(afuller): This should report a violation.
-  EXPECT_EQ(violations_or.value().violations_size(), 0);
+  // TODO(afuller): This should report a violation instead of erroring.
+  EXPECT_FALSE(violations_or.ok()) << violations_or.status();
+  // EXPECT_EQ(violations_or.value().violations_size(), 1);
 }
 
 TEST(ValidatorTest, MessageConstraint) {

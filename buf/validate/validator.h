@@ -58,15 +58,15 @@ class ValidatorFactory {
   friend class Validator;
   std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder> builder_;
   absl::Mutex mutex_;
-  absl::flat_hash_map<const google::protobuf::Descriptor*, internal::MessageConstraints>
-      constraints_ ABSL_GUARDED_BY(mutex_);
+  absl::flat_hash_map<const google::protobuf::Descriptor*, internal::Constraints> constraints_
+      ABSL_GUARDED_BY(mutex_);
+  google::protobuf::Arena arena_;
 
   explicit ValidatorFactory(
       std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder> builder)
       : builder_(std::move(builder)) {}
 
-  const internal::MessageConstraints& GetMessageConstraints(
-      const google::protobuf::Descriptor* desc);
+  const internal::Constraints& GetMessageConstraints(const google::protobuf::Descriptor* desc);
 };
 
 } // namespace buf::validate

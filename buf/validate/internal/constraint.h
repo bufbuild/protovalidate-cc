@@ -6,7 +6,8 @@
 #include "buf/validate/expression.pb.h"
 #include "eval/public/activation.h"
 #include "eval/public/cel_expression.h"
-#include "src/google/protobuf/arena.h"
+#include "google/protobuf/arena.h"
+#include "google/protobuf/message.h"
 
 namespace buf::validate::internal {
 
@@ -30,7 +31,7 @@ struct ConstraintContext {
   }
 };
 
-// A set of constraints that can be evaluated together.
+// A set of constraints that share the same 'rule' value.
 class ConstraintSet {
  public:
   absl::Status Validate(
@@ -40,14 +41,21 @@ class ConstraintSet {
 
   absl::Status Add(
       google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint);
+  absl::Status Add(
+      google::api::expr::runtime::CelExpressionBuilder& builder,
+      std::string_view id,
+      std::string_view message,
+      std::string_view expression);
 
   [[nodiscard]] const std::vector<CompiledConstraint>& getExprs() const { return exprs_; }
 
   void setRules(google::api::expr::runtime::CelValue rules) { rules_ = rules; }
+  void setRules(const google::protobuf::Message* rules, google::protobuf::Arena* arena);
+
   [[nodiscard]] const google::api::expr::runtime::CelValue& getRules() const { return rules_; }
   [[nodiscard]] google::api::expr::runtime::CelValue& getRules() { return rules_; }
 
-  absl::Status ValidateMessage(
+  absl::Status Apply(
       ConstraintContext& ctx,
       std::string_view fieldPath,
       const google::protobuf::Message& message) const;
@@ -55,15 +63,19 @@ class ConstraintSet {
  private:
   google::api::expr::runtime::CelValue rules_;
   std::vector<CompiledConstraint> exprs_;
+
+  // The field to bind to 'this' or null if the entire message should be bound.
+  const google::protobuf::FieldDescriptor* field_;
 };
 
 // Creates a new expression builder suitable for creating constraints.
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder();
 
-using MessageConstraints = absl::StatusOr<std::vector<ConstraintSet>>;
+using Constraints = absl::StatusOr<std::vector<ConstraintSet>>;
 
-MessageConstraints NewMessageConstraints(
+Constraints NewMessageConstraints(
+    google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor);
 

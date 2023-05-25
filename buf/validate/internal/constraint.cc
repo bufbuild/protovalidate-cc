@@ -1,10 +1,14 @@
 #include "buf/validate/internal/constraint.h"
 
 #include "absl/status/statusor.h"
+#include "buf/validate/priv/private.pb.h"
 #include "buf/validate/validate.pb.h"
 #include "eval/public/builtin_func_registrar.h"
 #include "eval/public/cel_expr_builder_factory.h"
 #include "eval/public/cel_value.h"
+#include "eval/public/containers/field_access.h"
+#include "eval/public/containers/field_backed_list_impl.h"
+#include "eval/public/containers/field_backed_map_impl.h"
 #include "eval/public/structs/cel_proto_wrapper.h"
 #include "fmt/core.h"
 #include "google/protobuf/descriptor.pb.h"
@@ -68,6 +72,18 @@ absl::Status ConstraintSet::Add(
   return absl::OkStatus();
 }
 
+absl::Status ConstraintSet::Add(
+    google::api::expr::runtime::CelExpressionBuilder& builder,
+    std::string_view id,
+    std::string_view message,
+    std::string_view expression) {
+  Constraint constraint;
+  *constraint.mutable_id() = id;
+  *constraint.mutable_message() = message;
+  *constraint.mutable_expression() = expression;
+  return Add(builder, constraint);
+}
+
 absl::Status ConstraintSet::Validate(
     ConstraintContext& ctx,
     std::string_view fieldPath,
@@ -100,7 +116,50 @@ NewConstraintBuilder() {
   return builder;
 }
 
-MessageConstraints NewMessageConstraints(
+void ConstraintSet::setRules(
+    const google::protobuf::Message* rules, google::protobuf::Arena* arena) {
+  rules_ = cel::runtime::CelProtoWrapper::CreateMessage(rules, arena);
+}
+
+absl::Status BuildMessageConstraintSet(
+    google::api::expr::runtime::CelExpressionBuilder& builder,
+    const MessageConstraints& constraints,
+    ConstraintSet& result) {
+  for (const auto& constraint : constraints.cel()) {
+    if (auto status = result.Add(builder, constraint); !status.ok()) {
+      return status;
+    }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status BuildBoolConstraintSet(
+    google::protobuf::Arena* arena,
+    google::api::expr::runtime::CelExpressionBuilder& builder,
+    const BoolRules& rules,
+    ConstraintSet& result) {
+  result.setRules(&rules, arena);
+  std::vector<const google::protobuf::FieldDescriptor*> fields;
+  rules.GetReflection()->ListFields(rules, &fields);
+  for (const auto* field : fields) {
+    if (!field->options().HasExtension(buf::validate::priv::field)) {
+      continue;
+    }
+    const auto& fieldLvl = field->options().GetExtension(buf::validate::priv::field);
+    for (const auto& constraint : fieldLvl.cel()) {
+      if (auto status =
+              result.Add(builder, constraint.id(), constraint.message(), constraint.expression());
+          !status.ok()) {
+        return status;
+      }
+    }
+    fmt::println("Processing constraints for field: {}", field->full_name());
+  }
+  return absl::OkStatus();
+}
+
+Constraints NewMessageConstraints(
+    google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
   std::vector<ConstraintSet> result;
@@ -110,14 +169,10 @@ MessageConstraints NewMessageConstraints(
     if (msgLvl.disabled()) {
       return result;
     }
-    // TODO: Explicitly give ownership to caller instead of using a shared_ptr.
-    result.emplace_back();
-    for (const auto& constraint : msgLvl.cel()) {
-      auto status = result.back().Add(builder, constraint);
-      if (!status.ok()) {
-        return status;
-      }
-    };
+    if (auto status = BuildMessageConstraintSet(builder, msgLvl, result.emplace_back());
+        !status.ok()) {
+      return status;
+    }
   }
 
   for (int i = 0; i < descriptor->field_count(); i++) {
@@ -129,7 +184,11 @@ MessageConstraints NewMessageConstraints(
     fmt::println("Field level constraints: {}", fieldLvl.ShortDebugString());
     switch (fieldLvl.type_case()) {
       case FieldConstraints::kBool:
-        break;
+        if (auto status =
+                BuildBoolConstraintSet(arena, builder, fieldLvl.bool_(), result.emplace_back());
+            !status.ok()) {
+          return status;
+        }
       case FieldConstraints::kFloat:
         break;
       case FieldConstraints::kDouble:
@@ -188,12 +247,31 @@ MessageConstraints NewMessageConstraints(
   return result;
 }
 
-absl::Status ConstraintSet::ValidateMessage(
+absl::Status ConstraintSet::Apply(
     ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) const {
   google::api::expr::runtime::Activation activation;
-  activation.InsertValue("this", cel::runtime::CelProtoWrapper::CreateMessage(&message, ctx.arena));
+  cel::runtime::CelValue result;
+  if (field_ != nullptr) {
+    if (field_->is_map()) {
+      result = cel::runtime::CelValue::CreateMap(
+          google::protobuf::Arena::Create<cel::runtime::FieldBackedMapImpl>(
+              ctx.arena, &message, field_, ctx.arena));
+    } else if (field_->is_repeated()) {
+      result = cel::runtime::CelValue::CreateList(
+          google::protobuf::Arena::Create<cel::runtime::FieldBackedListImpl>(
+              ctx.arena, &message, field_, ctx.arena));
+    } else if (auto status =
+                   cel::runtime::CreateValueFromSingleField(&message, field_, ctx.arena, &result);
+               !status.ok()) {
+      return status;
+    }
+    activation.InsertValue("this", result);
+  } else {
+    activation.InsertValue(
+        "this", cel::runtime::CelProtoWrapper::CreateMessage(&message, ctx.arena));
+  }
   return Validate(ctx, fieldPath, activation);
 }
 
