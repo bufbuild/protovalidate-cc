@@ -1,6 +1,7 @@
 #include "buf/validate/internal/constraint.h"
 
 #include "absl/status/statusor.h"
+#include "buf/validate/internal/extra_func.h"
 #include "buf/validate/priv/private.pb.h"
 #include "buf/validate/validate.pb.h"
 #include "eval/public/builtin_func_registrar.h"
@@ -117,6 +118,10 @@ NewConstraintBuilder(google::protobuf::Arena* arena) {
   if (!register_status.ok()) {
     return register_status;
   }
+  register_status = RegisterExtraFuncs(*builder->GetRegistry());
+  if (!register_status.ok()) {
+    return register_status;
+  }
   return builder;
 }
 
@@ -173,7 +178,7 @@ Constraints NewMessageConstraints(
     if (msgLvl.disabled()) {
       return result;
     }
-    if (auto status = BuildMessageConstraintSet(builder, msgLvl, result.emplace_back());
+    if (auto status = BuildMessageConstraintSet(builder, msgLvl, result.emplace_back(nullptr));
         !status.ok()) {
       return status;
     }
@@ -188,8 +193,8 @@ Constraints NewMessageConstraints(
     fmt::println("Field level constraints: {}", fieldLvl.ShortDebugString());
     switch (fieldLvl.type_case()) {
       case FieldConstraints::kBool:
-        if (auto status =
-                BuildBoolConstraintSet(arena, builder, fieldLvl.bool_(), result.emplace_back());
+        if (auto status = BuildBoolConstraintSet(
+                arena, builder, fieldLvl.bool_(), result.emplace_back(field));
             !status.ok()) {
           return status;
         }
@@ -257,6 +262,7 @@ absl::Status ConstraintSet::Apply(
     const google::protobuf::Message& message) const {
   google::api::expr::runtime::Activation activation;
   cel::runtime::CelValue result;
+  std::string subPath;
   if (field_ != nullptr) {
     if (field_->is_map()) {
       result = cel::runtime::CelValue::CreateMap(
@@ -272,6 +278,12 @@ absl::Status ConstraintSet::Apply(
       return status;
     }
     activation.InsertValue("this", result);
+    if (fieldPath.empty()) {
+      fieldPath = field_->name();
+    } else {
+      subPath = absl::StrCat(fieldPath, ".", field_->name());
+      fieldPath = subPath;
+    }
   } else {
     activation.InsertValue(
         "this", cel::runtime::CelProtoWrapper::CreateMessage(&message, ctx.arena));

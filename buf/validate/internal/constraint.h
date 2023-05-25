@@ -34,6 +34,9 @@ struct ConstraintContext {
 // A set of constraints that share the same 'rule' value.
 class ConstraintSet {
  public:
+  ConstraintSet() : field_(nullptr) {}
+  explicit ConstraintSet(const google::protobuf::FieldDescriptor* field) : field_(field) {}
+
   absl::Status Validate(
       ConstraintContext& ctx,
       std::string_view fieldPath,
@@ -51,9 +54,11 @@ class ConstraintSet {
 
   void setRules(google::api::expr::runtime::CelValue rules) { rules_ = rules; }
   void setRules(const google::protobuf::Message* rules, google::protobuf::Arena* arena);
-
   [[nodiscard]] const google::api::expr::runtime::CelValue& getRules() const { return rules_; }
   [[nodiscard]] google::api::expr::runtime::CelValue& getRules() { return rules_; }
+
+  void setField(const google::protobuf::FieldDescriptor* field) { field_ = field; }
+  [[nodiscard]] const google::protobuf::FieldDescriptor* getField() const { return field_; }
 
   absl::Status Apply(
       ConstraintContext& ctx,

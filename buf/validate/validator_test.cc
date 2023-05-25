@@ -48,9 +48,11 @@ TEST(ValidatorTest, ValidateBool) {
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
   auto violations_or = validator->Validate(bool_const_false);
-  // TODO(afuller): This should report a violation instead of erroring.
-  EXPECT_FALSE(violations_or.ok()) << violations_or.status();
-  // EXPECT_EQ(violations_or.value().violations_size(), 1);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "bool.const");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "format is unimplemented");
 }
 
 TEST(ValidatorTest, MessageConstraint) {
