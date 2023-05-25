@@ -101,12 +101,16 @@ absl::Status ConstraintSet::Validate(
 }
 
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
-NewConstraintBuilder() {
+NewConstraintBuilder(google::protobuf::Arena* arena) {
   cel::runtime::InterpreterOptions options;
   options.enable_qualified_type_identifiers = true;
   options.enable_timestamp_duration_overflow_errors = true;
   options.enable_heterogeneous_equality = true;
   options.enable_empty_wrapper_null_unboxing = true;
+  options.enable_regex_precompilation = true;
+  options.constant_folding = true;
+  options.constant_arena = arena;
+
   std::unique_ptr<cel::runtime::CelExpressionBuilder> builder =
       cel::runtime::CreateCelExpressionBuilder(options);
   auto register_status = cel::runtime::RegisterBuiltinFunctions(builder->GetRegistry(), options);

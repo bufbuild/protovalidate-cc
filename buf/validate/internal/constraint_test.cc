@@ -18,7 +18,7 @@ class ExpressionTest : public testing::Test {
     options.enable_timestamp_duration_overflow_errors = true;
     options.enable_heterogeneous_equality = true;
     options.enable_empty_wrapper_null_unboxing = true;
-    auto builder_or = NewConstraintBuilder();
+    auto builder_or = NewConstraintBuilder(&arena_);
     ASSERT_TRUE(builder_or.ok());
     builder_ = std::move(builder_or).value();
   }

@@ -66,11 +66,13 @@ absl::StatusOr<Violations> Validator::Validate(
 }
 
 absl::StatusOr<std::unique_ptr<ValidatorFactory>> ValidatorFactory::New() {
-  auto builder_or = internal::NewConstraintBuilder();
+  std::unique_ptr<ValidatorFactory> result(new ValidatorFactory());
+  auto builder_or = internal::NewConstraintBuilder(&result->arena_);
   if (!builder_or.ok()) {
     return builder_or.status();
   }
-  return std::unique_ptr<ValidatorFactory>(new ValidatorFactory(std::move(builder_or).value()));
+  result->builder_ = std::move(builder_or).value();
+  return result;
 }
 
 const internal::Constraints& ValidatorFactory::GetMessageConstraints(

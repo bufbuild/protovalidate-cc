@@ -62,9 +62,7 @@ class ValidatorFactory {
       ABSL_GUARDED_BY(mutex_);
   google::protobuf::Arena arena_;
 
-  explicit ValidatorFactory(
-      std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder> builder)
-      : builder_(std::move(builder)) {}
+  ValidatorFactory() = default;
 
   const internal::Constraints& GetMessageConstraints(const google::protobuf::Descriptor* desc);
 };

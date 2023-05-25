@@ -70,7 +70,7 @@ class ConstraintSet {
 
 // Creates a new expression builder suitable for creating constraints.
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
-NewConstraintBuilder();
+NewConstraintBuilder(google::protobuf::Arena* arena);
 
 using Constraints = absl::StatusOr<std::vector<ConstraintSet>>;
 
