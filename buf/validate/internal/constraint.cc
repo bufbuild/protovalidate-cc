@@ -11,7 +11,6 @@
 #include "eval/public/containers/field_backed_list_impl.h"
 #include "eval/public/containers/field_backed_map_impl.h"
 #include "eval/public/structs/cel_proto_wrapper.h"
-#include "fmt/core.h"
 #include "google/protobuf/descriptor.pb.h"
 #include "parser/parser.h"
 
@@ -165,7 +164,6 @@ absl::Status BuildConstraintSet(
         return status;
       }
     }
-    fmt::println("Processing constraints for field: {}", field->full_name());
   }
   return absl::OkStatus();
 }
@@ -175,7 +173,6 @@ Constraints NewMessageConstraints(
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
   std::vector<ConstraintSet> result;
-  fmt::println("Processing constraints for message: {}", descriptor->full_name());
   if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
     if (msgLvl.disabled()) {
@@ -193,7 +190,6 @@ Constraints NewMessageConstraints(
       continue;
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
-    fmt::println("Field level constraints: {}", fieldLvl.ShortDebugString());
     absl::Status status = absl::UnimplementedError("Not implemented");
     switch (fieldLvl.type_case()) {
       case FieldConstraints::kBool:
@@ -279,7 +275,7 @@ Constraints NewMessageConstraints(
     }
     const auto& oneofLvl = oneof->options().GetExtension(buf::validate::oneof);
     // TODO(afuller): Apply oneof level constraints.
-    fmt::println("Oneof level constraints: {}", oneofLvl.ShortDebugString());
+    // fmt::println("Oneof level constraints: {}", oneofLvl.ShortDebugString());
   }
 
   return result;

@@ -1,0 +1,28 @@
+cc_library(
+    name = "runner",
+    srcs = ["runner.cc"],
+    hdrs = ["runner.h"],
+    deps = [
+        "//buf/validate:validator",
+        "@com_github_bufbuild_protovalidate_api//proto/protovalidate-testing/buf/validate/conformance/cases:buf_validate_conformance_cases_proto_cc",
+        "@com_github_bufbuild_protovalidate_api//proto/protovalidate-testing/buf/validate/conformance/harness:buf_validate_conformance_harness_proto_cc",
+    ],
+)
+
+cc_test(
+    name = "runner_test",
+    srcs = ["runner_test.cc"],
+    deps = [
+        ":runner",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_binary(
+    name = "runner_main",
+    srcs = ["runner_main.cc"],
+    deps = [
+        ":runner",
+        "@com_github_bufbuild_protovalidate_api//proto/protovalidate-testing/buf/validate/conformance/harness:buf_validate_conformance_harness_proto_cc",
+    ],
+)
