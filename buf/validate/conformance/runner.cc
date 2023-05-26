@@ -1,7 +1,6 @@
 #include "buf/validate/conformance/runner.h"
 
 #include "buf/validate/validator.h"
-#include "fmt/core.h"
 #include "google/protobuf/descriptor.h"
 
 namespace buf::validate::conformance {

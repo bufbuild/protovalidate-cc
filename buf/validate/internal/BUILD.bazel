@@ -30,7 +30,6 @@ cc_library(
         "@com_google_cel_cpp//eval/public/containers:field_backed_map_impl",
         "@com_google_cel_cpp//eval/public/structs:cel_proto_wrapper",
         "@com_google_cel_cpp//parser",
-        "@dev_fmt//:fmt",
     ],
 )
 
@@ -52,6 +51,5 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_cel_cpp//eval/public:cel_function_adapter",
         "@com_google_cel_cpp//eval/public:cel_function_registry",
-        "@dev_fmt//:fmt",
     ],
 )

@@ -2,7 +2,6 @@
 
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
-#include "fmt/core.h"
 #include "google/protobuf/arena.h"
 
 namespace buf::validate::internal {

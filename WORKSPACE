@@ -63,10 +63,3 @@ http_archive(
         "https://github.com/bufbuild/protovalidate/archive/e24aa6210b787b7887b876f68f95605162c522b4.tar.gz",
     ],
 )
-
-http_archive(
-    name = "dev_fmt",
-    build_file = "//bazel:fmt.BUILD.bazel",
-    strip_prefix = "fmt-master",
-    urls = ["https://github.com/fmtlib/fmt/archive/master.zip"],
-)
