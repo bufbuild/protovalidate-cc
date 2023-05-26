@@ -11,6 +11,7 @@ COPYRIGHT_YEARS := 2023
 LICENSE_IGNORE := -e internal/testdata/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
+BAZEL ?= bazel
 ARGS ?=
 
 .PHONY: help
@@ -27,14 +28,19 @@ clean: ## Delete intermediate build artifacts
 
 .PHONY: test
 test: generate ## Run all unit tests
-	bazel test //...
+	$(BAZEL) test //...
+
+.PHONY: conformance
+conformance: $(BIN)/protovalidate-conformance
+	$(BAZEL) build -c dbg //buf/validate/conformance:runner_main && \
+	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main --strict
 
 .PHONY: generate
 generate: generate-license ## Regenerate code and license headers
 
 .PHONY: bazel
 bazel:
-	bazel build //...
+	$(BAZEL) build //...
 
 .PHONY: generate-license
 generate-license: $(BIN)/license-header
@@ -69,3 +75,7 @@ $(BIN)/license-header: $(BIN) Makefile
 
 $(BIN)/golangci-lint: $(BIN) Makefile
 	GOBIN=$(abspath $(@D)) $(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
+
+$(BIN)/protovalidate-conformance: $(BIN) Makefile
+	GOBIN=$(abspath $(BIN)) $(GO) install \
+    	github.com/bufbuild/protovalidate/tools/protovalidate-conformance@latest
