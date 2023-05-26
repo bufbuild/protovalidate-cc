@@ -44,7 +44,17 @@ harness::TestResult TestRunner::runTestCase(const google::protobuf::Message& mes
   auto validator = validatorFactory_->NewValidator(&arena_, false);
   auto violations_or = validator->Validate(message);
   if (!violations_or.ok()) {
-    *result.mutable_runtime_error() = violations_or.status().message();
+    switch (violations_or.status().code()) {
+      case absl::StatusCode::kInvalidArgument:
+        *result.mutable_runtime_error() = violations_or.status().message();
+        break;
+      case absl::StatusCode::kFailedPrecondition:
+        *result.mutable_compilation_error() = violations_or.status().message();
+        break;
+      default:
+        *result.mutable_unexpected_error() = violations_or.status().message();
+        break;
+    }
   } else if (violations_or.value().violations_size() > 0) {
     *result.mutable_validation_error() = std::move(violations_or).value();
   } else {
