@@ -6,13 +6,13 @@
 namespace buf::validate::conformance {
 
 harness::TestConformanceResponse TestRunner::runTest(
-    const harness::TestConformanceRequest& request) {
+    const harness::TestConformanceRequest& request,
+    google::protobuf::DescriptorPool* descriptorPool) {
   harness::TestConformanceResponse response;
 
   // Create a descriptor pool, and populate it.
-  google::protobuf::DescriptorPool descriptorPool;
   for (const auto& file : request.fdset().file()) {
-    descriptorPool.BuildFile(file);
+    descriptorPool->BuildFile(file);
   }
 
   for (const auto& tc : request.cases()) {
@@ -24,7 +24,7 @@ harness::TestConformanceResponse TestRunner::runTest(
       *result.mutable_unexpected_error() = "could not parse type url " + dyn.type_url();
       continue;
     }
-    const auto* desc = descriptorPool.FindMessageTypeByName(dyn.type_url().substr(pos + 1));
+    const auto* desc = descriptorPool->FindMessageTypeByName(dyn.type_url().substr(pos + 1));
     if (desc == nullptr) {
       *result.mutable_unexpected_error() = "could not find descriptor for type " + dyn.type_url();
     } else {

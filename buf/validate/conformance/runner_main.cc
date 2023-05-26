@@ -5,8 +5,9 @@
 int main(int argc, char** argv) {
   buf::validate::conformance::TestRunner runner;
   buf::validate::conformance::harness::TestConformanceRequest request;
+  google::protobuf::DescriptorPool descriptorPool;
   request.ParseFromIstream(&std::cin);
-  auto response = runner.runTest(request);
+  auto response = runner.runTest(request, &descriptorPool);
   response.SerializeToOstream(&std::cout);
   return 0;
 }
