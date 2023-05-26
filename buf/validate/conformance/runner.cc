@@ -7,14 +7,8 @@ namespace buf::validate::conformance {
 
 harness::TestConformanceResponse TestRunner::runTest(
     const harness::TestConformanceRequest& request,
-    google::protobuf::DescriptorPool* descriptorPool) {
+    const google::protobuf::DescriptorPool* descriptorPool) {
   harness::TestConformanceResponse response;
-
-  // Create a descriptor pool, and populate it.
-  for (const auto& file : request.fdset().file()) {
-    descriptorPool->BuildFile(file);
-  }
-
   for (const auto& tc : request.cases()) {
     auto& result = response.mutable_results()->operator[](tc.first);
     const google::protobuf::Any& dyn = tc.second;

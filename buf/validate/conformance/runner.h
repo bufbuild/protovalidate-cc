@@ -12,7 +12,7 @@ class TestRunner {
 
   harness::TestConformanceResponse runTest(
       const harness::TestConformanceRequest& request,
-      google::protobuf::DescriptorPool* descriptorPool);
+      const google::protobuf::DescriptorPool* descriptorPool);
   harness::TestResult runTestCase(
       const google::protobuf::Descriptor* desc, const google::protobuf::Any& dyn);
   harness::TestResult runTestCase(const google::protobuf::Message& message);
