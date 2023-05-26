@@ -117,7 +117,7 @@ NewConstraintBuilder(google::protobuf::Arena* arena) {
   if (!register_status.ok()) {
     return register_status;
   }
-  register_status = RegisterExtraFuncs(*builder->GetRegistry());
+  register_status = RegisterExtraFuncs(*builder->GetRegistry(), arena);
   if (!register_status.ok()) {
     return register_status;
   }

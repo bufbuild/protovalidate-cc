@@ -49,7 +49,7 @@ TEST(ValidatorTest, ValidateBool) {
   auto validator = factory->NewValidator(&arena, false);
   auto violations_or = validator->Validate(bool_const_false);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
-  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  ASSERT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "bool.const");
   EXPECT_EQ(violations_or.value().violations(0).message(), "value must equal false");
@@ -64,7 +64,7 @@ TEST(ValidatorTest, MessageConstraint) {
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
   auto violations_or = validator->Validate(message_expressions);
-  EXPECT_TRUE(violations_or.ok()) << violations_or.status();
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   ASSERT_EQ(violations_or.value().violations_size(), 3);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "");
   EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "message_expression_scalar");
