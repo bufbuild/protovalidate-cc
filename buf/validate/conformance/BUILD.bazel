@@ -4,8 +4,8 @@ cc_library(
     hdrs = ["runner.h"],
     deps = [
         "//buf/validate:validator",
-        "@com_github_bufbuild_protovalidate_api//proto/protovalidate-testing/buf/validate/conformance/cases:buf_validate_conformance_cases_proto_cc",
-        "@com_github_bufbuild_protovalidate_api//proto/protovalidate-testing/buf/validate/conformance/harness:buf_validate_conformance_harness_proto_cc",
+        "@com_github_bufbuild_protovalidate//proto/protovalidate-testing/buf/validate/conformance/cases:buf_validate_conformance_cases_proto_cc",
+        "@com_github_bufbuild_protovalidate//proto/protovalidate-testing/buf/validate/conformance/harness:buf_validate_conformance_harness_proto_cc",
     ],
 )
 
@@ -23,6 +23,6 @@ cc_binary(
     srcs = ["runner_main.cc"],
     deps = [
         ":runner",
-        "@com_github_bufbuild_protovalidate_api//proto/protovalidate-testing/buf/validate/conformance/harness:buf_validate_conformance_harness_proto_cc",
+        "@com_github_bufbuild_protovalidate//proto/protovalidate-testing/buf/validate/conformance/harness:buf_validate_conformance_harness_proto_cc",
     ],
 )

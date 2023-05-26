@@ -20,7 +20,7 @@ cc_library(
     hdrs = ["constraint.h"],
     deps = [
         ":extra_func",
-        "@com_github_bufbuild_protovalidate_api//proto/protovalidate/buf/validate:validate_proto_cc",
+        "@com_github_bufbuild_protovalidate//proto/protovalidate/buf/validate:validate_proto_cc",
         "@com_google_cel_cpp//eval/public:activation",
         "@com_google_cel_cpp//eval/public:builtin_func_registrar",
         "@com_google_cel_cpp//eval/public:cel_expr_builder_factory",

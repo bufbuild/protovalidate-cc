@@ -1,4 +1,4 @@
-workspace(name = "com_github_bufbuild_protovalidate")
+workspace(name = "com_github_bufbuild_protovalidate_cc")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
@@ -55,18 +55,17 @@ switched_rules_by_language(
     cc = True,
 )
 
-# TODO(afuller): Depend on the protovalidate-api repository once it is published.
-# http_archive(
-#     name = "com_github_bufbuild_protovalidate_api",
-#     strip_prefix = "protovalidate-main",
-#     urls = [
-#         "https://github.com/bufbuild/protovalidate-api/archive/main.tar.gz",
-#     ],
-# )
-local_repository(
-    name = "com_github_bufbuild_protovalidate_api",
-    path = "../protovalidate-api",
+http_archive(
+    name = "com_github_bufbuild_protovalidate",
+    strip_prefix = "protovalidate-main",
+    urls = [
+        "https://github.com/bufbuild/protovalidate/archive/main.tar.gz",
+    ],
 )
+# local_repository(
+#     name = "com_github_bufbuild_protovalidate",
+#     path = "../protovalidate",
+# )
 
 http_archive(
     name = "dev_fmt",
