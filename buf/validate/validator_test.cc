@@ -52,7 +52,7 @@ TEST(ValidatorTest, ValidateBool) {
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "bool.const");
-  EXPECT_EQ(violations_or.value().violations(0).message(), "format is unimplemented");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "value must equal false");
 }
 
 TEST(ValidatorTest, MessageConstraint) {
