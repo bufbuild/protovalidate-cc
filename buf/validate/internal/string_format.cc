@@ -231,6 +231,21 @@ absl::Status StringFormat::formatHeX(
 absl::Status StringFormat::formatString(
     std::string& builder, const google::api::expr::runtime::CelValue& val) const {
   switch (val.type()) {
+    case cel::CelValue::Type::kString:
+      absl::StrAppend(&builder, val.StringOrDie().value());
+      break;
+    case cel::CelValue::Type::kBytes:
+      absl::StrAppend(&builder, val.BytesOrDie().value());
+      break;
+    default:
+      return formatStringSafe(builder, val);
+  }
+  return absl::OkStatus();
+}
+
+absl::Status StringFormat::formatStringSafe(
+    std::string& builder, const google::api::expr::runtime::CelValue& val) const {
+  switch (val.type()) {
     case cel::CelValue::Type::kBool:
       builder += val.BoolOrDie() ? "true" : "false";
       break;
@@ -264,7 +279,7 @@ absl::Status StringFormat::formatString(
       const char* delim = "";
       const auto& list = *val.ListOrDie();
       for (int i = 0; i < list.size(); i++) {
-        formatString(builder, list[i]);
+        formatStringSafe(builder, list[i]);
         builder += delim;
         delim = ", ";
       }
@@ -282,11 +297,11 @@ absl::Status StringFormat::formatString(
       const auto& keys = *keys_or.value();
       for (int i = 0; i < keys.size(); i++) {
         builder += delim;
-        formatString(builder, keys[i]);
+        formatStringSafe(builder, keys[i]);
         builder += ": ";
         auto mapVal = map[keys[i]];
         if (mapVal.has_value()) {
-          formatString(builder, mapVal.value());
+          formatStringSafe(builder, mapVal.value());
         }
         delim = ", ";
       }
