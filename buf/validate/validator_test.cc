@@ -55,6 +55,37 @@ TEST(ValidatorTest, ValidateBool) {
   EXPECT_EQ(violations_or.value().violations(0).message(), "value must equal false");
 }
 
+TEST(ValidatorTest, ValidateStartsWithFailure) {
+  conformance::cases::custom_constraints::StringStartsWith str_starts_with;
+  str_starts_with.set_val("ffoobar");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_starts_with);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(
+      violations_or.value().violations(0).field_path(),
+      ""); // TODO: what should the feild path be here?
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string_starts_with_foo");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "val must start with 'foo'");
+}
+
+TEST(ValidatorTest, ValidateStartsWithSuccess) {
+  conformance::cases::custom_constraints::StringStartsWith str_starts_with;
+  str_starts_with.set_val("foobar");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_starts_with);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
 TEST(ValidatorTest, MessageConstraint) {
   conformance::cases::custom_constraints::MessageExpressions message_expressions;
   message_expressions.mutable_e();
