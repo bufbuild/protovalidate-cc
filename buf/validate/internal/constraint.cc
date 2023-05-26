@@ -158,9 +158,9 @@ absl::Status BuildConstraintSet(
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::priv::field);
     for (const auto& constraint : fieldLvl.cel()) {
-      if (auto status =
-              result.Add(builder, constraint.id(), constraint.message(), constraint.expression());
-          !status.ok()) {
+      auto status =
+          result.Add(builder, constraint.id(), constraint.message(), constraint.expression());
+      if (!status.ok()) {
         return status;
       }
     }
@@ -178,7 +178,7 @@ Constraints NewMessageConstraints(
     if (msgLvl.disabled()) {
       return result;
     }
-    if (auto status = BuildMessageConstraintSet(builder, msgLvl, result.emplace_back(nullptr));
+    if (auto status = BuildMessageConstraintSet(builder, msgLvl, result.emplace_back());
         !status.ok()) {
       return status;
     }
@@ -190,75 +190,94 @@ Constraints NewMessageConstraints(
       continue;
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
+    if (fieldLvl.skipped()) {
+      continue;
+    }
     absl::Status status = absl::UnimplementedError("Not implemented");
     switch (fieldLvl.type_case()) {
       case FieldConstraints::kBool:
-        status = BuildConstraintSet(arena, builder, fieldLvl.bool_(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.bool_(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kFloat:
-        status = BuildConstraintSet(arena, builder, fieldLvl.float_(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.float_(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kDouble:
-        status = BuildConstraintSet(arena, builder, fieldLvl.double_(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.double_(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kInt32:
-        status = BuildConstraintSet(arena, builder, fieldLvl.int32(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.int32(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kInt64:
-        status = BuildConstraintSet(arena, builder, fieldLvl.int64(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.int64(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kUint32:
-        status = BuildConstraintSet(arena, builder, fieldLvl.uint32(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.uint32(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kUint64:
-        status = BuildConstraintSet(arena, builder, fieldLvl.uint64(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.uint64(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kSint32:
-        status = BuildConstraintSet(arena, builder, fieldLvl.sint32(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.sint32(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kSint64:
-        status = BuildConstraintSet(arena, builder, fieldLvl.sint64(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.sint64(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kFixed32:
-        status = BuildConstraintSet(arena, builder, fieldLvl.fixed32(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.fixed32(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kFixed64:
-        status = BuildConstraintSet(arena, builder, fieldLvl.fixed64(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.fixed64(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kSfixed32:
-        status =
-            BuildConstraintSet(arena, builder, fieldLvl.sfixed32(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.sfixed32(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kSfixed64:
-        status =
-            BuildConstraintSet(arena, builder, fieldLvl.sfixed64(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.sfixed64(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kString:
-        status = BuildConstraintSet(arena, builder, fieldLvl.string(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.string(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kBytes:
-        status = BuildConstraintSet(arena, builder, fieldLvl.bytes(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.bytes(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kEnum:
-        status = BuildConstraintSet(arena, builder, fieldLvl.enum_(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.enum_(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kRepeated:
-        status =
-            BuildConstraintSet(arena, builder, fieldLvl.repeated(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.repeated(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kMap:
-        status = BuildConstraintSet(arena, builder, fieldLvl.map(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.map(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kAny:
-        status = BuildConstraintSet(arena, builder, fieldLvl.any(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.any(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kDuration:
-        status =
-            BuildConstraintSet(arena, builder, fieldLvl.duration(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.duration(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kTimestamp:
-        status =
-            BuildConstraintSet(arena, builder, fieldLvl.timestamp(), result.emplace_back(field));
+        status = BuildConstraintSet(
+            arena, builder, fieldLvl.timestamp(), result.emplace_back(field, fieldLvl));
         break;
       default:
         return absl::InvalidArgumentError("unknown field validator type");
@@ -297,10 +316,18 @@ absl::Status ConstraintSet::Apply(
       result = cel::runtime::CelValue::CreateList(
           google::protobuf::Arena::Create<cel::runtime::FieldBackedListImpl>(
               ctx.arena, &message, field_, ctx.arena));
-    } else if (auto status =
-                   cel::runtime::CreateValueFromSingleField(&message, field_, ctx.arena, &result);
-               !status.ok()) {
-      return status;
+    } else {
+      bool hasFile = message.GetReflection()->HasField(message, field_);
+      if (ignoreEmpty_ && !hasFile) {
+        return absl::OkStatus();
+      } else if (required_ && !hasFile) {
+        return absl::InvalidArgumentError(
+            absl::StrCat("required field '", field_->name(), "' is missing"));
+      } else if (auto status =
+                     cel::runtime::CreateValueFromSingleField(&message, field_, ctx.arena, &result);
+                 !status.ok()) {
+        return status;
+      }
     }
     activation.InsertValue("this", result);
     if (fieldPath.empty()) {

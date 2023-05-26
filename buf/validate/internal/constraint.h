@@ -3,6 +3,8 @@
 #include <string>
 #include <string_view>
 
+#include <buf/validate/validate.pb.h>
+
 #include "buf/validate/expression.pb.h"
 #include "eval/public/activation.h"
 #include "eval/public/cel_expression.h"
@@ -35,7 +37,9 @@ struct ConstraintContext {
 class ConstraintSet {
  public:
   ConstraintSet() : field_(nullptr) {}
-  explicit ConstraintSet(const google::protobuf::FieldDescriptor* field) : field_(field) {}
+  explicit ConstraintSet(
+      const google::protobuf::FieldDescriptor* desc, const FieldConstraints& field)
+      : field_(desc), ignoreEmpty_(field.ignore_empty()), required_(field.required()) {}
 
   absl::Status Validate(
       ConstraintContext& ctx,
@@ -71,6 +75,8 @@ class ConstraintSet {
 
   // The field to bind to 'this' or null if the entire message should be bound.
   const google::protobuf::FieldDescriptor* field_;
+  bool ignoreEmpty_ = false;
+  bool required_ = false;
 };
 
 // Creates a new expression builder suitable for creating constraints.

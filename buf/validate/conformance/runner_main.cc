@@ -1,3 +1,4 @@
+#include "absl/time/clock.h"
 #include "buf/validate/conformance/harness/harness.pb.h"
 #include "buf/validate/conformance/runner.h"
 
