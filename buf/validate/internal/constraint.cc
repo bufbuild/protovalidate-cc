@@ -432,7 +432,7 @@ Constraints NewMessageConstraints(
   return result;
 }
 
-absl::Status ConstraintSet::Apply(
+absl::Status ConstraintSet::Validate(
     ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) const {
@@ -449,14 +449,17 @@ absl::Status ConstraintSet::Apply(
           google::protobuf::Arena::Create<cel::runtime::FieldBackedListImpl>(
               ctx.arena, &message, field_, ctx.arena));
     } else {
-      bool hasFile = message.GetReflection()->HasField(message, field_);
-      if (ignoreEmpty_ && !hasFile) {
-        return absl::OkStatus();
-      } else if (required_ && !hasFile) {
-        return absl::InvalidArgumentError("value is required");
-      } else if (auto status =
-                     cel::runtime::CreateValueFromSingleField(&message, field_, ctx.arena, &result);
-                 !status.ok()) {
+      if (!message.GetReflection()->HasField(message, field_)) {
+        if (required_) {
+          return absl::InvalidArgumentError("value is required");
+        } else if (
+            ignoreEmpty_ || field_->containing_oneof() != nullptr ||
+            field_->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
+          return absl::OkStatus();
+        }
+      }
+      auto status = cel::runtime::CreateValueFromSingleField(&message, field_, ctx.arena, &result);
+      if (!status.ok()) {
         return status;
       }
     }
