@@ -55,15 +55,11 @@ switched_rules_by_language(
     cc = True,
 )
 
-# http_archive(
-#     name = "com_github_bufbuild_protovalidate",
-#     sha256 = "f565e0a315f36986467852556d5d253e65d887d96fa921881b9a337207e755b2",
-#     strip_prefix = "protovalidate-e24aa6210b787b7887b876f68f95605162c522b4",
-#     urls = [
-#         "https://github.com/bufbuild/protovalidate/archive/e24aa6210b787b7887b876f68f95605162c522b4.tar.gz",
-#     ],
-# )
-local_repository(
+http_archive(
     name = "com_github_bufbuild_protovalidate",
-    path = "../protovalidate",
+    sha256 = "f565e0a315f36986467852556d5d253e65d887d96fa921881b9a337207e755b2",
+    strip_prefix = "protovalidate-e24aa6210b787b7887b876f68f95605162c522b4",
+    urls = [
+        "https://github.com/bufbuild/protovalidate/archive/e24aa6210b787b7887b876f68f95605162c522b4.tar.gz",
+    ],
 )

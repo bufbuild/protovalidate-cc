@@ -2,6 +2,7 @@
 
 #include "buf/validate/conformance/cases/bool.pb.h"
 #include "buf/validate/conformance/cases/custom_constraints/custom_constraints.pb.h"
+#include "buf/validate/conformance/cases/strings.pb.h"
 #include "eval/public/activation.h"
 #include "eval/public/builtin_func_registrar.h"
 #include "eval/public/cel_expr_builder_factory.h"
@@ -56,7 +57,7 @@ TEST(ValidatorTest, ValidateBool) {
 }
 
 TEST(ValidatorTest, ValidateStartsWithFailure) {
-  conformance::cases::custom_constraints::StringStartsWith str_starts_with;
+  conformance::cases::StringPrefix str_starts_with;
   str_starts_with.set_val("ffoobar");
   auto factory_or = ValidatorFactory::New();
   ASSERT_TRUE(factory_or.ok()) << factory_or.status();
@@ -66,15 +67,13 @@ TEST(ValidatorTest, ValidateStartsWithFailure) {
   auto violations_or = validator->Validate(str_starts_with);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(
-      violations_or.value().violations(0).field_path(),
-      ""); // TODO: what should the feild path be here?
-  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string_starts_with_foo");
-  EXPECT_EQ(violations_or.value().violations(0).message(), "val must start with 'foo'");
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.prefix");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "value does not have prefix `\"foo\"`");
 }
 
 TEST(ValidatorTest, ValidateStartsWithSuccess) {
-  conformance::cases::custom_constraints::StringStartsWith str_starts_with;
+  conformance::cases::StringPrefix str_starts_with;
   str_starts_with.set_val("foobar");
   auto factory_or = ValidatorFactory::New();
   ASSERT_TRUE(factory_or.ok()) << factory_or.status();
