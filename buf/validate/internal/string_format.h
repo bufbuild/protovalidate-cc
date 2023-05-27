@@ -49,6 +49,8 @@ class StringFormat {
       std::string& builder, const google::api::expr::runtime::CelValue& value) const;
 
  private:
+  absl::Status formatStringSafe(
+      std::string& builder, const google::api::expr::runtime::CelValue& value) const;
 };
 
 } // namespace buf::validate::internal

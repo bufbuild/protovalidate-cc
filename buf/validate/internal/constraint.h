@@ -45,6 +45,10 @@ class ConstraintSet {
       ConstraintContext& ctx,
       std::string_view fieldPath,
       google::api::expr::runtime::Activation& activation) const;
+  absl::Status Validate(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message) const;
 
   absl::Status Add(
       google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint);
@@ -63,11 +67,6 @@ class ConstraintSet {
 
   void setField(const google::protobuf::FieldDescriptor* field) { field_ = field; }
   [[nodiscard]] const google::protobuf::FieldDescriptor* getField() const { return field_; }
-
-  absl::Status Apply(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message) const;
 
  private:
   google::api::expr::runtime::CelValue rules_;

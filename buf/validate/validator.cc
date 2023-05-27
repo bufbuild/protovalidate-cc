@@ -13,7 +13,7 @@ absl::Status Validator::ValidateMessage(
     return constraints_or.status();
   }
   for (const auto& constraint : constraints_or.value()) {
-    auto status = constraint.Apply(ctx, fieldPath, message);
+    auto status = constraint.Validate(ctx, fieldPath, message);
     if (!status.ok() || (ctx.failFast && ctx.violations.violations_size() > 0)) {
       return status;
     }
