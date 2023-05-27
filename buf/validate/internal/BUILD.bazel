@@ -48,7 +48,6 @@ cc_library(
     srcs = ["extra_func.cc"],
     hdrs = ["extra_func.h"],
     deps = [
-        ":starts_with",
         ":string_format",
         "@com_google_absl//absl/status",
         "@com_google_cel_cpp//eval/public:cel_function_adapter",
@@ -60,15 +59,6 @@ cc_library(
     name = "string_format",
     srcs = ["string_format.cc"],
     hdrs = ["string_format.h"],
-    deps = [
-        "@com_google_cel_cpp//eval/public:cel_value",
-    ],
-)
-
-cc_library(
-    name = "starts_with",
-    srcs = ["starts_with.cc"],
-    hdrs = ["starts_with.h"],
     deps = [
         "@com_google_cel_cpp//eval/public:cel_value",
     ],
