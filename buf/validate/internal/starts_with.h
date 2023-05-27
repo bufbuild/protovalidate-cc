@@ -12,7 +12,7 @@ class StartsWith {
   absl::Status startsWith(
       std::string& builder,
       std::string_view format,
-      const google::api::expr::runtime::CelList& args) const;
+      const google::api::expr::runtime::CelValue args) const;
 
  private:
 };

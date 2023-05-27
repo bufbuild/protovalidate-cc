@@ -7,33 +7,19 @@ namespace buf::validate::internal {
 namespace cel = ::google::api::expr::runtime;
 
 absl::Status StartsWith::startsWith(
-    std::string& builder, std::string_view fmtStr, const cel::CelList& args) const {
-  return absl::OkStatus();
-  // auto result = google::protobuf::Arena::Create<std::string>(arena);
-  // if (!rhs.IsBytes()) {
-  //   auto* error = google::protobuf::Arena::Create<cel::CelError>(
-  //       arena, absl::StatusCode::kInvalidArgument, "ends_with: bytes were not provided");
-  //   return cel::CelValue::CreateError(error);
-  // }
-  // auto suffix = rhs.BytesOrDie().value();
-  // LOG(WARNING) << suffix;
-  // //    if (suffix == nullptr) {
-  // //        auto* error = google::protobuf::Arena::Create<cel::CelError>(
-  // //                arena, absl::StatusCode::kInvalidArgument, "ends_with: no input provided");
-  // //        return cel::CelValue::CreateError(error);
-  // //    }
-  // auto lhsValue = lhs.value();
-  // if (lhsValue != nullptr && lhsValue.size() >= suffix.size()) {
-  //   auto lhsData = lhsValue.data();
-  //   auto suffixData = suffix.data();
-  //   auto lhsSize = lhsValue.size();
-  //   auto suffixSize = suffix.size();
-  //   if (std::memcmp(lhsData + (lhsSize - suffixSize), suffixData, suffixSize) == 0) {
-  //     return cel::CelValue::CreateString(result);
-  //   }
-  // }
-  // auto* error = google::protobuf::Arena::Create<cel::CelError>(
-  //     arena, absl::StatusCode::kInvalidArgument, "ends_with: does not ends with");
-  // return cel::CelValue::CreateError(error);
+    std::string& builder, std::string_view lhs, const cel::CelValue rhs) const {
+  auto suffix = rhs.BytesOrDie().value();
+  std::byte lhsValue[lhs.length()];
+  std::memcpy(lhsValue, lhs.data(), lhs.length());
+  if (lhs.length() >= suffix.size()) {
+    auto suffixData = suffix.data();
+    auto lhsSize = lhs.length();
+    auto suffixSize = suffix.size();
+
+    if (std::memcmp(lhsValue + (lhsSize - suffixSize), suffixData, suffixSize) == 0) {
+      return absl::OkStatus();
+    }
+  }
+  return absl::InvalidArgumentError("does not start with the right value");
 }
 } // namespace buf::validate::internal

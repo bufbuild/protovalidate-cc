@@ -57,17 +57,7 @@ absl::Status RegisterExtraFuncs(
               return cel::CelValue::CreateError(error);
             }
             auto* result = google::protobuf::Arena::Create<std::string>(arena);
-            auto suffix = rhs.BytesOrDie().value();
-            auto lhsValue = lhs.value();
-            if (lhsValue != nullptr && lhsValue.size() >= suffix.size()) {
-              auto lhsData = lhsValue.data();
-              auto suffixData = suffix.data();
-              auto lhsSize = lhsValue.size();
-              auto suffixSize = suffix.size();
-              if (std::memcmp(lhsData + (lhsSize - suffixSize), suffixData, suffixSize) == 0) {
-                return cel::CelValue::CreateString(result);
-              }
-            }
+            startsWith->startsWith(*result, lhs.value().data(), rhs);
             auto* error = google::protobuf::Arena::Create<cel::CelError>(
                 arena, absl::StatusCode::kInvalidArgument, "starts_with: does not start with");
             return cel::CelValue::CreateError(error);
