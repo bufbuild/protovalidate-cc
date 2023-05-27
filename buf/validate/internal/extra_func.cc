@@ -19,12 +19,20 @@ absl::StatusOr<bool> startsWith(std::string_view lhs, const cel::CelValue& rhs) 
 
 cel::CelValue startsWithTop(
     google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
-  auto resultOr = startsWith(lhs.value().data(), rhs);
-  if (!resultOr.ok()) {
-    auto* error = google::protobuf::Arena::Create<cel::CelError>(arena, resultOr.status());
+  if (!rhs.IsBytes()) {
+    // Without this cast, I get some strange error but that's something that needs to be addressed
+    absl::StatusOr<bool> status = absl::InvalidArgumentError("doesnt start with the right thing");
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(arena, status.status());
     return cel::CelValue::CreateError(error);
   }
-  return cel::CelValue::CreateBool(resultOr.value());
+  bool result = absl::StartsWith(lhs.value().data(), rhs.BytesOrDie().value());
+  if (!result) {
+    // Without this cast, I get some strange error but that's something that needs to be addressed
+    absl::StatusOr<bool> status = absl::InvalidArgumentError("doesnt start with the right thing");
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(arena, status.status());
+    return cel::CelValue::CreateError(error);
+  }
+  return cel::CelValue::CreateBool(result);
 }
 
 absl::Status RegisterExtraFuncs(
