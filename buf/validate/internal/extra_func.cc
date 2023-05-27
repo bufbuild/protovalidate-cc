@@ -8,30 +8,14 @@
 namespace buf::validate::internal {
 namespace cel = google::api::expr::runtime;
 
-absl::StatusOr<bool> startsWith(std::string_view lhs, const cel::CelValue& rhs) {
-  if (!rhs.IsBytes()) {
-    return absl::InvalidArgumentError(
-        "doesnt start with the right thing"); // todo: fix the error string
-  }
-  auto suffix = rhs.BytesOrDie().value();
-  return absl::StartsWith(lhs, suffix);
-}
-
 cel::CelValue startsWithTop(
     google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
   if (!rhs.IsBytes()) {
-    // Without this cast, I get some strange error but that's something that needs to be addressed
-    absl::StatusOr<bool> status = absl::InvalidArgumentError("doesnt start with the right thing");
-    auto* error = google::protobuf::Arena::Create<cel::CelError>(arena, status.status());
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "doesnt start with the right thing");
     return cel::CelValue::CreateError(error);
   }
   bool result = absl::StartsWith(lhs.value().data(), rhs.BytesOrDie().value());
-  if (!result) {
-    // Without this cast, I get some strange error but that's something that needs to be addressed
-    absl::StatusOr<bool> status = absl::InvalidArgumentError("doesnt start with the right thing");
-    auto* error = google::protobuf::Arena::Create<cel::CelError>(arena, status.status());
-    return cel::CelValue::CreateError(error);
-  }
   return cel::CelValue::CreateBool(result);
 }
 

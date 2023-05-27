@@ -69,7 +69,7 @@ TEST(ValidatorTest, ValidateStartsWithFailure) {
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.prefix");
-  EXPECT_EQ(violations_or.value().violations(0).message(), "value does not have prefix `\"foo\"`");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "value does not have prefix `foo`");
 }
 
 TEST(ValidatorTest, ValidateStartsWithSuccess) {
