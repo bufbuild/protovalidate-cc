@@ -38,8 +38,14 @@ struct ConstraintContext {
 class ConstraintSet {
  public:
   ConstraintSet() = default;
-  ConstraintSet(const google::protobuf::FieldDescriptor* desc, const FieldConstraints& field)
-      : field_(desc), ignoreEmpty_(field.ignore_empty()), required_(field.required()) {}
+  ConstraintSet(
+      const google::protobuf::FieldDescriptor* desc,
+      const FieldConstraints& field,
+      const AnyRules* anyRules = nullptr)
+      : field_(desc),
+        ignoreEmpty_(field.ignore_empty()),
+        required_(field.required()),
+        anyRules_(anyRules) {}
   ConstraintSet(const google::protobuf::OneofDescriptor* desc, const OneofConstraints& oneof)
       : oneof_(desc), required_(oneof.required()) {}
 
@@ -74,11 +80,13 @@ class ConstraintSet {
   google::api::expr::runtime::CelValue rules_;
   std::vector<CompiledConstraint> exprs_;
 
-  const google::protobuf::OneofDescriptor* oneof_ = nullptr;
   // The field to bind to 'this' or null if the entire message should be bound.
   const google::protobuf::FieldDescriptor* field_ = nullptr;
+  const google::protobuf::OneofDescriptor* oneof_ = nullptr;
   bool ignoreEmpty_ = false;
   bool required_ = false;
+
+  const AnyRules* anyRules_ = nullptr;
 
   absl::Status ValidateMessage(
       ConstraintContext& ctx,
@@ -94,6 +102,11 @@ class ConstraintSet {
       ConstraintContext& ctx,
       std::string_view fieldPath,
       const google::protobuf::Message& message) const;
+
+  absl::Status ValidateAny(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& anyMsg) const;
 };
 
 // Creates a new expression builder suitable for creating constraints.

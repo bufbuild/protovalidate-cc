@@ -391,7 +391,7 @@ Constraints NewMessageConstraints(
           return absl::InvalidArgumentError("any field validator on non-any field");
         }
         status = BuildConstraintSet(
-            arena, builder, fieldLvl.any(), result.emplace_back(field, fieldLvl));
+            arena, builder, fieldLvl.any(), result.emplace_back(field, fieldLvl, &fieldLvl.any()));
         break;
       case FieldConstraints::kDuration:
         if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
@@ -485,7 +485,16 @@ absl::Status ConstraintSet::ValidateField(
           field_->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
         return absl::OkStatus();
       }
+    } else if (
+        anyRules_ != nullptr &&
+        field_->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+      const auto& anyMsg = message.GetReflection()->GetMessage(message, field_);
+      auto status = ValidateAny(ctx, fieldPath, anyMsg);
+      if (!status.ok()) {
+        return status;
+      }
     }
+
     auto status = cel::runtime::CreateValueFromSingleField(&message, field_, ctx.arena, &result);
     if (!status.ok()) {
       return status;
@@ -493,6 +502,44 @@ absl::Status ConstraintSet::ValidateField(
   }
   activation.InsertValue("this", result);
   return Validate(ctx, fieldPath, activation);
+}
+
+absl::Status ConstraintSet::ValidateAny(
+    ConstraintContext& ctx,
+    std::string_view fieldPath,
+    const google::protobuf::Message& anyMsg) const {
+  const auto* typeUriField = anyMsg.GetDescriptor()->FindFieldByName("type_url");
+  if (typeUriField == nullptr ||
+      typeUriField->type() != google::protobuf::FieldDescriptor::TYPE_STRING) {
+    return absl::InvalidArgumentError("expected Any");
+  }
+  const auto& typeUri = anyMsg.GetReflection()->GetString(anyMsg, typeUriField);
+  if (anyRules_->in_size() > 0) {
+    // Must be in the list of allowed types.
+    bool found = false;
+    for (const auto& allowed : anyRules_->in()) {
+      if (allowed == typeUri) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      auto& violation = *ctx.violations.add_violations();
+      *violation.mutable_constraint_id() = "any.in";
+      *violation.mutable_message() = "type URL must be in the allow list";
+      *violation.mutable_field_path() = fieldPath;
+    }
+  }
+  for (const auto& block : anyRules_->not_in()) {
+    if (block == typeUri) {
+      auto& violation = *ctx.violations.add_violations();
+      *violation.mutable_constraint_id() = "any.not_in";
+      *violation.mutable_message() = "type URL must not be in the block list";
+      *violation.mutable_field_path() = fieldPath;
+      break;
+    }
+  }
+  return absl::OkStatus();
 }
 
 absl::Status ConstraintSet::ValidateOneof(
