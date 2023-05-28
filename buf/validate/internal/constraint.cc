@@ -432,49 +432,63 @@ Constraints NewMessageConstraints(
   return result;
 }
 
-absl::Status ConstraintSet::Validate(
+absl::Status ConstraintSet::ValidateMessage(
+    ConstraintContext& ctx,
+    std::string_view fieldPath,
+    const google::protobuf::Message& message) const {
+  google::api::expr::runtime::Activation activation;
+  activation.InsertValue("this", cel::runtime::CelProtoWrapper::CreateMessage(&message, ctx.arena));
+  return Validate(ctx, fieldPath, activation);
+}
+
+absl::Status ConstraintSet::ValidateField(
     ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) const {
   google::api::expr::runtime::Activation activation;
   cel::runtime::CelValue result;
   std::string subPath;
-  if (field_ != nullptr) {
-    if (field_->is_map()) {
-      result = cel::runtime::CelValue::CreateMap(
-          google::protobuf::Arena::Create<cel::runtime::FieldBackedMapImpl>(
-              ctx.arena, &message, field_, ctx.arena));
-    } else if (field_->is_repeated()) {
-      result = cel::runtime::CelValue::CreateList(
-          google::protobuf::Arena::Create<cel::runtime::FieldBackedListImpl>(
-              ctx.arena, &message, field_, ctx.arena));
-    } else {
-      if (!message.GetReflection()->HasField(message, field_)) {
-        if (required_) {
-          return absl::InvalidArgumentError("value is required");
-        } else if (
-            ignoreEmpty_ || field_->containing_oneof() != nullptr ||
-            field_->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
-          return absl::OkStatus();
-        }
-      }
-      auto status = cel::runtime::CreateValueFromSingleField(&message, field_, ctx.arena, &result);
-      if (!status.ok()) {
-        return status;
-      }
-    }
-    activation.InsertValue("this", result);
-    if (fieldPath.empty()) {
-      fieldPath = field_->name();
-    } else {
-      subPath = absl::StrCat(fieldPath, ".", field_->name());
-      fieldPath = subPath;
-    }
+  if (field_->is_map()) {
+    result = cel::runtime::CelValue::CreateMap(
+        google::protobuf::Arena::Create<cel::runtime::FieldBackedMapImpl>(
+            ctx.arena, &message, field_, ctx.arena));
+  } else if (field_->is_repeated()) {
+    result = cel::runtime::CelValue::CreateList(
+        google::protobuf::Arena::Create<cel::runtime::FieldBackedListImpl>(
+            ctx.arena, &message, field_, ctx.arena));
   } else {
-    activation.InsertValue(
-        "this", cel::runtime::CelProtoWrapper::CreateMessage(&message, ctx.arena));
+    if (!message.GetReflection()->HasField(message, field_)) {
+      if (required_) {
+        return absl::InvalidArgumentError("value is required");
+      } else if (
+          ignoreEmpty_ || field_->containing_oneof() != nullptr ||
+          field_->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
+        return absl::OkStatus();
+      }
+    }
+    auto status = cel::runtime::CreateValueFromSingleField(&message, field_, ctx.arena, &result);
+    if (!status.ok()) {
+      return status;
+    }
+  }
+  activation.InsertValue("this", result);
+  if (fieldPath.empty()) {
+    fieldPath = field_->name();
+  } else {
+    subPath = absl::StrCat(fieldPath, ".", field_->name());
+    fieldPath = subPath;
   }
   return Validate(ctx, fieldPath, activation);
+}
+
+absl::Status ConstraintSet::Validate(
+    ConstraintContext& ctx,
+    std::string_view fieldPath,
+    const google::protobuf::Message& message) const {
+  if (field_ == nullptr) {
+    return ValidateMessage(ctx, fieldPath, message);
+  }
+  return ValidateField(ctx, fieldPath, message);
 }
 
 } // namespace buf::validate::internal

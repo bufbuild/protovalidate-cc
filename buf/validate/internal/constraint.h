@@ -45,6 +45,7 @@ class ConstraintSet {
       ConstraintContext& ctx,
       std::string_view fieldPath,
       google::api::expr::runtime::Activation& activation) const;
+
   absl::Status Validate(
       ConstraintContext& ctx,
       std::string_view fieldPath,
@@ -65,7 +66,6 @@ class ConstraintSet {
   [[nodiscard]] const google::api::expr::runtime::CelValue& getRules() const { return rules_; }
   [[nodiscard]] google::api::expr::runtime::CelValue& getRules() { return rules_; }
 
-  void setField(const google::protobuf::FieldDescriptor* field) { field_ = field; }
   [[nodiscard]] const google::protobuf::FieldDescriptor* getField() const { return field_; }
 
  private:
@@ -76,6 +76,16 @@ class ConstraintSet {
   const google::protobuf::FieldDescriptor* field_;
   bool ignoreEmpty_ = false;
   bool required_ = false;
+
+  absl::Status ValidateMessage(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message) const;
+
+  absl::Status ValidateField(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message) const;
 };
 
 // Creates a new expression builder suitable for creating constraints.
