@@ -411,11 +411,22 @@ Constraints NewMessageConstraints(
         status = BuildConstraintSet(
             arena, builder, fieldLvl.timestamp(), result.emplace_back(field, fieldLvl));
         break;
+      case FieldConstraints::TYPE_NOT_SET:
+        result.emplace_back(field, fieldLvl);
+        status = absl::OkStatus();
+        break;
       default:
-        return absl::InvalidArgumentError("unknown field validator type");
+        return absl::InvalidArgumentError(
+            absl::StrFormat("unknown field validator type %d", fieldLvl.type_case()));
     }
     if (!status.ok()) {
       return status;
+    }
+    for (const auto& constraint : fieldLvl.cel()) {
+      status = result.back().Add(builder, constraint);
+      if (!status.ok()) {
+        return status;
+      }
     }
   }
 
