@@ -459,6 +459,12 @@ absl::Status ConstraintSet::ValidateField(
   google::api::expr::runtime::Activation activation;
   cel::runtime::CelValue result;
   std::string subPath;
+  if (fieldPath.empty()) {
+    fieldPath = field_->name();
+  } else {
+    subPath = absl::StrCat(fieldPath, ".", field_->name());
+    fieldPath = subPath;
+  }
   if (field_->is_map()) {
     result = cel::runtime::CelValue::CreateMap(
         google::protobuf::Arena::Create<cel::runtime::FieldBackedMapImpl>(
@@ -470,7 +476,11 @@ absl::Status ConstraintSet::ValidateField(
   } else {
     if (!message.GetReflection()->HasField(message, field_)) {
       if (required_) {
-        return absl::InvalidArgumentError("value is required");
+        auto& violation = *ctx.violations.add_violations();
+        *violation.mutable_constraint_id() = "required";
+        *violation.mutable_message() = "value is required";
+        *violation.mutable_field_path() = fieldPath;
+        return absl::OkStatus();
       } else if (
           ignoreEmpty_ || field_->containing_oneof() != nullptr ||
           field_->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
@@ -483,12 +493,6 @@ absl::Status ConstraintSet::ValidateField(
     }
   }
   activation.InsertValue("this", result);
-  if (fieldPath.empty()) {
-    fieldPath = field_->name();
-  } else {
-    subPath = absl::StrCat(fieldPath, ".", field_->name());
-    fieldPath = subPath;
-  }
   return Validate(ctx, fieldPath, activation);
 }
 
