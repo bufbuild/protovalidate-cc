@@ -10,6 +10,7 @@
 #include "eval/public/cel_expression.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/message.h"
+#include "src/google/protobuf/descriptor.h"
 
 namespace buf::validate::internal {
 
@@ -36,10 +37,11 @@ struct ConstraintContext {
 // A set of constraints that share the same 'rule' value.
 class ConstraintSet {
  public:
-  ConstraintSet() : field_(nullptr) {}
-  explicit ConstraintSet(
-      const google::protobuf::FieldDescriptor* desc, const FieldConstraints& field)
+  ConstraintSet() = default;
+  ConstraintSet(const google::protobuf::FieldDescriptor* desc, const FieldConstraints& field)
       : field_(desc), ignoreEmpty_(field.ignore_empty()), required_(field.required()) {}
+  ConstraintSet(const google::protobuf::OneofDescriptor* desc, const OneofConstraints& oneof)
+      : oneof_(desc), required_(oneof.required()) {}
 
   absl::Status Validate(
       ConstraintContext& ctx,
@@ -72,8 +74,9 @@ class ConstraintSet {
   google::api::expr::runtime::CelValue rules_;
   std::vector<CompiledConstraint> exprs_;
 
+  const google::protobuf::OneofDescriptor* oneof_ = nullptr;
   // The field to bind to 'this' or null if the entire message should be bound.
-  const google::protobuf::FieldDescriptor* field_;
+  const google::protobuf::FieldDescriptor* field_ = nullptr;
   bool ignoreEmpty_ = false;
   bool required_ = false;
 
@@ -83,6 +86,11 @@ class ConstraintSet {
       const google::protobuf::Message& message) const;
 
   absl::Status ValidateField(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message) const;
+
+  absl::Status ValidateOneof(
       ConstraintContext& ctx,
       std::string_view fieldPath,
       const google::protobuf::Message& message) const;

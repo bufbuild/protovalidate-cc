@@ -436,8 +436,7 @@ Constraints NewMessageConstraints(
       continue;
     }
     const auto& oneofLvl = oneof->options().GetExtension(buf::validate::oneof);
-    // TODO(afuller): Apply oneof level constraints.
-    // fmt::println("Oneof level constraints: {}", oneofLvl.ShortDebugString());
+    result.emplace_back(oneof, oneofLvl);
   }
 
   return result;
@@ -496,14 +495,39 @@ absl::Status ConstraintSet::ValidateField(
   return Validate(ctx, fieldPath, activation);
 }
 
+absl::Status ConstraintSet::ValidateOneof(
+    buf::validate::internal::ConstraintContext& ctx,
+    std::string_view fieldPath,
+    const google::protobuf::Message& message) const {
+  std::string subPath;
+  if (fieldPath.empty()) {
+    fieldPath = oneof_->name();
+  } else {
+    subPath = absl::StrCat(fieldPath, ".", oneof_->name());
+    fieldPath = subPath;
+  }
+  if (required_) {
+    if (!message.GetReflection()->HasOneof(message, oneof_)) {
+      auto& violation = *ctx.violations.add_violations();
+      *violation.mutable_constraint_id() = "required";
+      *violation.mutable_message() = "exactly one of oneof fields is required";
+      *violation.mutable_field_path() = fieldPath;
+    }
+  }
+  return absl::OkStatus();
+}
+
 absl::Status ConstraintSet::Validate(
     ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) const {
-  if (field_ == nullptr) {
-    return ValidateMessage(ctx, fieldPath, message);
+  if (field_ != nullptr) {
+    return ValidateField(ctx, fieldPath, message);
   }
-  return ValidateField(ctx, fieldPath, message);
+  if (oneof_ != nullptr) {
+    return ValidateOneof(ctx, fieldPath, message);
+  }
+  return ValidateMessage(ctx, fieldPath, message);
 }
 
 } // namespace buf::validate::internal
