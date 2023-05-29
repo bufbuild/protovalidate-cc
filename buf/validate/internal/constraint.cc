@@ -67,10 +67,30 @@ absl::Status FieldConstraintRules::Validate(
     result = cel::runtime::CelValue::CreateMap(
         google::protobuf::Arena::Create<cel::runtime::FieldBackedMapImpl>(
             ctx.arena, &message, field_, ctx.arena));
+    if (result.MapOrDie()->size() == 0) {
+      if (ignoreEmpty_) {
+        return absl::OkStatus();
+      } else if (required_) {
+        auto& violation = *ctx.violations.add_violations();
+        *violation.mutable_constraint_id() = "required";
+        *violation.mutable_message() = "value is required";
+        *violation.mutable_field_path() = fieldPath;
+      }
+    }
   } else if (field_->is_repeated()) {
     result = cel::runtime::CelValue::CreateList(
         google::protobuf::Arena::Create<cel::runtime::FieldBackedListImpl>(
             ctx.arena, &message, field_, ctx.arena));
+    if (result.ListOrDie()->size() == 0) {
+      if (ignoreEmpty_) {
+        return absl::OkStatus();
+      } else if (required_) {
+        auto& violation = *ctx.violations.add_violations();
+        *violation.mutable_constraint_id() = "required";
+        *violation.mutable_message() = "value is required";
+        *violation.mutable_field_path() = fieldPath;
+      }
+    }
   } else {
     if (!message.GetReflection()->HasField(message, field_)) {
       if (required_) {
