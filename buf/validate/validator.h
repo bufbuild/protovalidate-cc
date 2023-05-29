@@ -5,6 +5,7 @@
 
 #include "buf/validate/expression.pb.h"
 #include "buf/validate/internal/constraint.h"
+#include "buf/validate/internal/message_rules.h"
 #include "eval/public/cel_expression.h"
 #include "google/protobuf/message.h"
 

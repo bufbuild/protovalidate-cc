@@ -17,341 +17,6 @@
 namespace buf::validate::internal {
 namespace cel = google::api::expr;
 
-namespace {
-
-absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    const MessageConstraints& constraints) {
-  auto result = std::make_unique<MessageConstraintRules>();
-  for (const auto& constraint : constraints.cel()) {
-    if (auto status = result->Add(builder, constraint); !status.ok()) {
-      return status;
-    }
-  }
-  return result;
-}
-
-template <typename R>
-absl::Status BuildCelRules(
-    google::protobuf::Arena* arena,
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    const R& rules,
-    CelConstraintRules& result) {
-  result.setRules(&rules, arena);
-  // Look for constraints on the set fields.
-  std::vector<const google::protobuf::FieldDescriptor*> fields;
-  R::GetReflection()->ListFields(rules, &fields);
-  for (const auto* field : fields) {
-    if (!field->options().HasExtension(buf::validate::priv::field)) {
-      continue;
-    }
-    const auto& fieldLvl = field->options().GetExtension(buf::validate::priv::field);
-    for (const auto& constraint : fieldLvl.cel()) {
-      auto status =
-          result.Add(builder, constraint.id(), constraint.message(), constraint.expression());
-      if (!status.ok()) {
-        return status;
-      }
-    }
-  }
-  return absl::OkStatus();
-}
-
-template <typename R>
-absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildScalarFieldRules(
-    google::protobuf::Arena* arena,
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    const google::protobuf::FieldDescriptor* field,
-    const FieldConstraints& fieldLvl,
-    const R& rules,
-    google::protobuf::FieldDescriptor::Type expectedType,
-    std::string_view wrapperName = "") {
-  if (field->type() != expectedType) {
-    if (field->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
-      if (field->message_type()->full_name() != wrapperName) {
-        return absl::FailedPreconditionError(absl::StrFormat(
-            "field type does not match constraint type: %s != %s",
-            field->type_name(),
-            google::protobuf::FieldDescriptor::TypeName(expectedType)));
-      }
-    } else {
-      return absl::FailedPreconditionError(absl::StrFormat(
-          "field type does not match constraint type: %s != %s",
-          google::protobuf::FieldDescriptor::TypeName(field->type()),
-          google::protobuf::FieldDescriptor::TypeName(expectedType)));
-    }
-  }
-  auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
-  auto status = BuildCelRules(arena, builder, rules, *result);
-  if (!status.ok()) {
-    return status;
-  }
-  return result;
-}
-
-absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
-    google::protobuf::Arena* arena,
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    const google::protobuf::FieldDescriptor* field,
-    const FieldConstraints& fieldLvl) {
-  if (fieldLvl.skipped()) {
-    return nullptr;
-  }
-  absl::StatusOr<std::unique_ptr<FieldConstraintRules>> rules_or;
-  switch (fieldLvl.type_case()) {
-    case FieldConstraints::kBool:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.bool_(),
-          google::protobuf::FieldDescriptor::TYPE_BOOL,
-          "google.protobuf.BoolValue");
-      break;
-    case FieldConstraints::kFloat:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.float_(),
-          google::protobuf::FieldDescriptor::TYPE_FLOAT,
-          "google.protobuf.FloatValue");
-      break;
-    case FieldConstraints::kDouble:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.double_(),
-          google::protobuf::FieldDescriptor::TYPE_DOUBLE,
-          "google.protobuf.DoubleValue");
-      break;
-    case FieldConstraints::kInt32:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.int32(),
-          google::protobuf::FieldDescriptor::TYPE_INT32,
-          "google.protobuf.Int32Value");
-      break;
-    case FieldConstraints::kInt64:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.int64(),
-          google::protobuf::FieldDescriptor::TYPE_INT64,
-          "google.protobuf.Int64Value");
-      break;
-    case FieldConstraints::kUint32:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.uint32(),
-          google::protobuf::FieldDescriptor::TYPE_UINT32,
-          "google.protobuf.UInt32Value");
-      break;
-    case FieldConstraints::kUint64:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.uint64(),
-          google::protobuf::FieldDescriptor::TYPE_UINT64,
-          "google.protobuf.UInt64Value");
-      break;
-    case FieldConstraints::kSint32:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.sint32(),
-          google::protobuf::FieldDescriptor::TYPE_SINT32);
-      break;
-    case FieldConstraints::kSint64:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.sint64(),
-          google::protobuf::FieldDescriptor::TYPE_SINT64);
-      break;
-    case FieldConstraints::kFixed32:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.fixed32(),
-          google::protobuf::FieldDescriptor::TYPE_FIXED32);
-      break;
-    case FieldConstraints::kFixed64:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.fixed64(),
-          google::protobuf::FieldDescriptor::TYPE_FIXED64);
-      break;
-    case FieldConstraints::kSfixed32:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.sfixed32(),
-          google::protobuf::FieldDescriptor::TYPE_SFIXED32);
-      break;
-    case FieldConstraints::kSfixed64:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.sfixed64(),
-          google::protobuf::FieldDescriptor::TYPE_SFIXED64);
-      break;
-    case FieldConstraints::kString:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.string(),
-          google::protobuf::FieldDescriptor::TYPE_STRING,
-          "google.protobuf.StringValue");
-      break;
-    case FieldConstraints::kBytes:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.bytes(),
-          google::protobuf::FieldDescriptor::TYPE_BYTES,
-          "google.protobuf.BytesValue");
-      break;
-    case FieldConstraints::kEnum:
-      rules_or = BuildScalarFieldRules(
-          arena,
-          builder,
-          field,
-          fieldLvl,
-          fieldLvl.enum_(),
-          google::protobuf::FieldDescriptor::TYPE_ENUM);
-      break;
-    case FieldConstraints::kDuration:
-      if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
-          field->message_type()->full_name() !=
-              google::protobuf::Duration::descriptor()->full_name()) {
-        return absl::InvalidArgumentError("duration field validator on non-duration field");
-      } else {
-        auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
-        auto status = BuildCelRules(arena, builder, fieldLvl.duration(), *result);
-        if (!status.ok()) {
-          rules_or = status;
-        } else {
-          rules_or = std::move(result);
-        }
-      }
-      break;
-    case FieldConstraints::kTimestamp:
-      if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
-          field->message_type()->full_name() !=
-              google::protobuf::Timestamp::descriptor()->full_name()) {
-        return absl::InvalidArgumentError("timestamp field validator on non-timestamp field");
-      } else {
-        auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
-        auto status = BuildCelRules(arena, builder, fieldLvl.timestamp(), *result);
-        if (!status.ok()) {
-          rules_or = status;
-        } else {
-          rules_or = std::move(result);
-        }
-      }
-      break;
-    case FieldConstraints::kRepeated:
-      if (!field->is_repeated()) {
-        return absl::InvalidArgumentError("repeated field validator on non-repeated field");
-      } else if (field->is_map()) {
-        return absl::InvalidArgumentError("repeated field validator on map field");
-      } else {
-        std::unique_ptr<FieldConstraintRules> items;
-        if (fieldLvl.repeated().has_items()) {
-          auto items_or = BuildFieldRules(arena, builder, field, fieldLvl.repeated().items());
-          if (!items_or.ok()) {
-            return items_or.status();
-          }
-          items = std::move(items_or).value();
-        }
-        auto result = std::make_unique<RepeatedConstraintRules>(field, fieldLvl, std::move(items));
-        auto status = BuildCelRules(arena, builder, fieldLvl.repeated(), *result);
-        if (!status.ok()) {
-          rules_or = status;
-        } else {
-          rules_or = std::move(result);
-        }
-      }
-      break;
-    case FieldConstraints::kMap:
-      if (!field->is_map()) {
-        return absl::InvalidArgumentError("map field validator on non-map field");
-      } else {
-        auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
-        auto status = BuildCelRules(arena, builder, fieldLvl.map(), *result);
-        if (!status.ok()) {
-          rules_or = status;
-        } else {
-          rules_or = std::move(result);
-        }
-      }
-      break;
-    case FieldConstraints::kAny:
-      if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
-          field->message_type()->full_name() != google::protobuf::Any::descriptor()->full_name()) {
-        return absl::InvalidArgumentError("any field validator on non-any field");
-      } else {
-        auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl, &fieldLvl.any());
-        auto status = BuildCelRules(arena, builder, fieldLvl.any(), *result);
-        if (!status.ok()) {
-          rules_or = status;
-        } else {
-          rules_or = std::move(result);
-        }
-      }
-      break;
-    case FieldConstraints::TYPE_NOT_SET:
-      rules_or = std::make_unique<FieldConstraintRules>(field, fieldLvl);
-      break;
-    default:
-      return absl::InvalidArgumentError(
-          absl::StrFormat("unknown field validator type %d", fieldLvl.type_case()));
-  }
-  if (rules_or.ok()) {
-    for (const auto& constraint : fieldLvl.cel()) {
-      auto status = rules_or.value()->Add(builder, constraint);
-      if (!status.ok()) {
-        return status;
-      }
-    }
-  }
-  return rules_or;
-}
-
-} // namespace
-
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder(google::protobuf::Arena* arena) {
   cel::runtime::InterpreterOptions options;
@@ -374,50 +39,6 @@ NewConstraintBuilder(google::protobuf::Arena* arena) {
     return register_status;
   }
   return builder;
-}
-
-Constraints NewMessageConstraints(
-    google::protobuf::Arena* arena,
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    const google::protobuf::Descriptor* descriptor) {
-  std::vector<std::unique_ptr<ConstraintRules>> result;
-  if (descriptor->options().HasExtension(buf::validate::message)) {
-    const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
-    if (msgLvl.disabled()) {
-      return result;
-    }
-    auto rules_or = BuildMessageRules(builder, msgLvl);
-    if (!rules_or.ok()) {
-      return rules_or.status();
-    }
-    result.emplace_back(std::move(rules_or).value());
-  }
-
-  for (int i = 0; i < descriptor->field_count(); i++) {
-    const google::protobuf::FieldDescriptor* field = descriptor->field(i);
-    if (!field->options().HasExtension(buf::validate::field)) {
-      continue;
-    }
-    const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
-    auto rules_or = BuildFieldRules(arena, builder, field, fieldLvl);
-    if (!rules_or.ok()) {
-      return rules_or.status();
-    }
-    if (rules_or.value() != nullptr) {
-      result.emplace_back(std::move(rules_or).value());
-    }
-  }
-
-  for (int i = 0; i < descriptor->oneof_decl_count(); i++) {
-    const google::protobuf::OneofDescriptor* oneof = descriptor->oneof_decl(i);
-    if (!oneof->options().HasExtension(buf::validate::oneof)) {
-      continue;
-    }
-    const auto& oneofLvl = oneof->options().GetExtension(buf::validate::oneof);
-    result.emplace_back(std::make_unique<OneofConstraintRules>(oneof, oneofLvl));
-  }
-
-  return result;
 }
 
 absl::Status MessageConstraintRules::Validate(
@@ -508,6 +129,51 @@ absl::Status RepeatedConstraintRules::Validate(
       status = itemRules_->ValidateAny(ctx, elemPath, anyMsg);
       if (ctx.shouldReturn(status)) {
         return status;
+      }
+    }
+  }
+  return absl::OkStatus();
+}
+
+absl::Status MapConstraintRules::Validate(
+    ConstraintContext& ctx,
+    std::string_view fieldPath,
+    const google::protobuf::Message& message) const {
+  auto status = Base::Validate(ctx, fieldPath, message);
+  if (!status.ok() || (keyRules_ == nullptr && valueRules_ == nullptr)) {
+    return status;
+  }
+  cel::runtime::FieldBackedMapImpl mapVal(&message, field_, ctx.arena);
+  cel::runtime::Activation activation;
+  const auto* keyField = field_->message_type()->FindFieldByName("key");
+  auto keys_or = mapVal.ListKeys();
+  if (!keys_or.ok()) {
+    return keys_or.status();
+  }
+  const auto& keys = *std::move(keys_or).value();
+  std::string subPath =
+      fieldPath.empty() ? field_->name() : absl::StrCat(fieldPath, ".", field_->name());
+  for (int i = 0; i < mapVal.size(); i++) {
+    const auto& elemMsg = message.GetReflection()->GetRepeatedMessage(message, field_, i);
+    std::string elemPath = absl::StrCat(subPath, "[", makeMapKeyString(elemMsg, keyField), "]");
+    auto key = keys[i];
+    if (keyRules_ != nullptr) {
+      activation.InsertValue("this", key);
+      status = keyRules_->ValidateCel(ctx, elemPath, activation);
+      if (ctx.shouldReturn(status)) {
+        return status;
+      }
+      activation.RemoveValueEntry("this");
+    }
+    if (valueRules_ != nullptr) {
+      auto value = mapVal[key];
+      if (value.has_value()) {
+        activation.InsertValue("this", *value);
+        status = valueRules_->ValidateCel(ctx, elemPath, activation);
+        if (ctx.shouldReturn(status)) {
+          return status;
+        }
+        activation.RemoveValueEntry("this");
       }
     }
   }

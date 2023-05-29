@@ -18,7 +18,7 @@ cc_library(
     hdrs = ["validator.h"],
     visibility = ["//visibility:public"],
     deps = [
-        "//buf/validate/internal:constraint",
+        "//buf/validate/internal:message_rules",
         "@com_github_bufbuild_protovalidate//proto/protovalidate/buf/validate:validate_proto_cc",
         "@com_google_cel_cpp//eval/public:cel_expression",
     ],
