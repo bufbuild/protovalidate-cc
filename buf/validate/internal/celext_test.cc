@@ -30,5 +30,19 @@ namespace buf::validate::internal {
             EXPECT_EQ(fmt_.isEmail("@EXAMPLE.COM"), false);
         }
 
+        class ValidateIPTest : public ::testing::Test {
+        protected:
+            CelExt fmt_;
+        };
+
+        TEST_F(ValidateIPTest, Numbers) {
+            EXPECT_EQ(fmt_.validateIP("192.0.2.1", 4), true);
+            EXPECT_EQ(fmt_.validateIP("192.0.2.1", 6), false);
+            EXPECT_EQ(fmt_.validateIP("255.255.255.256", 4), false);
+            EXPECT_EQ(fmt_.validateIP("2001:db8:3333:4444:5555:6666:7777:8888", 6), true);
+            EXPECT_EQ(fmt_.validateIP("2001:db8:3333:4444:5555:6666:7777:8888", 4), false);
+            EXPECT_EQ(fmt_.validateIP("2001:db8:a0b:12f0::::0:1", 6), false);
+        }
+
     } // namespace
 } // namespace buf::validate::internal

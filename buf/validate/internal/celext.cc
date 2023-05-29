@@ -2,6 +2,8 @@
 
 #include <string>
 #include <algorithm>
+#include <string_view>
+#include <arpa/inet.h>
 
 namespace buf::validate::internal {
     namespace cel = ::google::api::expr::runtime;
@@ -63,6 +65,25 @@ namespace buf::validate::internal {
 
         // Validate the hostname
         return isHostname(domainPart);
+    }
+
+    bool CelExt::validateIP(std::string_view addr, int64_t ver) const {
+        struct in_addr addr4;
+        struct in6_addr addr6;
+        int result;
+
+        switch (ver) {
+            case 0:
+                return true;
+            case 4:
+                result = inet_pton(AF_INET, addr.data(), &(addr4.s_addr));
+                return result == 1;
+            case 6:
+                result = inet_pton(AF_INET6, addr.data(), &(addr6.s6_addr));
+                return result == 1;
+            default:
+                return false;
+        }
     }
 
 
