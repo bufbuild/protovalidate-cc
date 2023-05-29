@@ -96,3 +96,21 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_library(
+    name = "celext",
+    srcs = ["celext.cc"],
+    hdrs = ["celext.h"],
+    deps = [
+        "@com_google_cel_cpp//eval/public:cel_value",
+    ],
+)
+
+cc_test(
+    name = "celext_test",
+    srcs = ["celext_test.cc"],
+    deps = [
+        ":celext",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
