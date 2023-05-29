@@ -37,7 +37,7 @@ absl::Status Validator::ValidateFields(
     if (field->is_repeated()) {
       int size = message.GetReflection()->FieldSize(message, field);
       for (int i = 0; i < size; i++) {
-        std::string elemPath = absl::StrCat(subFieldPath, ".", i);
+        std::string elemPath = absl::StrCat(subFieldPath, "[", i, "]");
         const auto& subMsg = message.GetReflection()->GetRepeatedMessage(message, field, i);
         if (auto status = ValidateMessage(ctx, elemPath, subMsg); ctx.shouldReturn(status)) {
           return status;

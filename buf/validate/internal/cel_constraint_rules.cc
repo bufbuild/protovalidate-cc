@@ -1,5 +1,6 @@
 #include "buf/validate/internal/cel_constraint_rules.h"
 
+#include "eval/public/structs/cel_proto_wrapper.h"
 #include "parser/parser.h"
 
 namespace buf::validate::internal {
@@ -86,6 +87,11 @@ absl::Status CelConstraintRules::ValidateCel(
   }
   activation.RemoveValueEntry("rules");
   return status;
+}
+
+void CelConstraintRules::setRules(
+    const google::protobuf::Message* rules, google::protobuf::Arena* arena) {
+  rules_ = cel::runtime::CelProtoWrapper::CreateMessage(rules, arena);
 }
 
 } // namespace buf::validate::internal

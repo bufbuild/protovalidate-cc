@@ -33,14 +33,6 @@ class ConstraintRules {
       ConstraintContext& ctx,
       std::string_view fieldPath,
       const google::protobuf::Message& message) const = 0;
-
-  void setRules(google::api::expr::runtime::CelValue rules) { rules_ = rules; }
-  void setRules(const google::protobuf::Message* rules, google::protobuf::Arena* arena);
-  [[nodiscard]] const google::api::expr::runtime::CelValue& getRules() const { return rules_; }
-  [[nodiscard]] google::api::expr::runtime::CelValue& getRules() { return rules_; }
-
- protected:
-  google::api::expr::runtime::CelValue rules_;
 };
 
 } // namespace buf::validate::internal

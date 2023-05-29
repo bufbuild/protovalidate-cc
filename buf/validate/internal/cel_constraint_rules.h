@@ -38,7 +38,13 @@ class CelConstraintRules : public ConstraintRules {
       std::string_view fieldPath,
       google::api::expr::runtime::Activation& activation) const;
 
+  void setRules(google::api::expr::runtime::CelValue rules) { rules_ = rules; }
+  void setRules(const google::protobuf::Message* rules, google::protobuf::Arena* arena);
+  [[nodiscard]] const google::api::expr::runtime::CelValue& getRules() const { return rules_; }
+  [[nodiscard]] google::api::expr::runtime::CelValue& getRules() { return rules_; }
+
  protected:
+  google::api::expr::runtime::CelValue rules_;
   std::vector<CompiledConstraint> exprs_;
 };
 

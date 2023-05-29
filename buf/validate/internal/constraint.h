@@ -21,7 +21,7 @@ class MessageConstraintRules final : public CelConstraintRules {
       const google::protobuf::Message& message) const;
 };
 
-class FieldConstraintRules final : public CelConstraintRules {
+class FieldConstraintRules : public CelConstraintRules {
  public:
   FieldConstraintRules(
       const google::protobuf::FieldDescriptor* desc,
@@ -39,7 +39,7 @@ class FieldConstraintRules final : public CelConstraintRules {
       std::string_view fieldPath,
       const google::protobuf::Message& message) const;
 
- private:
+ protected:
   const google::protobuf::FieldDescriptor* field_ = nullptr;
   bool ignoreEmpty_ = false;
   bool required_ = false;
@@ -49,6 +49,25 @@ class FieldConstraintRules final : public CelConstraintRules {
       ConstraintContext& ctx,
       std::string_view fieldPath,
       const google::protobuf::Message& anyMsg) const;
+};
+
+class RepeatedConstraintRules : public FieldConstraintRules {
+  using Base = FieldConstraintRules;
+
+ public:
+  RepeatedConstraintRules(
+      const google::protobuf::FieldDescriptor* desc,
+      const FieldConstraints& field,
+      std::unique_ptr<FieldConstraintRules> itemRules)
+      : Base(desc, field), itemRules_(std::move(itemRules)) {}
+
+  virtual absl::Status Validate(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message) const;
+
+ private:
+  std::unique_ptr<FieldConstraintRules> itemRules_;
 };
 
 // A set of constraints that share the same 'rule' value.

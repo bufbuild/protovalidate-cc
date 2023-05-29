@@ -22,19 +22,18 @@ cc_library(
         ":constraint_rules",
         "@com_google_cel_cpp//eval/public:activation",
         "@com_google_cel_cpp//eval/public:cel_expression",
+        "@com_google_cel_cpp//eval/public/structs:cel_proto_wrapper",
         "@com_google_cel_cpp//parser",
     ],
 )
 
 cc_library(
     name = "constraint_rules",
-    srcs = ["constraint_rules.cc"],
     hdrs = ["constraint_rules.h"],
     deps = [
         "@com_github_bufbuild_protovalidate//proto/protovalidate/buf/validate:validate_proto_cc",
         "@com_google_absl//absl/status",
         "@com_google_cel_cpp//eval/public:cel_value",
-        "@com_google_cel_cpp//eval/public/structs:cel_proto_wrapper",
         "@com_google_protobuf//:protobuf",
     ],
 )
