@@ -500,8 +500,15 @@ absl::Status RepeatedConstraintRules::Validate(
     cel::runtime::Activation activation;
     activation.InsertValue("this", list[i]);
     status = itemRules_->ValidateCel(ctx, elemPath, activation);
-    if (!status.ok()) {
+    if (ctx.shouldReturn(status)) {
       return status;
+    }
+    if (itemRules_->getAnyRules() != nullptr) {
+      const auto& anyMsg = message.GetReflection()->GetRepeatedMessage(message, field_, i);
+      status = itemRules_->ValidateAny(ctx, elemPath, anyMsg);
+      if (ctx.shouldReturn(status)) {
+        return status;
+      }
     }
   }
   return absl::OkStatus();

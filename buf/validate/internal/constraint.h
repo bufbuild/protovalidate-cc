@@ -39,16 +39,18 @@ class FieldConstraintRules : public CelConstraintRules {
       std::string_view fieldPath,
       const google::protobuf::Message& message) const;
 
+  absl::Status ValidateAny(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& anyMsg) const;
+
+  const AnyRules* getAnyRules() const { return anyRules_; }
+
  protected:
   const google::protobuf::FieldDescriptor* field_ = nullptr;
   bool ignoreEmpty_ = false;
   bool required_ = false;
   const AnyRules* anyRules_ = nullptr;
-
-  absl::Status ValidateAny(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& anyMsg) const;
 };
 
 class RepeatedConstraintRules : public FieldConstraintRules {
