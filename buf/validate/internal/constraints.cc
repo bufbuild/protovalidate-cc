@@ -1,4 +1,4 @@
-#include "buf/validate/internal/constraint.h"
+#include "buf/validate/internal/constraints.h"
 
 #include "absl/status/statusor.h"
 #include "buf/validate/internal/extra_func.h"

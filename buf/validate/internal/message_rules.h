@@ -1,7 +1,7 @@
 #pragma once
 
 #include "absl/status/statusor.h"
-#include "buf/validate/internal/constraint.h"
+#include "buf/validate/internal/constraints.h"
 #include "buf/validate/validate.pb.h"
 #include "eval/public/cel_expression.h"
 #include "google/protobuf/arena.h"

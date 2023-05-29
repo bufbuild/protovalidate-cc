@@ -74,8 +74,8 @@ cc_library(
 
 cc_library(
     name = "constraint",
-    srcs = ["constraint.cc"],
-    hdrs = ["constraint.h"],
+    srcs = ["constraints.cc"],
+    hdrs = ["constraints.h"],
     deps = [
         ":cel_constraint_rules",
         ":extra_func",
@@ -92,7 +92,7 @@ cc_library(
 
 cc_test(
     name = "constraint_test",
-    srcs = ["constraint_test.cc"],
+    srcs = ["constraints_test.cc"],
     deps = [
         ":constraint",
         "@com_google_cel_cpp//eval/public:activation",
