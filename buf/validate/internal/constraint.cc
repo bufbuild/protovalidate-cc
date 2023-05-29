@@ -57,7 +57,7 @@ absl::Status ProcessConstraint(
 
 } // namespace
 
-absl::Status ConstraintSet::Add(
+absl::Status CelConstraintRules::Add(
     google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint) {
   auto pexpr_or = cel::parser::Parse(constraint.expression());
   if (!pexpr_or.ok()) {
@@ -73,7 +73,7 @@ absl::Status ConstraintSet::Add(
   return absl::OkStatus();
 }
 
-absl::Status ConstraintSet::Add(
+absl::Status CelConstraintRules::Add(
     google::api::expr::runtime::CelExpressionBuilder& builder,
     std::string_view id,
     std::string_view message,
@@ -85,7 +85,7 @@ absl::Status ConstraintSet::Add(
   return Add(builder, constraint);
 }
 
-absl::Status ConstraintSet::Validate(
+absl::Status CelConstraintRules::ValidateCel(
     ConstraintContext& ctx,
     std::string_view fieldPath,
     google::api::expr::runtime::Activation& activation) const {
@@ -125,7 +125,7 @@ NewConstraintBuilder(google::protobuf::Arena* arena) {
   return builder;
 }
 
-void ConstraintSet::setRules(
+void ConstraintRules::setRules(
     const google::protobuf::Message* rules, google::protobuf::Arena* arena) {
   rules_ = cel::runtime::CelProtoWrapper::CreateMessage(rules, arena);
 }
@@ -206,7 +206,7 @@ Constraints NewMessageConstraints(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
-  std::vector<std::unique_ptr<ConstraintSet>> result;
+  std::vector<std::unique_ptr<ConstraintRules>> result;
   if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
     if (msgLvl.disabled()) {
@@ -228,7 +228,7 @@ Constraints NewMessageConstraints(
     if (fieldLvl.skipped()) {
       continue;
     }
-    StatusOrConstraintSet rules_or;
+    absl::StatusOr<std::unique_ptr<CelConstraintRules>> rules_or;
     switch (fieldLvl.type_case()) {
       case FieldConstraints::kBool:
         rules_or = BuildScalarConstraintSet(
@@ -466,13 +466,13 @@ Constraints NewMessageConstraints(
     if (!rules_or.ok()) {
       return rules_or.status();
     }
-    result.emplace_back(std::move(rules_or).value());
     for (const auto& constraint : fieldLvl.cel()) {
-      auto status = result.back()->Add(builder, constraint);
+      auto status = rules_or.value()->Add(builder, constraint);
       if (!status.ok()) {
         return status;
       }
     }
+    result.emplace_back(std::move(rules_or).value());
   }
 
   for (int i = 0; i < descriptor->oneof_decl_count(); i++) {
@@ -493,7 +493,7 @@ absl::Status ConstraintSet::ValidateMessage(
     const google::protobuf::Message& message) const {
   google::api::expr::runtime::Activation activation;
   activation.InsertValue("this", cel::runtime::CelProtoWrapper::CreateMessage(&message, ctx.arena));
-  return Validate(ctx, fieldPath, activation);
+  return ValidateCel(ctx, fieldPath, activation);
 }
 
 absl::Status ConstraintSet::ValidateField(
@@ -546,7 +546,7 @@ absl::Status ConstraintSet::ValidateField(
     }
   }
   activation.InsertValue("this", result);
-  return Validate(ctx, fieldPath, activation);
+  return ValidateCel(ctx, fieldPath, activation);
 }
 
 absl::Status ConstraintSet::ValidateAny(

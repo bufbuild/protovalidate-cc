@@ -13,6 +13,7 @@ namespace {
 class ExpressionTest : public testing::Test {
  public:
   void SetUp() override {
+    constraints_ = std::make_unique<ConstraintSet>();
     cel::runtime::InterpreterOptions options;
     options.enable_qualified_type_identifiers = true;
     options.enable_timestamp_duration_overflow_errors = true;
@@ -25,7 +26,7 @@ class ExpressionTest : public testing::Test {
 
  protected:
   std::unique_ptr<cel::runtime::CelExpressionBuilder> builder_;
-  ConstraintSet constraints_;
+  std::unique_ptr<ConstraintSet> constraints_;
   google::protobuf::Arena arena_;
 
   absl::Status AddConstraint(std::string expr, std::string message, std::string id) {
@@ -33,7 +34,7 @@ class ExpressionTest : public testing::Test {
     constraint.set_expression(std::move(expr));
     constraint.set_message(std::move(message));
     constraint.set_id(std::move(id));
-    return constraints_.Add(*builder_, constraint);
+    return constraints_->Add(*builder_, constraint);
   }
 
   absl::Status Validate(
@@ -42,7 +43,7 @@ class ExpressionTest : public testing::Test {
       std::vector<Violation>& violations) {
     ConstraintContext ctx;
     ctx.arena = &arena_;
-    auto status = constraints_.Validate(ctx, fieldPath, activation);
+    auto status = constraints_->ValidateCel(ctx, fieldPath, activation);
     if (!status.ok()) {
       return status;
     }

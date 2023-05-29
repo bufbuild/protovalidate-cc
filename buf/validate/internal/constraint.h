@@ -34,13 +34,59 @@ struct ConstraintContext {
   }
 };
 
+class ConstraintRules {
+ public:
+  ConstraintRules() = default;
+  virtual ~ConstraintRules() = default;
+
+  ConstraintRules(const ConstraintRules&) = delete;
+  void operator=(const ConstraintRules&) = delete;
+
+  virtual absl::Status Validate(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message) const = 0;
+
+  void setRules(google::api::expr::runtime::CelValue rules) { rules_ = rules; }
+  void setRules(const google::protobuf::Message* rules, google::protobuf::Arena* arena);
+  [[nodiscard]] const google::api::expr::runtime::CelValue& getRules() const { return rules_; }
+  [[nodiscard]] google::api::expr::runtime::CelValue& getRules() { return rules_; }
+
+ protected:
+  google::api::expr::runtime::CelValue rules_;
+};
+
+class CelConstraintRules : public ConstraintRules {
+  using Base = ConstraintRules;
+
+ public:
+  using Base::Base;
+
+  absl::Status Add(
+      google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint);
+  absl::Status Add(
+      google::api::expr::runtime::CelExpressionBuilder& builder,
+      std::string_view id,
+      std::string_view message,
+      std::string_view expression);
+  [[nodiscard]] const std::vector<CompiledConstraint>& getExprs() const { return exprs_; }
+
+  // Validate all the cel rules given the activation.
+  absl::Status ValidateCel(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      google::api::expr::runtime::Activation& activation) const;
+
+ protected:
+  std::vector<CompiledConstraint> exprs_;
+};
+
 // A set of constraints that share the same 'rule' value.
-class ConstraintSet {
+class ConstraintSet : public CelConstraintRules {
+  using Base = CelConstraintRules;
+
  public:
   ConstraintSet() = default;
-  ConstraintSet(const ConstraintSet&) = delete;
-  void operator=(const ConstraintSet&) = delete;
-
   ConstraintSet(
       const google::protobuf::FieldDescriptor* desc,
       const FieldConstraints& field,
@@ -52,37 +98,14 @@ class ConstraintSet {
   ConstraintSet(const google::protobuf::OneofDescriptor* desc, const OneofConstraints& oneof)
       : oneof_(desc), required_(oneof.required()) {}
 
-  absl::Status Validate(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      google::api::expr::runtime::Activation& activation) const;
-
-  absl::Status Validate(
+  virtual absl::Status Validate(
       ConstraintContext& ctx,
       std::string_view fieldPath,
       const google::protobuf::Message& message) const;
 
-  absl::Status Add(
-      google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint);
-  absl::Status Add(
-      google::api::expr::runtime::CelExpressionBuilder& builder,
-      std::string_view id,
-      std::string_view message,
-      std::string_view expression);
-
-  [[nodiscard]] const std::vector<CompiledConstraint>& getExprs() const { return exprs_; }
-
-  void setRules(google::api::expr::runtime::CelValue rules) { rules_ = rules; }
-  void setRules(const google::protobuf::Message* rules, google::protobuf::Arena* arena);
-  [[nodiscard]] const google::api::expr::runtime::CelValue& getRules() const { return rules_; }
-  [[nodiscard]] google::api::expr::runtime::CelValue& getRules() { return rules_; }
-
   [[nodiscard]] const google::protobuf::FieldDescriptor* getField() const { return field_; }
 
  private:
-  google::api::expr::runtime::CelValue rules_;
-  std::vector<CompiledConstraint> exprs_;
-
   // The field to bind to 'this' or null if the entire message should be bound.
   const google::protobuf::FieldDescriptor* field_ = nullptr;
   const google::protobuf::OneofDescriptor* oneof_ = nullptr;
@@ -116,7 +139,7 @@ class ConstraintSet {
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder(google::protobuf::Arena* arena);
 
-using Constraints = absl::StatusOr<std::vector<std::unique_ptr<ConstraintSet>>>;
+using Constraints = absl::StatusOr<std::vector<std::unique_ptr<ConstraintRules>>>;
 
 Constraints NewMessageConstraints(
     google::protobuf::Arena* arena,
