@@ -10,6 +10,7 @@ namespace cel = google::api::expr::runtime;
 
 absl::Status RegisterExtraFuncs(
     google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena) {
+  // TODO(afuller): This should be specialized for the locale.
   auto* formatter = google::protobuf::Arena::Create<StringFormat>(regArena);
   auto status = cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue>::
       CreateAndRegister(
@@ -18,23 +19,7 @@ absl::Status RegisterExtraFuncs(
           [formatter](
               google::protobuf::Arena* arena,
               cel::CelValue::StringHolder format,
-              cel::CelValue arg) -> cel::CelValue {
-            if (!arg.IsList()) {
-              auto* error = google::protobuf::Arena::Create<cel::CelError>(
-                  arena, absl::StatusCode::kInvalidArgument, "format: expected list");
-              return cel::CelValue::CreateError(error);
-            }
-            const cel::CelList& list = *arg.ListOrDie();
-            std::string_view fmtStr = format.value();
-            auto* result = google::protobuf::Arena::Create<std::string>(arena);
-            auto status = formatter->format(*result, fmtStr, list);
-            if (!status.ok()) {
-              auto* error = google::protobuf::Arena::Create<cel::CelError>(
-                  arena, absl::StatusCode::kInvalidArgument, status.message());
-              return cel::CelValue::CreateError(error);
-            }
-            return cel::CelValue::CreateString(result);
-          },
+              cel::CelValue arg) -> cel::CelValue { return formatter->format(arena, format, arg); },
           &registry);
   if (!status.ok()) {
     return status;

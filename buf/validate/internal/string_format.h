@@ -13,6 +13,11 @@ constexpr const char kLowerHexDigits[17] = "0123456789abcdef";
 // TODO: Support locale-specific formatting.
 class StringFormat {
  public:
+  google::api::expr::runtime::CelValue format(
+      google::protobuf::Arena* arena,
+      google::api::expr::runtime::CelValue::StringHolder format,
+      google::api::expr::runtime::CelValue arg) const;
+
   absl::Status format(
       std::string& builder,
       std::string_view format,
