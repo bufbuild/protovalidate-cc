@@ -130,16 +130,18 @@ void ConstraintSet::setRules(
   rules_ = cel::runtime::CelProtoWrapper::CreateMessage(rules, arena);
 }
 
-absl::Status BuildMessageConstraintSet(
+using StatusOrConstraintSet = absl::StatusOr<std::unique_ptr<ConstraintSet>>;
+
+StatusOrConstraintSet BuildMessageConstraintSet(
     google::api::expr::runtime::CelExpressionBuilder& builder,
-    const MessageConstraints& constraints,
-    ConstraintSet& result) {
+    const MessageConstraints& constraints) {
+  auto result = std::make_unique<ConstraintSet>();
   for (const auto& constraint : constraints.cel()) {
-    if (auto status = result.Add(builder, constraint); !status.ok()) {
+    if (auto status = result->Add(builder, constraint); !status.ok()) {
       return status;
     }
   }
-  return absl::OkStatus();
+  return result;
 }
 
 template <typename R>
@@ -169,48 +171,52 @@ absl::Status BuildConstraintSet(
 }
 
 template <typename R>
-absl::Status BuildScalarConstraintSet(
+StatusOrConstraintSet BuildScalarConstraintSet(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
+    const google::protobuf::FieldDescriptor* field,
+    const FieldConstraints& fieldLvl,
     const R& rules,
     google::protobuf::FieldDescriptor::Type expectedType,
-    std::string_view wrapperName,
-    ConstraintSet& result) {
-  if (result.getField() == nullptr) {
-    return absl::InternalError("field not set");
-  }
-  if (result.getField()->type() != expectedType) {
-    if (result.getField()->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
-      if (result.getField()->message_type()->full_name() != wrapperName) {
+    std::string_view wrapperName = "") {
+  if (field->type() != expectedType) {
+    if (field->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
+      if (field->message_type()->full_name() != wrapperName) {
         return absl::FailedPreconditionError(absl::StrFormat(
             "field type does not match constraint type: %s != %s",
-            result.getField()->type_name(),
+            field->type_name(),
             google::protobuf::FieldDescriptor::TypeName(expectedType)));
       }
     } else {
       return absl::FailedPreconditionError(absl::StrFormat(
           "field type does not match constraint type: %s != %s",
-          google::protobuf::FieldDescriptor::TypeName(result.getField()->type()),
+          google::protobuf::FieldDescriptor::TypeName(field->type()),
           google::protobuf::FieldDescriptor::TypeName(expectedType)));
     }
   }
-  return BuildConstraintSet(arena, builder, rules, result);
+  auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
+  auto status = BuildConstraintSet(arena, builder, rules, *result);
+  if (!status.ok()) {
+    return status;
+  }
+  return result;
 }
 
 Constraints NewMessageConstraints(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
-  std::vector<ConstraintSet> result;
+  std::vector<std::unique_ptr<ConstraintSet>> result;
   if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
     if (msgLvl.disabled()) {
       return result;
     }
-    if (auto status = BuildMessageConstraintSet(builder, msgLvl, result.emplace_back());
-        !status.ok()) {
-      return status;
+    auto rules_or = BuildMessageConstraintSet(builder, msgLvl);
+    if (!rules_or.ok()) {
+      return rules_or.status();
     }
+    result.emplace_back(std::move(rules_or).value());
   }
 
   for (int i = 0; i < descriptor->field_count(); i++) {
@@ -222,208 +228,247 @@ Constraints NewMessageConstraints(
     if (fieldLvl.skipped()) {
       continue;
     }
-    absl::Status status = absl::UnimplementedError("Not implemented");
+    StatusOrConstraintSet rules_or;
     switch (fieldLvl.type_case()) {
       case FieldConstraints::kBool:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.bool_(),
             google::protobuf::FieldDescriptor::TYPE_BOOL,
-            "google.protobuf.BoolValue",
-            result.emplace_back(field, fieldLvl));
+            "google.protobuf.BoolValue");
         break;
       case FieldConstraints::kFloat:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.float_(),
             google::protobuf::FieldDescriptor::TYPE_FLOAT,
-            "google.protobuf.FloatValue",
-            result.emplace_back(field, fieldLvl));
+            "google.protobuf.FloatValue");
         break;
       case FieldConstraints::kDouble:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.double_(),
             google::protobuf::FieldDescriptor::TYPE_DOUBLE,
-            "google.protobuf.DoubleValue",
-            result.emplace_back(field, fieldLvl));
+            "google.protobuf.DoubleValue");
         break;
       case FieldConstraints::kInt32:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.int32(),
             google::protobuf::FieldDescriptor::TYPE_INT32,
-            "google.protobuf.Int32Value",
-            result.emplace_back(field, fieldLvl));
+            "google.protobuf.Int32Value");
         break;
       case FieldConstraints::kInt64:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.int64(),
             google::protobuf::FieldDescriptor::TYPE_INT64,
-            "google.protobuf.Int64Value",
-            result.emplace_back(field, fieldLvl));
+            "google.protobuf.Int64Value");
         break;
       case FieldConstraints::kUint32:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.uint32(),
             google::protobuf::FieldDescriptor::TYPE_UINT32,
-            "google.protobuf.UInt32Value",
-            result.emplace_back(field, fieldLvl));
+            "google.protobuf.UInt32Value");
         break;
       case FieldConstraints::kUint64:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.uint64(),
             google::protobuf::FieldDescriptor::TYPE_UINT64,
-            "google.protobuf.UInt64Value",
-            result.emplace_back(field, fieldLvl));
+            "google.protobuf.UInt64Value");
         break;
       case FieldConstraints::kSint32:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.sint32(),
-            google::protobuf::FieldDescriptor::TYPE_SINT32,
-            "",
-            result.emplace_back(field, fieldLvl));
+            google::protobuf::FieldDescriptor::TYPE_SINT32);
         break;
       case FieldConstraints::kSint64:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.sint64(),
-            google::protobuf::FieldDescriptor::TYPE_SINT64,
-            "",
-            result.emplace_back(field, fieldLvl));
+            google::protobuf::FieldDescriptor::TYPE_SINT64);
         break;
       case FieldConstraints::kFixed32:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.fixed32(),
-            google::protobuf::FieldDescriptor::TYPE_FIXED32,
-            "",
-            result.emplace_back(field, fieldLvl));
+            google::protobuf::FieldDescriptor::TYPE_FIXED32);
         break;
       case FieldConstraints::kFixed64:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.fixed64(),
-            google::protobuf::FieldDescriptor::TYPE_FIXED64,
-            "",
-            result.emplace_back(field, fieldLvl));
+            google::protobuf::FieldDescriptor::TYPE_FIXED64);
         break;
       case FieldConstraints::kSfixed32:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.sfixed32(),
-            google::protobuf::FieldDescriptor::TYPE_SFIXED32,
-            "",
-            result.emplace_back(field, fieldLvl));
+            google::protobuf::FieldDescriptor::TYPE_SFIXED32);
         break;
       case FieldConstraints::kSfixed64:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.sfixed64(),
-            google::protobuf::FieldDescriptor::TYPE_SFIXED64,
-            "",
-            result.emplace_back(field, fieldLvl));
+            google::protobuf::FieldDescriptor::TYPE_SFIXED64);
         break;
       case FieldConstraints::kString:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.string(),
             google::protobuf::FieldDescriptor::TYPE_STRING,
-            "google.protobuf.StringValue",
-            result.emplace_back(field, fieldLvl));
+            "google.protobuf.StringValue");
         break;
       case FieldConstraints::kBytes:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.bytes(),
             google::protobuf::FieldDescriptor::TYPE_BYTES,
-            "google.protobuf.BytesValue",
-            result.emplace_back(field, fieldLvl));
+            "google.protobuf.BytesValue");
         break;
       case FieldConstraints::kEnum:
-        status = BuildScalarConstraintSet(
+        rules_or = BuildScalarConstraintSet(
             arena,
             builder,
+            field,
+            fieldLvl,
             fieldLvl.enum_(),
-            google::protobuf::FieldDescriptor::TYPE_ENUM,
-            "",
-            result.emplace_back(field, fieldLvl));
-        break;
-      case FieldConstraints::kRepeated:
-        if (!field->is_repeated()) {
-          return absl::InvalidArgumentError("repeated field validator on non-repeated field");
-        } else if (field->is_map()) {
-          return absl::InvalidArgumentError("repeated field validator on map field");
-        }
-        status = BuildConstraintSet(
-            arena, builder, fieldLvl.repeated(), result.emplace_back(field, fieldLvl));
-        break;
-      case FieldConstraints::kMap:
-        if (!field->is_map()) {
-          return absl::InvalidArgumentError("map field validator on non-map field");
-        }
-        status = BuildConstraintSet(
-            arena, builder, fieldLvl.map(), result.emplace_back(field, fieldLvl));
-        break;
-      case FieldConstraints::kAny:
-        if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
-            field->message_type()->full_name() !=
-                google::protobuf::Any::descriptor()->full_name()) {
-          return absl::InvalidArgumentError("any field validator on non-any field");
-        }
-        status = BuildConstraintSet(
-            arena, builder, fieldLvl.any(), result.emplace_back(field, fieldLvl, &fieldLvl.any()));
+            google::protobuf::FieldDescriptor::TYPE_ENUM);
         break;
       case FieldConstraints::kDuration:
         if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
             field->message_type()->full_name() !=
                 google::protobuf::Duration::descriptor()->full_name()) {
           return absl::InvalidArgumentError("duration field validator on non-duration field");
+        } else {
+          auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
+          auto status = BuildConstraintSet(arena, builder, fieldLvl.duration(), *result);
+          if (!status.ok()) {
+            rules_or = status;
+          } else {
+            rules_or = std::move(result);
+          }
         }
-        status = BuildConstraintSet(
-            arena, builder, fieldLvl.duration(), result.emplace_back(field, fieldLvl));
         break;
       case FieldConstraints::kTimestamp:
         if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
             field->message_type()->full_name() !=
                 google::protobuf::Timestamp::descriptor()->full_name()) {
           return absl::InvalidArgumentError("timestamp field validator on non-timestamp field");
+        } else {
+          auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
+          auto status = BuildConstraintSet(arena, builder, fieldLvl.timestamp(), *result);
+          if (!status.ok()) {
+            rules_or = status;
+          } else {
+            rules_or = std::move(result);
+          }
         }
-        status = BuildConstraintSet(
-            arena, builder, fieldLvl.timestamp(), result.emplace_back(field, fieldLvl));
+        break;
+      case FieldConstraints::kRepeated:
+        if (!field->is_repeated()) {
+          return absl::InvalidArgumentError("repeated field validator on non-repeated field");
+        } else if (field->is_map()) {
+          return absl::InvalidArgumentError("repeated field validator on map field");
+        } else {
+          auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
+          auto status = BuildConstraintSet(arena, builder, fieldLvl.repeated(), *result);
+          if (!status.ok()) {
+            rules_or = status;
+          } else {
+            rules_or = std::move(result);
+          }
+        }
+        break;
+      case FieldConstraints::kMap:
+        if (!field->is_map()) {
+          return absl::InvalidArgumentError("map field validator on non-map field");
+        } else {
+          auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
+          auto status = BuildConstraintSet(arena, builder, fieldLvl.map(), *result);
+          if (!status.ok()) {
+            rules_or = status;
+          } else {
+            rules_or = std::move(result);
+          }
+        }
+        break;
+      case FieldConstraints::kAny:
+        if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
+            field->message_type()->full_name() !=
+                google::protobuf::Any::descriptor()->full_name()) {
+          return absl::InvalidArgumentError("any field validator on non-any field");
+        } else {
+          auto result = std::make_unique<ConstraintSet>(field, fieldLvl, &fieldLvl.any());
+          auto status = BuildConstraintSet(arena, builder, fieldLvl.any(), *result);
+          if (!status.ok()) {
+            rules_or = status;
+          } else {
+            rules_or = std::move(result);
+          }
+        }
         break;
       case FieldConstraints::TYPE_NOT_SET:
-        result.emplace_back(field, fieldLvl);
-        status = absl::OkStatus();
+        rules_or = std::make_unique<ConstraintSet>(field, fieldLvl);
         break;
       default:
         return absl::InvalidArgumentError(
             absl::StrFormat("unknown field validator type %d", fieldLvl.type_case()));
     }
-    if (!status.ok()) {
-      return status;
+    if (!rules_or.ok()) {
+      return rules_or.status();
     }
+    result.emplace_back(std::move(rules_or).value());
     for (const auto& constraint : fieldLvl.cel()) {
-      status = result.back().Add(builder, constraint);
+      auto status = result.back()->Add(builder, constraint);
       if (!status.ok()) {
         return status;
       }
@@ -436,7 +481,7 @@ Constraints NewMessageConstraints(
       continue;
     }
     const auto& oneofLvl = oneof->options().GetExtension(buf::validate::oneof);
-    result.emplace_back(oneof, oneofLvl);
+    result.emplace_back(std::make_unique<ConstraintSet>(oneof, oneofLvl));
   }
 
   return result;

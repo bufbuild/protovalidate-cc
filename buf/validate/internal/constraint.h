@@ -38,6 +38,9 @@ struct ConstraintContext {
 class ConstraintSet {
  public:
   ConstraintSet() = default;
+  ConstraintSet(const ConstraintSet&) = delete;
+  void operator=(const ConstraintSet&) = delete;
+
   ConstraintSet(
       const google::protobuf::FieldDescriptor* desc,
       const FieldConstraints& field,
@@ -113,7 +116,7 @@ class ConstraintSet {
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder(google::protobuf::Arena* arena);
 
-using Constraints = absl::StatusOr<std::vector<ConstraintSet>>;
+using Constraints = absl::StatusOr<std::vector<std::unique_ptr<ConstraintSet>>>;
 
 Constraints NewMessageConstraints(
     google::protobuf::Arena* arena,
