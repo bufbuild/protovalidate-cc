@@ -13,7 +13,7 @@ namespace {
 class ExpressionTest : public testing::Test {
  public:
   void SetUp() override {
-    constraints_ = std::make_unique<ConstraintSet>();
+    constraints_ = std::make_unique<MessageConstraintRules>();
     cel::runtime::InterpreterOptions options;
     options.enable_qualified_type_identifiers = true;
     options.enable_timestamp_duration_overflow_errors = true;
@@ -26,7 +26,7 @@ class ExpressionTest : public testing::Test {
 
  protected:
   std::unique_ptr<cel::runtime::CelExpressionBuilder> builder_;
-  std::unique_ptr<ConstraintSet> constraints_;
+  std::unique_ptr<MessageConstraintRules> constraints_;
   google::protobuf::Arena arena_;
 
   absl::Status AddConstraint(std::string expr, std::string message, std::string id) {

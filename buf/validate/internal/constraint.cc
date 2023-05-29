@@ -13,93 +13,25 @@
 #include "eval/public/structs/cel_proto_wrapper.h"
 #include "google/protobuf/any.pb.h"
 #include "google/protobuf/descriptor.pb.h"
-#include "parser/parser.h"
 
 namespace buf::validate::internal {
 namespace cel = google::api::expr;
 
 namespace {
 
-absl::Status ProcessConstraint(
-    ConstraintContext& ctx,
-    absl::string_view fieldPath,
-    const google::api::expr::runtime::BaseActivation& activation,
-    const CompiledConstraint& expr) {
-  auto result_or = expr.expr->Evaluate(activation, ctx.arena);
-  if (!result_or.ok()) {
-    return result_or.status();
-  }
-  cel::runtime::CelValue result = std::move(result_or).value();
-  if (result.IsBool()) {
-    if (!result.BoolOrDie()) {
-      // Add violation with the constraint message.
-      Violation& violation = *ctx.violations.add_violations();
-      *violation.mutable_field_path() = fieldPath;
-      violation.set_message(expr.constraint.message());
-      violation.set_constraint_id(expr.constraint.id());
+absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
+    google::api::expr::runtime::CelExpressionBuilder& builder,
+    const MessageConstraints& constraints) {
+  auto result = std::make_unique<MessageConstraintRules>();
+  for (const auto& constraint : constraints.cel()) {
+    if (auto status = result->Add(builder, constraint); !status.ok()) {
+      return status;
     }
-  } else if (result.IsString()) {
-    if (!result.StringOrDie().value().empty()) {
-      // Add violation with custom message.
-      Violation& violation = *ctx.violations.add_violations();
-      *violation.mutable_field_path() = fieldPath;
-      violation.set_message(std::string(result.StringOrDie().value()));
-      violation.set_constraint_id(expr.constraint.id());
-    }
-  } else if (result.IsError()) {
-    const cel::runtime::CelError& error = *result.ErrorOrDie();
-    return {absl::StatusCode::kInvalidArgument, error.message()};
-  } else {
-    return {absl::StatusCode::kInvalidArgument, "invalid result type"};
   }
-  return absl::OkStatus();
+  return result;
 }
 
 } // namespace
-
-absl::Status CelConstraintRules::Add(
-    google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint) {
-  auto pexpr_or = cel::parser::Parse(constraint.expression());
-  if (!pexpr_or.ok()) {
-    return pexpr_or.status();
-  }
-  cel::v1alpha1::ParsedExpr pexpr = std::move(pexpr_or).value();
-  auto expr_or = builder.CreateExpression(pexpr.mutable_expr(), pexpr.mutable_source_info());
-  if (!expr_or.ok()) {
-    return expr_or.status();
-  }
-  std::unique_ptr<cel::runtime::CelExpression> expr = std::move(expr_or).value();
-  exprs_.emplace_back(CompiledConstraint{std::move(constraint), std::move(expr)});
-  return absl::OkStatus();
-}
-
-absl::Status CelConstraintRules::Add(
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    std::string_view id,
-    std::string_view message,
-    std::string_view expression) {
-  Constraint constraint;
-  *constraint.mutable_id() = id;
-  *constraint.mutable_message() = message;
-  *constraint.mutable_expression() = expression;
-  return Add(builder, constraint);
-}
-
-absl::Status CelConstraintRules::ValidateCel(
-    ConstraintContext& ctx,
-    std::string_view fieldPath,
-    google::api::expr::runtime::Activation& activation) const {
-  activation.InsertValue("rules", rules_);
-  absl::Status status = absl::OkStatus();
-  for (const auto& expr : exprs_) {
-    status = ProcessConstraint(ctx, fieldPath, activation, expr);
-    if (ctx.shouldReturn(status)) {
-      break;
-    }
-  }
-  activation.RemoveValueEntry("rules");
-  return status;
-}
 
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder(google::protobuf::Arena* arena) {
@@ -125,31 +57,12 @@ NewConstraintBuilder(google::protobuf::Arena* arena) {
   return builder;
 }
 
-void ConstraintRules::setRules(
-    const google::protobuf::Message* rules, google::protobuf::Arena* arena) {
-  rules_ = cel::runtime::CelProtoWrapper::CreateMessage(rules, arena);
-}
-
-using StatusOrConstraintSet = absl::StatusOr<std::unique_ptr<ConstraintSet>>;
-
-StatusOrConstraintSet BuildMessageConstraintSet(
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    const MessageConstraints& constraints) {
-  auto result = std::make_unique<ConstraintSet>();
-  for (const auto& constraint : constraints.cel()) {
-    if (auto status = result->Add(builder, constraint); !status.ok()) {
-      return status;
-    }
-  }
-  return result;
-}
-
 template <typename R>
-absl::Status BuildConstraintSet(
+absl::Status BuildCelRules(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const R& rules,
-    ConstraintSet& result) {
+    CelConstraintRules& result) {
   result.setRules(&rules, arena);
   // Look for constraints on the set fields.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
@@ -171,7 +84,7 @@ absl::Status BuildConstraintSet(
 }
 
 template <typename R>
-StatusOrConstraintSet BuildScalarConstraintSet(
+absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
@@ -194,8 +107,8 @@ StatusOrConstraintSet BuildScalarConstraintSet(
           google::protobuf::FieldDescriptor::TypeName(expectedType)));
     }
   }
-  auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
-  auto status = BuildConstraintSet(arena, builder, rules, *result);
+  auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
+  auto status = BuildCelRules(arena, builder, rules, *result);
   if (!status.ok()) {
     return status;
   }
@@ -212,7 +125,7 @@ Constraints NewMessageConstraints(
     if (msgLvl.disabled()) {
       return result;
     }
-    auto rules_or = BuildMessageConstraintSet(builder, msgLvl);
+    auto rules_or = BuildMessageRules(builder, msgLvl);
     if (!rules_or.ok()) {
       return rules_or.status();
     }
@@ -231,7 +144,7 @@ Constraints NewMessageConstraints(
     absl::StatusOr<std::unique_ptr<CelConstraintRules>> rules_or;
     switch (fieldLvl.type_case()) {
       case FieldConstraints::kBool:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -241,7 +154,7 @@ Constraints NewMessageConstraints(
             "google.protobuf.BoolValue");
         break;
       case FieldConstraints::kFloat:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -251,7 +164,7 @@ Constraints NewMessageConstraints(
             "google.protobuf.FloatValue");
         break;
       case FieldConstraints::kDouble:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -261,7 +174,7 @@ Constraints NewMessageConstraints(
             "google.protobuf.DoubleValue");
         break;
       case FieldConstraints::kInt32:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -271,7 +184,7 @@ Constraints NewMessageConstraints(
             "google.protobuf.Int32Value");
         break;
       case FieldConstraints::kInt64:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -281,7 +194,7 @@ Constraints NewMessageConstraints(
             "google.protobuf.Int64Value");
         break;
       case FieldConstraints::kUint32:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -291,7 +204,7 @@ Constraints NewMessageConstraints(
             "google.protobuf.UInt32Value");
         break;
       case FieldConstraints::kUint64:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -301,7 +214,7 @@ Constraints NewMessageConstraints(
             "google.protobuf.UInt64Value");
         break;
       case FieldConstraints::kSint32:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -310,7 +223,7 @@ Constraints NewMessageConstraints(
             google::protobuf::FieldDescriptor::TYPE_SINT32);
         break;
       case FieldConstraints::kSint64:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -319,7 +232,7 @@ Constraints NewMessageConstraints(
             google::protobuf::FieldDescriptor::TYPE_SINT64);
         break;
       case FieldConstraints::kFixed32:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -328,7 +241,7 @@ Constraints NewMessageConstraints(
             google::protobuf::FieldDescriptor::TYPE_FIXED32);
         break;
       case FieldConstraints::kFixed64:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -337,7 +250,7 @@ Constraints NewMessageConstraints(
             google::protobuf::FieldDescriptor::TYPE_FIXED64);
         break;
       case FieldConstraints::kSfixed32:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -346,7 +259,7 @@ Constraints NewMessageConstraints(
             google::protobuf::FieldDescriptor::TYPE_SFIXED32);
         break;
       case FieldConstraints::kSfixed64:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -355,7 +268,7 @@ Constraints NewMessageConstraints(
             google::protobuf::FieldDescriptor::TYPE_SFIXED64);
         break;
       case FieldConstraints::kString:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -365,7 +278,7 @@ Constraints NewMessageConstraints(
             "google.protobuf.StringValue");
         break;
       case FieldConstraints::kBytes:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -375,7 +288,7 @@ Constraints NewMessageConstraints(
             "google.protobuf.BytesValue");
         break;
       case FieldConstraints::kEnum:
-        rules_or = BuildScalarConstraintSet(
+        rules_or = BuildFieldRules(
             arena,
             builder,
             field,
@@ -389,8 +302,8 @@ Constraints NewMessageConstraints(
                 google::protobuf::Duration::descriptor()->full_name()) {
           return absl::InvalidArgumentError("duration field validator on non-duration field");
         } else {
-          auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
-          auto status = BuildConstraintSet(arena, builder, fieldLvl.duration(), *result);
+          auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
+          auto status = BuildCelRules(arena, builder, fieldLvl.duration(), *result);
           if (!status.ok()) {
             rules_or = status;
           } else {
@@ -404,8 +317,8 @@ Constraints NewMessageConstraints(
                 google::protobuf::Timestamp::descriptor()->full_name()) {
           return absl::InvalidArgumentError("timestamp field validator on non-timestamp field");
         } else {
-          auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
-          auto status = BuildConstraintSet(arena, builder, fieldLvl.timestamp(), *result);
+          auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
+          auto status = BuildCelRules(arena, builder, fieldLvl.timestamp(), *result);
           if (!status.ok()) {
             rules_or = status;
           } else {
@@ -419,8 +332,8 @@ Constraints NewMessageConstraints(
         } else if (field->is_map()) {
           return absl::InvalidArgumentError("repeated field validator on map field");
         } else {
-          auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
-          auto status = BuildConstraintSet(arena, builder, fieldLvl.repeated(), *result);
+          auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
+          auto status = BuildCelRules(arena, builder, fieldLvl.repeated(), *result);
           if (!status.ok()) {
             rules_or = status;
           } else {
@@ -432,8 +345,8 @@ Constraints NewMessageConstraints(
         if (!field->is_map()) {
           return absl::InvalidArgumentError("map field validator on non-map field");
         } else {
-          auto result = std::make_unique<ConstraintSet>(field, fieldLvl);
-          auto status = BuildConstraintSet(arena, builder, fieldLvl.map(), *result);
+          auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
+          auto status = BuildCelRules(arena, builder, fieldLvl.map(), *result);
           if (!status.ok()) {
             rules_or = status;
           } else {
@@ -447,8 +360,8 @@ Constraints NewMessageConstraints(
                 google::protobuf::Any::descriptor()->full_name()) {
           return absl::InvalidArgumentError("any field validator on non-any field");
         } else {
-          auto result = std::make_unique<ConstraintSet>(field, fieldLvl, &fieldLvl.any());
-          auto status = BuildConstraintSet(arena, builder, fieldLvl.any(), *result);
+          auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl, &fieldLvl.any());
+          auto status = BuildCelRules(arena, builder, fieldLvl.any(), *result);
           if (!status.ok()) {
             rules_or = status;
           } else {
@@ -457,7 +370,7 @@ Constraints NewMessageConstraints(
         }
         break;
       case FieldConstraints::TYPE_NOT_SET:
-        rules_or = std::make_unique<ConstraintSet>(field, fieldLvl);
+        rules_or = std::make_unique<FieldConstraintRules>(field, fieldLvl);
         break;
       default:
         return absl::InvalidArgumentError(
@@ -481,13 +394,13 @@ Constraints NewMessageConstraints(
       continue;
     }
     const auto& oneofLvl = oneof->options().GetExtension(buf::validate::oneof);
-    result.emplace_back(std::make_unique<ConstraintSet>(oneof, oneofLvl));
+    result.emplace_back(std::make_unique<OneofConstraintRules>(oneof, oneofLvl));
   }
 
   return result;
 }
 
-absl::Status ConstraintSet::ValidateMessage(
+absl::Status MessageConstraintRules::Validate(
     ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) const {
@@ -496,7 +409,7 @@ absl::Status ConstraintSet::ValidateMessage(
   return ValidateCel(ctx, fieldPath, activation);
 }
 
-absl::Status ConstraintSet::ValidateField(
+absl::Status FieldConstraintRules::Validate(
     ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) const {
@@ -549,7 +462,7 @@ absl::Status ConstraintSet::ValidateField(
   return ValidateCel(ctx, fieldPath, activation);
 }
 
-absl::Status ConstraintSet::ValidateAny(
+absl::Status FieldConstraintRules::ValidateAny(
     ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& anyMsg) const {
@@ -587,7 +500,7 @@ absl::Status ConstraintSet::ValidateAny(
   return absl::OkStatus();
 }
 
-absl::Status ConstraintSet::ValidateOneof(
+absl::Status OneofConstraintRules::Validate(
     buf::validate::internal::ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) const {
@@ -607,19 +520,6 @@ absl::Status ConstraintSet::ValidateOneof(
     }
   }
   return absl::OkStatus();
-}
-
-absl::Status ConstraintSet::Validate(
-    ConstraintContext& ctx,
-    std::string_view fieldPath,
-    const google::protobuf::Message& message) const {
-  if (field_ != nullptr) {
-    return ValidateField(ctx, fieldPath, message);
-  }
-  if (oneof_ != nullptr) {
-    return ValidateOneof(ctx, fieldPath, message);
-  }
-  return ValidateMessage(ctx, fieldPath, message);
 }
 
 } // namespace buf::validate::internal
