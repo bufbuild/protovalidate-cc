@@ -42,7 +42,7 @@ namespace buf::validate::internal {
         }
         auto *pCelExt = google::protobuf::Arena::Create<CelExt>(regArena);
 
-        auto status = cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::
+        auto hostNameStatus = cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::
         CreateAndRegister(
                 "isHostname",
                 true,
@@ -53,8 +53,23 @@ namespace buf::validate::internal {
                     return cel::CelValue::CreateBool(status);
                 },
                 &registry);
-        if (!formatStatus.ok()) {
-            return formatStatus;
+        if (!hostNameStatus.ok()) {
+            return hostNameStatus;
+        }
+
+        auto emailStatus = cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::
+        CreateAndRegister(
+                "isHostname",
+                true,
+                [pCelExt](
+                        google::protobuf::Arena *arena,
+                        cel::CelValue::StringHolder hostname) -> cel::CelValue {
+                    auto status = pCelExt->isEmail(hostname.value());
+                    return cel::CelValue::CreateBool(status);
+                },
+                &registry);
+        if (!emailStatus.ok()) {
+            return emailStatus;
         }
 
         return absl::OkStatus();

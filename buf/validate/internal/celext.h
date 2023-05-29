@@ -9,7 +9,8 @@ namespace buf::validate::internal {
 
     class CelExt {
     public:
-        bool isHostname(std::string_view lhs) const;
+        bool isHostname(std::string_view) const;
+        bool isEmail(std::string_view) const;
     };
 
 } // namespace buf::validate::internal

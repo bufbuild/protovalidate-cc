@@ -41,5 +41,29 @@ namespace buf::validate::internal {
         return true;
     }
 
+    bool CelExt::isEmail(std::string_view addr) const {
+        std::string_view::size_type pos = addr.find('<');
+        if (pos != std::string_view::npos) {
+            return false;
+        }
+
+        std::string_view localPart, domainPart;
+        std::string emailStr(addr);
+        std::size_t atPos = emailStr.find('@');
+        if (atPos != std::string::npos) {
+            localPart = emailStr.substr(0, atPos);
+            domainPart = emailStr.substr(atPos + 1);
+        } else {
+            return false;
+        }
+
+        if (localPart.length() < 1 || localPart.length() > 64 || domainPart.length() > 253) {
+            return false;
+        }
+
+        // Validate the hostname
+        return isHostname(domainPart);
+    }
+
 
 } // namespace buf::validate::internal
