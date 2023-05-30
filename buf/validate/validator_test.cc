@@ -58,14 +58,14 @@ TEST(ValidatorTest, ValidateBool) {
 }
 
 TEST(ValidatorTest, ValidateStringContainsFailure) {
-  conformance::cases::StringContains str_starts_with;
-  str_starts_with.set_val("somethingwithout");
+  conformance::cases::StringContains str_contains;
+  str_contains.set_val("somethingwithout");
   auto factory_or = ValidatorFactory::New();
   ASSERT_TRUE(factory_or.ok()) << factory_or.status();
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_starts_with);
+  auto violations_or = validator->Validate(str_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -75,27 +75,27 @@ TEST(ValidatorTest, ValidateStringContainsFailure) {
 }
 
 TEST(ValidatorTest, ValidateStringContainsSuccess) {
-  conformance::cases::StringContains str_starts_with;
-  str_starts_with.set_val("foobar");
+  conformance::cases::StringContains str_contains;
+  str_contains.set_val("foobar");
   auto factory_or = ValidatorFactory::New();
   ASSERT_TRUE(factory_or.ok()) << factory_or.status();
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_starts_with);
+  auto violations_or = validator->Validate(str_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
 
 TEST(ValidatorTest, ValidateBytesContainsFailure) {
-  conformance::cases::BytesContains str_starts_with;
-  str_starts_with.set_val("somethingwithout");
+  conformance::cases::BytesContains bytes_contains;
+  bytes_contains.set_val("somethingwithout");
   auto factory_or = ValidatorFactory::New();
   ASSERT_TRUE(factory_or.ok()) << factory_or.status();
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_starts_with);
+  auto violations_or = validator->Validate(bytes_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -104,14 +104,14 @@ TEST(ValidatorTest, ValidateBytesContainsFailure) {
 }
 
 TEST(ValidatorTest, ValidateBytesContainsSuccess) {
-  conformance::cases::BytesContains str_starts_with;
-  str_starts_with.set_val("foobar");
+  conformance::cases::BytesContains bytes_contains;
+  bytes_contains.set_val("foobar");
   auto factory_or = ValidatorFactory::New();
   ASSERT_TRUE(factory_or.ok()) << factory_or.status();
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_starts_with);
+  auto violations_or = validator->Validate(bytes_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
