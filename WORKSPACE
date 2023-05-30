@@ -57,7 +57,7 @@ switched_rules_by_language(
 
 http_archive(
     name = "com_github_bufbuild_protovalidate",
-    #sha256 = "f565e0a315f36986467852556d5d253e65d887d96fa921881b9a337207e755b2",
+    sha256 = "8649b521215ce00a7c76aaae4c45d7136edffd36d002cbda5dd57317afd17e1a",
     strip_prefix = "protovalidate-0.1.2",
     urls = [
         "https://github.com/bufbuild/protovalidate/archive/v0.1.2.tar.gz",
