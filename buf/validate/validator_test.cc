@@ -85,6 +85,35 @@ TEST(ValidatorTest, ValidateStartsWithSuccess) {
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
 
+TEST(ValidatorTest, ValidateEndsWithFailure) {
+  conformance::cases::StringSuffix str_ends_with;
+  str_ends_with.set_val("foobazz");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_ends_with);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.suffix");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "value does not have suffix `baz`");
+}
+
+TEST(ValidatorTest, ValidateEndsWithSuccess) {
+  conformance::cases::StringSuffix str_ends_with;
+  str_ends_with.set_val("foobaz");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_ends_with);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
 TEST(ValidatorTest, MessageConstraint) {
   conformance::cases::custom_constraints::MessageExpressions message_expressions;
   message_expressions.mutable_e();
