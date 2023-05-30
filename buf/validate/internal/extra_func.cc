@@ -30,27 +30,37 @@ namespace buf::validate::internal {
         return cel::CelValue::CreateBool(result);
     }
 
-    cel::CelValue isURI(google::protobuf::Arena *arena, cel::CelValue::StringHolder lhs) {
-        std::string_view in = lhs.value();
+    cel::CelValue isURICore(google::protobuf::Arena* arena, std::string_view in) {
+        std::unordered_set<std::string> allowedSchemes = { "http", "https", "ftp", "ftps" };
+
         std::vector<std::string> parts = absl::StrSplit(in, ':');
         if (parts.size() < 2) {
             return cel::CelValue::CreateBool(false);
         }
 
         std::string scheme = absl::AsciiStrToLower(parts[0]);
-        if (!absl::EqualsIgnoreCase(scheme, "http") && !absl::EqualsIgnoreCase(scheme, "https") &&
-            !absl::EqualsIgnoreCase(scheme, "ftp") && !absl::EqualsIgnoreCase(scheme, "ftps")) {
-            return cel::CelValue::CreateBool(false);
-        }
-
-        std::string schemeStr = absl::StrCat(scheme, "://");
-        std::string::size_type pos = in.find(schemeStr);
-        if (pos == std::string::npos) {
+        if (allowedSchemes.find(scheme) == allowedSchemes.end()) {
             return cel::CelValue::CreateBool(false);
         }
 
         return cel::CelValue::CreateBool(true);
     }
+
+    cel::CelValue isURI(google::protobuf::Arena *arena, cel::CelValue::StringHolder lhs) {
+        std::string_view in = lhs.value();
+        std::string schemeStr = absl::StrCat(in.substr(0, in.find(':')), "://");
+        std::string::size_type pos = in.find(schemeStr);
+        if (pos == std::string::npos) {
+            return cel::CelValue::CreateBool(false);
+        }
+
+        return isURICore(arena, in);
+    }
+
+    cel::CelValue isURIRef(google::protobuf::Arena *arena, cel::CelValue::StringHolder lhs) {
+        return isURICore(arena, lhs.value());
+    }
+
 
 
     absl::Status RegisterExtraFuncs(
@@ -85,6 +95,12 @@ namespace buf::validate::internal {
                 cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::
                 CreateAndRegister("isURI", true, &isURI, &registry);
         if (!isURIStatus.ok()) {
+            return isURIStatus;
+        }
+        auto isURIRefStatus =
+                cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::
+                CreateAndRegister("isURIRef", true, &isURIRef, &registry);
+        if (!isURIRefStatus.ok()) {
             return isURIStatus;
         }
         return absl::OkStatus();
