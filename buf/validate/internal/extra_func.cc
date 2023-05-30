@@ -19,6 +19,17 @@ cel::CelValue startsWith(
   return cel::CelValue::CreateBool(result);
 }
 
+cel::CelValue endsWith(
+    google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
+  if (!rhs.IsBytes()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "doesnt end with the right thing");
+    return cel::CelValue::CreateError(error);
+  }
+  bool result = absl::EndsWith(lhs.value().data(), rhs.BytesOrDie().value());
+  return cel::CelValue::CreateBool(result);
+}
+
 absl::Status RegisterExtraFuncs(
     google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena) {
   auto* formatter = google::protobuf::Arena::Create<StringFormat>(regArena);
@@ -50,9 +61,15 @@ absl::Status RegisterExtraFuncs(
   if (!status.ok()) {
     return status;
   }
-  auto endsWithStatus =
+  auto startsWithStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
           CreateAndRegister("startsWith", true, &startsWith, &registry);
+  if (!startsWithStatus.ok()) {
+    return startsWithStatus;
+  }
+  auto endsWithStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
+          CreateAndRegister("endsWith", true, &endsWith, &registry);
   if (!endsWithStatus.ok()) {
     return endsWithStatus;
   }
