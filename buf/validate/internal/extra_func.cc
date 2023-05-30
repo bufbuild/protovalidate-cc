@@ -1,5 +1,6 @@
 #include "buf/validate/internal/extra_func.h"
 
+#include "absl/strings/match.h"
 #include "buf/validate/internal/string_format.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
@@ -8,11 +9,28 @@
 namespace buf::validate::internal {
 namespace cel = google::api::expr::runtime;
 
+cel::CelValue unique(
+    google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
+  if (!rhs.IsList()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "is not the right value");
+    return cel::CelValue::CreateError(error);
+  }
+  const cel::CelList& cel_list = *rhs.ListOrDie();
+  for (int index = 0; index < cel_list.size(); index++) {
+    cel_list[index];
+    // auto value = (*cel_list).Get(arena, index);
+  }
+
+  // bool result = absl::StrContains(lhs.value().data(), rhs.BytesOrDie().value());
+  return cel::CelValue::CreateBool(false);
+}
+
 cel::CelValue contains(
     google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
   if (!rhs.IsBytes()) {
     auto* error = google::protobuf::Arena::Create<cel::CelError>(
-        arena, absl::StatusCode::kInvalidArgument, "doesnt start with the right thing");
+        arena, absl::StatusCode::kInvalidArgument, "does not contain the right value");
     return cel::CelValue::CreateError(error);
   }
   bool result = absl::StrContains(lhs.value().data(), rhs.BytesOrDie().value());
@@ -56,6 +74,12 @@ absl::Status RegisterExtraFuncs(
           &registry);
   if (!status.ok()) {
     return status;
+  }
+  auto uniqueStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
+          CreateAndRegister("unique", true, &unique, &registry);
+  if (!uniqueStatus.ok()) {
+    return uniqueStatus;
   }
   auto containsStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::

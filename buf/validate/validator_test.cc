@@ -3,6 +3,7 @@
 #include "buf/validate/conformance/cases/bool.pb.h"
 #include "buf/validate/conformance/cases/bytes.pb.h"
 #include "buf/validate/conformance/cases/custom_constraints/custom_constraints.pb.h"
+#include "buf/validate/conformance/cases/repeated.pb.h"
 #include "buf/validate/conformance/cases/strings.pb.h"
 #include "eval/public/activation.h"
 #include "eval/public/builtin_func_registrar.h"
@@ -55,6 +56,38 @@ TEST(ValidatorTest, ValidateBool) {
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "bool.const");
   EXPECT_EQ(violations_or.value().violations(0).message(), "value must equal false");
+}
+
+TEST(ValidatorTest, ValidateStrRepeatedUniqueFailure) {
+  conformance::cases::RepeatedUnique str_repeated;
+  str_repeated.add_val("1");
+  str_repeated.add_val("1");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_repeated);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.contains");
+  EXPECT_EQ(
+      violations_or.value().violations(0).message(), "value does not contain substring `bar`");
+}
+
+TEST(ValidatorTest, ValidateStrRepeatedUniqueSuccess) {
+  conformance::cases::RepeatedUnique str_repeated;
+  str_repeated.add_val("1");
+  str_repeated.add_val("2");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_repeated);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
 
 TEST(ValidatorTest, ValidateStringContainsFailure) {
