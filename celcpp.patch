@@ -1,0 +1,13 @@
+diff --git a/eval/public/structs/protobuf_descriptor_type_provider.cc b/eval/public/structs/protobuf_descriptor_type_provider.cc
+index 5c18ce3..77839ea 100644
+--- a/eval/public/structs/protobuf_descriptor_type_provider.cc
++++ b/eval/public/structs/protobuf_descriptor_type_provider.cc
+@@ -42,7 +42,7 @@ ProtobufDescriptorProvider::ProvideLegacyTypeInfo(
+ std::unique_ptr<ProtoMessageTypeAdapter>
+ ProtobufDescriptorProvider::CreateTypeAdapter(absl::string_view name) const {
+   const google::protobuf::Descriptor* descriptor =
+-      descriptor_pool_->FindMessageTypeByName(name);
++      descriptor_pool_->FindMessageTypeByName(std::string(name));
+   if (descriptor == nullptr) {
+     return nullptr;
+   }
