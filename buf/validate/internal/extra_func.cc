@@ -34,13 +34,13 @@ namespace buf::validate::internal {
         return cel::CelValue::CreateBool(result);
     }
 
-    bool checkHostName(std::string_view val) {
+    bool checkHostName(absl::string_view val) {
         if (val.length() > 253) {
             return false;
         }
 
         std::string s(val);
-        std::string_view delimiter = ".";
+        absl::string_view delimiter = ".";
         if (s.length() >= delimiter.length() &&
             s.compare(s.length() - delimiter.length(), delimiter.length(), delimiter) == 0) {
             s.substr(0, s.length() - delimiter.length());
@@ -49,8 +49,8 @@ namespace buf::validate::internal {
 
         // split isHostname on '.' and validate each part
         size_t pos = 0;
-        std::string_view part;
-        while ((pos = s.find(delimiter)) != std::string_view::npos) {
+        absl::string_view part;
+        while ((pos = s.find(delimiter)) != absl::string_view::npos) {
             part = s.substr(0, pos);
             // if part is empty, longer than 63 chars, or starts/ends with '-', it is invalid
             if (part.empty() || part.length() > 63 || part.front() == '-' || part.back() == '-') {
@@ -74,18 +74,17 @@ namespace buf::validate::internal {
     }
 
     cel::CelValue isEmail(google::protobuf::Arena *arena, cel::CelValue::StringHolder lhs) {
-        std::string_view addr = lhs.value();
-        std::string_view::size_type pos = addr.find('<');
-        if (pos != std::string_view::npos) {
+        absl::string_view addr = lhs.value();
+        absl::string_view::size_type pos = addr.find('<');
+        if (pos != absl::string_view::npos) {
             return cel::CelValue::CreateBool(false);
         }
 
-        std::string_view localPart, domainPart;
-        std::string emailStr(addr);
-        std::size_t atPos = emailStr.find('@');
-        if (atPos != std::string::npos) {
-            localPart = emailStr.substr(0, atPos);
-            domainPart = emailStr.substr(atPos + 1);
+        absl::string_view localPart, domainPart;
+        std::vector<std::string> atPos = absl::StrSplit(addr, '@');
+        if (atPos[0] != "") {
+            localPart = atPos[0];
+            domainPart = atPos[1];
         } else {
             return cel::CelValue::CreateBool(false);
         }
@@ -98,7 +97,7 @@ namespace buf::validate::internal {
         return cel::CelValue::CreateBool(checkHostName(domainPart));
     }
 
-    bool validateIP(std::string_view addr, int64_t ver) {
+    bool validateIP(absl::string_view addr, int64_t ver) {
         struct in_addr addr4;
         struct in6_addr addr6;
         int result;
