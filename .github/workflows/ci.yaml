@@ -25,12 +25,9 @@ jobs:
           cache-dependency-path: go.work.sum
       - name: Test conformance
         run: make conformance
-  go:
-    name: Go
+  test:
+    name: Unit tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: [oldstable, stable]
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -39,21 +36,6 @@ jobs:
       - name: Install go
         uses: actions/setup-go@v4
         with:
-          go-version: ${{ matrix.go-version }}
           cache-dependency-path: go.work.sum
-      - name: Test
-        run: make test-go
-      - name: Lint
-        # Often, lint guidelines depend on the Go version. To prevent
-        # conflicting guidance, run only on the most recent supported version.
-        if: matrix.go-version == 'stable'
-        uses: golangci/golangci-lint-action@v3
-        with:
-          skip-pkg-cache: true
-          only-new-issues: true
-          args: >
-            --modules-download-mode=readonly
-            --timeout=3m0s
-            ./go/v2/... 
-            ./tools/protovalidate-conformance/... 
-            ./tools/protovalidate-migrate/...
+      - name: Execute tests
+        run: make test
