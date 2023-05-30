@@ -6,6 +6,27 @@
 namespace buf::validate::internal {
 namespace cel = ::google::api::expr::runtime;
 
+cel::CelValue StringFormat::format(
+    google::protobuf::Arena* arena,
+    cel::CelValue::StringHolder formatVal,
+    cel::CelValue arg) const {
+  if (!arg.IsList()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "format: expected list");
+    return cel::CelValue::CreateError(error);
+  }
+  const cel::CelList& list = *arg.ListOrDie();
+  std::string_view fmtStr = formatVal.value();
+  auto* result = google::protobuf::Arena::Create<std::string>(arena);
+  auto status = format(*result, fmtStr, list);
+  if (!status.ok()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, status.message());
+    return cel::CelValue::CreateError(error);
+  }
+  return cel::CelValue::CreateString(result);
+}
+
 absl::Status StringFormat::format(
     std::string& builder, std::string_view fmtStr, const cel::CelList& args) const {
   size_t index = 0;
@@ -279,7 +300,9 @@ absl::Status StringFormat::formatStringSafe(
       const char* delim = "";
       const auto& list = *val.ListOrDie();
       for (int i = 0; i < list.size(); i++) {
-        formatStringSafe(builder, list[i]);
+        if (auto status = formatStringSafe(builder, list[i]); !status.ok()) {
+          return status;
+        }
         builder += delim;
         delim = ", ";
       }
@@ -297,11 +320,15 @@ absl::Status StringFormat::formatStringSafe(
       const auto& keys = *keys_or.value();
       for (int i = 0; i < keys.size(); i++) {
         builder += delim;
-        formatStringSafe(builder, keys[i]);
+        if (auto status = formatStringSafe(builder, keys[i]); !status.ok()) {
+          return status;
+        }
         builder += ": ";
         auto mapVal = map[keys[i]];
         if (mapVal.has_value()) {
-          formatStringSafe(builder, mapVal.value());
+          if (auto status = formatStringSafe(builder, mapVal.value()); !status.ok()) {
+            return status;
+          }
         }
         delim = ", ";
       }

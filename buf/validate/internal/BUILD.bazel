@@ -39,9 +39,43 @@ cc_library(
 )
 
 cc_library(
+    name = "cel_rules",
+    srcs = ["cel_rules.h"],
+    deps = [
+        "@com_google_absl//absl/status",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
+    name = "message_rules",
+    srcs = ["message_rules.cc"],
+    hdrs = ["message_rules.h"],
+    deps = [
+        ":field_rules",
+        "@com_github_bufbuild_protovalidate//proto/protovalidate/buf/validate:validate_proto_cc",
+        "@com_google_absl//absl/status",
+        "@com_google_cel_cpp//eval/public:cel_expression",
+        "@com_google_cel_cpp//eval/public/structs:cel_proto_wrapper",
+    ],
+)
+
+cc_library(
+    name = "field_rules",
+    srcs = ["field_rules.cc"],
+    hdrs = ["field_rules.h"],
+    deps = [
+        ":cel_rules",
+        ":constraint",
+        "@com_google_absl//absl/status:statusor",
+        "@com_google_protobuf//:protobuf",
+    ],
+)
+
+cc_library(
     name = "constraint",
-    srcs = ["constraint.cc"],
-    hdrs = ["constraint.h"],
+    srcs = ["constraints.cc"],
+    hdrs = ["constraints.h"],
     deps = [
         ":cel_constraint_rules",
         ":extra_func",
@@ -53,13 +87,12 @@ cc_library(
         "@com_google_cel_cpp//eval/public/containers:field_access",
         "@com_google_cel_cpp//eval/public/containers:field_backed_list_impl",
         "@com_google_cel_cpp//eval/public/containers:field_backed_map_impl",
-        "@com_google_cel_cpp//eval/public/structs:cel_proto_wrapper",
     ],
 )
 
 cc_test(
     name = "constraint_test",
-    srcs = ["constraint_test.cc"],
+    srcs = ["constraints_test.cc"],
     deps = [
         ":constraint",
         "@com_google_cel_cpp//eval/public:activation",

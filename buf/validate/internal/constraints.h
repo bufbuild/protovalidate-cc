@@ -44,7 +44,7 @@ class FieldConstraintRules : public CelConstraintRules {
       std::string_view fieldPath,
       const google::protobuf::Message& anyMsg) const;
 
-  const AnyRules* getAnyRules() const { return anyRules_; }
+  [[nodiscard]] const AnyRules* getAnyRules() const { return anyRules_; }
 
  protected:
   const google::protobuf::FieldDescriptor* field_ = nullptr;
@@ -63,13 +63,34 @@ class RepeatedConstraintRules : public FieldConstraintRules {
       std::unique_ptr<FieldConstraintRules> itemRules)
       : Base(desc, field), itemRules_(std::move(itemRules)) {}
 
-  virtual absl::Status Validate(
+  absl::Status Validate(
       ConstraintContext& ctx,
       std::string_view fieldPath,
-      const google::protobuf::Message& message) const;
+      const google::protobuf::Message& message) const override;
 
  private:
   std::unique_ptr<FieldConstraintRules> itemRules_;
+};
+
+class MapConstraintRules : public FieldConstraintRules {
+  using Base = FieldConstraintRules;
+
+ public:
+  MapConstraintRules(
+      const google::protobuf::FieldDescriptor* desc,
+      const FieldConstraints& field,
+      std::unique_ptr<FieldConstraintRules> keyRules,
+      std::unique_ptr<FieldConstraintRules> valueRules)
+      : Base(desc, field), keyRules_(std::move(keyRules)), valueRules_(std::move(valueRules)) {}
+
+  absl::Status Validate(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message) const override;
+
+ private:
+  std::unique_ptr<FieldConstraintRules> keyRules_;
+  std::unique_ptr<FieldConstraintRules> valueRules_;
 };
 
 // A set of constraints that share the same 'rule' value.
@@ -80,10 +101,10 @@ class OneofConstraintRules : public ConstraintRules {
   OneofConstraintRules(const google::protobuf::OneofDescriptor* desc, const OneofConstraints& oneof)
       : oneof_(desc), required_(oneof.required()) {}
 
-  virtual absl::Status Validate(
+  absl::Status Validate(
       ConstraintContext& ctx,
       std::string_view fieldPath,
-      const google::protobuf::Message& message) const;
+      const google::protobuf::Message& message) const override;
 
  private:
   const google::protobuf::OneofDescriptor* oneof_ = nullptr;
@@ -94,11 +115,32 @@ class OneofConstraintRules : public ConstraintRules {
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder(google::protobuf::Arena* arena);
 
-using Constraints = absl::StatusOr<std::vector<std::unique_ptr<ConstraintRules>>>;
-
-Constraints NewMessageConstraints(
-    google::protobuf::Arena* arena,
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    const google::protobuf::Descriptor* descriptor);
+inline std::string makeMapKeyString(
+    const google::protobuf::Message& message, const google::protobuf::FieldDescriptor* keyField) {
+  switch (keyField->cpp_type()) {
+    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
+      return std::to_string(message.GetReflection()->GetInt32(message, keyField));
+    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
+      return std::to_string(message.GetReflection()->GetInt64(message, keyField));
+    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
+      return std::to_string(message.GetReflection()->GetUInt32(message, keyField));
+    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
+      return std::to_string(message.GetReflection()->GetUInt64(message, keyField));
+    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
+      return std::to_string(message.GetReflection()->GetDouble(message, keyField));
+    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
+      return std::to_string(message.GetReflection()->GetFloat(message, keyField));
+    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
+      return message.GetReflection()->GetBool(message, keyField) ? "true" : "false";
+    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
+      return message.GetReflection()->GetEnum(message, keyField)->name();
+    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
+      // Quote and escape the string.
+      return absl::StrCat(
+          "\"", absl::CEscape(message.GetReflection()->GetString(message, keyField)), "\"");
+    default:
+      return "?";
+  }
+}
 
 } // namespace buf::validate::internal

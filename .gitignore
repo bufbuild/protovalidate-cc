@@ -8,3 +8,4 @@ clang.bazelrc
 user.bazelrc
 local_tsan.bazelrc
 /.clwb/
+.vscode

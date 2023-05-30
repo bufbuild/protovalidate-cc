@@ -12,6 +12,7 @@ LICENSE_IGNORE := -e internal/testdata/
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
 ARGS ?=
+BAZEL ?= bazel
 
 .PHONY: help
 help: ## Describe useful make targets
@@ -24,6 +25,15 @@ all: test ## Run all tests and lint (default)
 clean: ## Delete intermediate build artifacts
 	@# -X only removes untracked files, -d recurses into directories, -f actually removes files/dirs
 	git clean -Xdf
+
+.PHONY: conformance
+conformance: $(BIN)/protovalidate-conformance
+	$(BAZEL) build -c dbg //buf/validate/conformance:runner_main && \
+	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main --strict
+
+$(BIN)/protovalidate-conformance: $(BIN) Makefile
+	GOBIN=$(abspath $(BIN)) $(GO) install \
+    	github.com/bufbuild/protovalidate/tools/protovalidate-conformance@latest
 
 .PHONY: test
 test: generate ## Run all unit tests
