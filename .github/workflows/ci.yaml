@@ -11,6 +11,20 @@ on:
 permissions:
   contents: read
 jobs:
+  conformance:
+    name: Conformance testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: Install go
+        uses: actions/setup-go@v4
+        with:
+          cache-dependency-path: go.work.sum
+      - name: Test conformance
+        run: make conformance
   go:
     name: Go
     runs-on: ubuntu-latest

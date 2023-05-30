@@ -8,6 +8,28 @@
 namespace buf::validate::internal {
 namespace cel = google::api::expr::runtime;
 
+cel::CelValue startsWith(
+    google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
+  if (!rhs.IsBytes()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "doesnt start with the right thing");
+    return cel::CelValue::CreateError(error);
+  }
+  bool result = absl::StartsWith(lhs.value().data(), rhs.BytesOrDie().value());
+  return cel::CelValue::CreateBool(result);
+}
+
+cel::CelValue endsWith(
+    google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
+  if (!rhs.IsBytes()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "doesnt end with the right thing");
+    return cel::CelValue::CreateError(error);
+  }
+  bool result = absl::EndsWith(lhs.value().data(), rhs.BytesOrDie().value());
+  return cel::CelValue::CreateBool(result);
+}
+
 absl::Status RegisterExtraFuncs(
     google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena) {
   // TODO(afuller): This should be specialized for the locale.
@@ -23,6 +45,18 @@ absl::Status RegisterExtraFuncs(
           &registry);
   if (!status.ok()) {
     return status;
+  }
+  auto startsWithStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
+          CreateAndRegister("startsWith", true, &startsWith, &registry);
+  if (!startsWithStatus.ok()) {
+    return startsWithStatus;
+  }
+  auto endsWithStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
+          CreateAndRegister("endsWith", true, &endsWith, &registry);
+  if (!endsWithStatus.ok()) {
+    return endsWithStatus;
   }
   return absl::OkStatus();
 }
