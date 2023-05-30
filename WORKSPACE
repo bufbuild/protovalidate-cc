@@ -35,10 +35,9 @@ rules_proto_toolchains()
 
 http_archive(
     name = "com_google_cel_cpp",
-    sha256 = "d62b93fd07c6151749e83855157f3f2778d62c168318f9c40dfcfe1c336c496f",
-    strip_prefix = "cel-cpp-da0aba702f44a41ec6d2eb4bbf6a9f01efc2746d",
+    strip_prefix = "cel-cpp-0.9.0",
     urls = [
-        "https://github.com/google/cel-cpp/archive/da0aba702f44a41ec6d2eb4bbf6a9f01efc2746d.tar.gz",
+        "https://github.com/google/cel-cpp/archive/v0.9.0.tar.gz",
     ],
 )
 
