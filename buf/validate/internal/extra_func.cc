@@ -8,7 +8,7 @@
 namespace buf::validate::internal {
 namespace cel = google::api::expr::runtime;
 
-cel::CelValue startsWithTop(
+cel::CelValue startsWith(
     google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
   if (!rhs.IsBytes()) {
     auto* error = google::protobuf::Arena::Create<cel::CelError>(
@@ -52,7 +52,7 @@ absl::Status RegisterExtraFuncs(
   }
   auto endsWithStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
-          CreateAndRegister("startsWith", true, &startsWithTop, &registry);
+          CreateAndRegister("startsWith", true, &startsWith, &registry);
   if (!endsWithStatus.ok()) {
     return endsWithStatus;
   }
