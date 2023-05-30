@@ -38,4 +38,4 @@ jobs:
         with:
           cache-dependency-path: go.work.sum
       - name: Execute tests
-        run: make tests
+        run: make test
