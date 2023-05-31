@@ -161,6 +161,21 @@ TEST(ValidatorTest, ValidateEndsWithFailure) {
   EXPECT_EQ(violations_or.value().violations(0).message(), "value does not have suffix `baz`");
 }
 
+TEST(ValidatorTest, ValidateEmailFailure) {
+  conformance::cases::StringEmail str_email;
+  str_email.set_val("foobar");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_email);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.email");
+}
+
 TEST(ValidatorTest, ValidateEndsWithSuccess) {
   conformance::cases::StringSuffix str_ends_with;
   str_ends_with.set_val("foobaz");

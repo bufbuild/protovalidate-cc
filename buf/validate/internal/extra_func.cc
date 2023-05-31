@@ -95,14 +95,14 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
 
   absl::string_view localPart, domainPart;
   std::vector<std::string> atPos = absl::StrSplit(addr, '@');
-  if (atPos[0] != "") {
+  if (!atPos.empty()) {
     localPart = atPos[0];
     domainPart = atPos[1];
   } else {
     return cel::CelValue::CreateBool(false);
   }
 
-  if (localPart.length() < 1 || localPart.length() > 64 || domainPart.length() > 253) {
+  if (localPart.length() < 1 || localPart.length() > 64 || localPart.length()+domainPart.length() > 253) {
     return cel::CelValue::CreateBool(false);
   }
 
