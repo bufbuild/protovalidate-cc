@@ -13,7 +13,7 @@ namespace buf::validate::internal {
 
 struct Url {
  public:
-  std::string queryString, path, scheme, host, port;
+  std::string scheme, host, path, queryString;
 
   // Parse parses a URL ref the context of the receiver. The provided URL
   // may be relative or absolute.
@@ -30,12 +30,10 @@ struct Url {
       result.host = hostSplit[0];
       remainder = hostSplit[1];
     }
-
     std::vector<std::string> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
     if (querySplit.size() == 2) {
       result.queryString = querySplit[1];
     }
-
     result.path = '/' + querySplit[0];
     return result;
   }
@@ -50,7 +48,7 @@ struct Url {
   }
 
   static bool isValidPath(const std::string& path) {
-    if (path.length() == 0) {
+    if (path == "/") {
       return true;
     }
     // Regular expression pattern for validating URI path
