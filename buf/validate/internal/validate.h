@@ -2,12 +2,13 @@
 #define _VALIDATE_H
 
 #include <functional>
-#include <regex>
 #include <stdexcept>
 #include <string>
 #include <typeindex>
 #include <typeinfo>
 #include <unordered_map>
+
+#include "re2/re2.h"
 
 #if !defined(_WIN32)
 #include <arpa/inet.h>
@@ -131,29 +132,21 @@ static inline bool IsHostname(const string& to_validate) {
   if (to_validate.length() > 253) {
     return false;
   }
-
-  const std::regex dot_regex{"\\."};
-  const auto iter_end = std::sregex_token_iterator();
-  auto iter = std::sregex_token_iterator(to_validate.begin(), to_validate.end(), dot_regex, -1);
-  for (; iter != iter_end; ++iter) {
-    const std::string& part = *iter;
-    if (part.empty() || part.length() > 63) {
+  const re2::RE2 component_regex("^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$");
+  std::vector<std::string> split = absl::StrSplit(to_validate, '.');
+  std::vector<std::string> search = {split.begin(), split.end() - 1};
+  if (split.size() < 2) {
+    return re2::RE2::FullMatch(split[0], component_regex);
+  }
+  std::string last = split[split.size() - 1];
+  for (const std::string& part : search) {
+    if (part.empty() || part.size() > 63) {
       return false;
     }
-    if (part.at(0) == '-') {
+    if (!re2::RE2::FullMatch(part, component_regex)) {
       return false;
-    }
-    if (part.at(part.length() - 1) == '-') {
-      return false;
-    }
-    for (const auto& character : part) {
-      if ((character < 'A' || character > 'Z') && (character < 'a' || character > 'z') &&
-          (character < '0' || character > '9') && character != '-') {
-        return false;
-      }
     }
   }
-
   return true;
 }
 

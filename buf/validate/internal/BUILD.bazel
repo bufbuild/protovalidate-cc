@@ -110,6 +110,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_cel_cpp//eval/public:cel_function_adapter",
         "@com_google_cel_cpp//eval/public:cel_function_registry",
+        "@com_googlesource_code_re2//:re2",
     ],
 )
 

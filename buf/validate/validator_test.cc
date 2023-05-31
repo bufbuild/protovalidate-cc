@@ -161,9 +161,52 @@ TEST(ValidatorTest, ValidateEndsWithFailure) {
   EXPECT_EQ(violations_or.value().violations(0).message(), "value does not have suffix `baz`");
 }
 
-TEST(ValidatorTest, ValidateHostnameFailure) {
+TEST(ValidatorTest, ValidateHostnameSuccess) {
+  conformance::cases::StringHostname str_hostname;
+  str_hostname.set_val("foo-bar.com");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_hostname);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
+TEST(ValidatorTest, ValidateGarbageHostnameFailure) {
   conformance::cases::StringHostname str_hostname;
   str_hostname.set_val("@!#$%^&*&^%$#");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_hostname);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.hostname");
+}
+
+TEST(ValidatorTest, ValidateHostnameFailure) {
+  conformance::cases::StringHostname str_hostname;
+  str_hostname.set_val("-foo.bar");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_hostname);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.hostname");
+}
+
+TEST(ValidatorTest, ValidateHostnameDoubleDotFailure) {
+  conformance::cases::StringHostname str_hostname;
+  str_hostname.set_val("foo.bar..");
   auto factory_or = ValidatorFactory::New();
   ASSERT_TRUE(factory_or.ok()) << factory_or.status();
   auto factory = std::move(factory_or).value();
