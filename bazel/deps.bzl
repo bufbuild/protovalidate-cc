@@ -53,6 +53,8 @@ _dependencies = {
         "urls": [
             "https://github.com/google/cel-cpp/archive/da0aba702f44a41ec6d2eb4bbf6a9f01efc2746d.tar.gz",
         ],
+        "patches": ["//bazel:cel_cpp.patch"],
+        "patch_args": ["-p1"],
     },
     "com_github_bufbuild_protovalidate": {
         "sha256": "8649b521215ce00a7c76aaae4c45d7136edffd36d002cbda5dd57317afd17e1a",

@@ -3,6 +3,11 @@ workspace(name = "com_github_bufbuild_protovalidate_cc")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("//bazel:deps.bzl", "protovalidate_cc_dependencies")
 
+# local_repository(
+#     name = "com_google_cel_cpp",
+#     path = "../cel-cpp",
+# )
+
 protovalidate_cc_dependencies()
 
 load("@rules_buf//buf:repositories.bzl", "rules_buf_dependencies", "rules_buf_toolchains")
