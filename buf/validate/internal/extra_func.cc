@@ -17,7 +17,7 @@ cel::CelValue unique(google::protobuf::Arena* arena, cel::CelValue rhs) {
     return cel::CelValue::CreateError(error);
   }
   const cel::CelList& cel_list = *rhs.ListOrDie();
-  cel::CelMapBuilder cel_map(arena);
+  cel::CelMapBuilder cel_map = *google::protobuf::Arena::Create<cel::CelMapBuilder>(arena);
   for (int index = 0; index < cel_list.size(); index++) {
     cel::CelValue cel_value = cel_list[index];
     auto status = cel_map.Add(cel_value, cel_value);
