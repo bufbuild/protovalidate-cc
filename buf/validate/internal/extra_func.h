@@ -5,7 +5,7 @@
 
 namespace buf::validate::internal {
 
-    absl::Status RegisterExtraFuncs(
-            google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena);
+absl::Status RegisterExtraFuncs(
+    google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena);
 
 }
