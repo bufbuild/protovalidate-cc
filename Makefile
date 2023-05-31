@@ -29,7 +29,7 @@ clean: ## Delete intermediate build artifacts
 .PHONY: conformance
 conformance: $(BIN)/protovalidate-conformance
 	$(BAZEL) build -c dbg //buf/validate/conformance:runner_main && \
-	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main --strict --case unique
+	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main --strict
 
 $(BIN)/protovalidate-conformance: $(BIN) Makefile
 	GOBIN=$(abspath $(BIN)) $(GO) install \
