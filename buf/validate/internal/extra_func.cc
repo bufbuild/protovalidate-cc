@@ -4,9 +4,11 @@
 #include <regex>
 #include <string>
 
+#include "absl/strings/match.h"
 #include "buf/validate/internal/string_format.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
+#include "eval/public/containers/container_backed_map_impl.h"
 #include "google/protobuf/arena.h"
 
 namespace buf::validate::internal {
@@ -59,11 +61,29 @@ struct Url {
 
 namespace cel = google::api::expr::runtime;
 
+cel::CelValue unique(google::protobuf::Arena* arena, cel::CelValue rhs) {
+  if (!rhs.IsList()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "expected a list value");
+    return cel::CelValue::CreateError(error);
+  }
+  const cel::CelList& cel_list = *rhs.ListOrDie();
+  cel::CelMapBuilder cel_map = *google::protobuf::Arena::Create<cel::CelMapBuilder>(arena);
+  for (int index = 0; index < cel_list.size(); index++) {
+    cel::CelValue cel_value = cel_list[index];
+    auto status = cel_map.Add(cel_value, cel_value);
+    if (!status.ok()) {
+      return cel::CelValue::CreateBool(false);
+    }
+  }
+  return cel::CelValue::CreateBool(cel_list.size() == cel_map.size());
+}
+
 cel::CelValue contains(
     google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
   if (!rhs.IsBytes()) {
     auto* error = google::protobuf::Arena::Create<cel::CelError>(
-        arena, absl::StatusCode::kInvalidArgument, "doesnt start with the right thing");
+        arena, absl::StatusCode::kInvalidArgument, "does not contain the right value");
     return cel::CelValue::CreateError(error);
   }
   bool result = absl::StrContains(lhs.value().data(), rhs.BytesOrDie().value());
@@ -117,6 +137,11 @@ absl::Status RegisterExtraFuncs(
           &registry);
   if (!status.ok()) {
     return status;
+  }
+  auto uniqueStatus = cel::FunctionAdapter<cel::CelValue, cel::CelValue>::CreateAndRegister(
+      "unique", true, &unique, &registry);
+  if (!uniqueStatus.ok()) {
+    return uniqueStatus;
   }
   auto containsStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
