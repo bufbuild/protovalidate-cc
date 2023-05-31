@@ -81,16 +81,12 @@ cel::CelValue isIPvX(
   std::string s(lhs.value());
   switch (rhs.Int64OrDie()) {
     case 0:
-      LOG(INFO) << "case0";
       return cel::CelValue::CreateBool(IsIp(s));
     case 4:
-      LOG(INFO) << "case4";
       return cel::CelValue::CreateBool(IsIpv4(s));
     case 6:
-      LOG(INFO) << "case6";
       return cel::CelValue::CreateBool(IsIpv6(s));
     default:
-      LOG(INFO) << "casedefault";
       return cel::CelValue::CreateBool(false);
   }
 }
