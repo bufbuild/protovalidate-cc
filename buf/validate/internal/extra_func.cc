@@ -18,12 +18,11 @@ cel::CelValue unique(google::protobuf::Arena* arena, cel::CelValue rhs) {
   }
   const cel::CelList& cel_list = *rhs.ListOrDie();
   auto& cel_map = *google::protobuf::Arena::Create<cel::CelMapBuilder>(arena);
-  std::set<cel::CelValue> cel_value_set;
   for (int index = 0; index < cel_list.size(); index++) {
     cel::CelValue cel_value = cel_list[index];
     cel_map[cel_value] = cel_value;
   }
-  return cel::CelValue::CreateBool(cel_list.size() == cel_value_set.size());
+  return cel::CelValue::CreateBool(cel_list.size() == cel_map.size());
 }
 
 cel::CelValue contains(
