@@ -13,7 +13,7 @@ namespace cel = google::api::expr::runtime;
 cel::CelValue unique(google::protobuf::Arena* arena, cel::CelValue rhs) {
   if (!rhs.IsList()) {
     auto* error = google::protobuf::Arena::Create<cel::CelError>(
-        arena, absl::StatusCode::kInvalidArgument, "is not the right value");
+        arena, absl::StatusCode::kInvalidArgument, "expected a list value");
     return cel::CelValue::CreateError(error);
   }
   const cel::CelList& cel_list = *rhs.ListOrDie();
