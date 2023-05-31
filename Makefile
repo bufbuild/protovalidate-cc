@@ -37,7 +37,7 @@ $(BIN)/protovalidate-conformance: $(BIN) Makefile
 
 .PHONY: test
 test: generate ## Run all unit tests
-	bazel test //... --config macos
+	bazel test //... 
 
 .PHONY: generate
 generate: generate-license ## Regenerate code and license headers
