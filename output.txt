@@ -1,0 +1,2 @@
+bazel build -c dbg //buf/validate/conformance:runner_main && \
+	.tmp/bin/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main --strict --case unique

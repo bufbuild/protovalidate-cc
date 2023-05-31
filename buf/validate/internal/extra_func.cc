@@ -1,6 +1,7 @@
 #include "buf/validate/internal/extra_func.h"
 
 #include <algorithm>
+#include <regex>
 #include <string>
 
 #include "buf/validate/internal/string_format.h"
@@ -12,66 +13,49 @@ namespace buf::validate::internal {
 
 struct Url {
  public:
-  std::string QueryString, Path, Scheme, Host, Port;
+  std::string queryString, path, scheme, host, port;
 
   // Parse parses a URL ref the context of the receiver. The provided URL
   // may be relative or absolute.
-  static Url& Parse(std::string_view ref) {
+  static Url parse(std::string_view ref) {
     Url result;
-
-    if (ref.empty()) return result;
-
-    absl::string_view uri_view(ref);
-
-    // get query start
-    size_t queryStart = uri_view.find('?');
-
-    // protocol
-    size_t protocolEnd = uri_view.find(':');
-    if (protocolEnd != absl::string_view::npos) {
-      absl::string_view prot = uri_view.substr(0, protocolEnd);
-      if (absl::EndsWith(prot, "://")) {
-        result.Scheme = std::string(prot.begin(), prot.end());
-        protocolEnd += 3; //      ://
-      } else protocolEnd = 0; // no protocol
+    if (ref.empty()) {
+      return result;
+    }
+    std::string remainder(ref);
+    if (absl::StrContains(ref, "://")) {
+      std::vector<std::string> split = absl::StrSplit(ref, "://");
+      result.scheme = split[0];
+      std::vector<std::string> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
+      result.host = hostSplit[0];
+      remainder = hostSplit[1];
     }
 
-    // host
-    size_t hostStart = protocolEnd;
-    size_t pathStart = uri_view.find('/', hostStart);
-
-    size_t hostEnd = uri_view.find(':', protocolEnd);
-    if (hostEnd != absl::string_view::npos &&
-        (pathStart == absl::string_view::npos || hostEnd < pathStart)) {
-      result.Host = std::string(uri_view.begin() + hostStart, uri_view.begin() + hostEnd);
-      hostEnd++; // Skip ':'
-      size_t portEnd = (pathStart != absl::string_view::npos) ? pathStart : queryStart;
-      result.Port = std::string(uri_view.begin() + hostEnd, uri_view.begin() + portEnd);
-    } else {
-      if (pathStart != absl::string_view::npos)
-        result.Host = std::string(uri_view.begin() + hostStart, uri_view.begin() + pathStart);
-      else result.Host = std::string(uri_view.begin() + hostStart, uri_view.end());
+    std::vector<std::string> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
+    if (querySplit.size() == 2) {
+      result.queryString = querySplit[1];
     }
 
-    // path
-    if (pathStart != absl::string_view::npos)
-      result.Path = std::string(uri_view.begin() + pathStart, uri_view.begin() + queryStart);
-
-    // query
-    if (queryStart != absl::string_view::npos)
-      result.QueryString = std::string(uri_view.begin() + queryStart, uri_view.end());
-
+    result.path = '/' + querySplit[0];
     return result;
   }
 
-  // IsAbs reports whether the URL is absolute.
-  // Absolute means that it has a non-empty scheme.
-  bool IsAbs() const { return IsValid() && !Scheme.empty(); }
+  bool isUri() const { return !scheme.empty() && !host.empty(); }
 
-  bool IsValid() const
-  {
-    // Check if the required components are present
-    return !Scheme.empty() && !Host.empty();
+  bool isUriRef() const {
+    if (!isValidPath(path)) {
+      return false;
+    }
+    return !scheme.empty() && !host.empty() || !path.empty();
+  }
+
+  static bool isValidPath(const std::string& path) {
+    if (path.length() == 0) {
+      return true;
+    }
+    // Regular expression pattern for validating URI path
+    std::regex pathPattern(R"(^\/[\w\/\-\.]*$)");
+    return std::regex_match(path, pathPattern);
   }
 };
 
@@ -111,14 +95,13 @@ cel::CelValue endsWith(
 }
 
 cel::CelValue isURI(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  struct Url uri = Url::Parse(lhs.value());
-
-  return cel::CelValue::CreateBool(uri.IsAbs());
+  auto parsed = Url::parse(lhs.value());
+  return cel::CelValue::CreateBool(parsed.isUri());
 }
 
 cel::CelValue isURIRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  struct Url uri = Url::Parse(lhs.value());
-  return cel::CelValue::CreateBool(uri.IsValid());
+  auto parsed = Url::parse(lhs.value());
+  return cel::CelValue::CreateBool(parsed.isUriRef());
 }
 
 absl::Status RegisterExtraFuncs(
@@ -157,13 +140,13 @@ absl::Status RegisterExtraFuncs(
   }
   auto isURIStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
-          "isURI", true, &isURI, &registry);
+          "isUri", true, &isURI, &registry);
   if (!isURIStatus.ok()) {
     return isURIStatus;
   }
   auto isURIRefStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
-          "isURIRef", true, &isURIRef, &registry);
+          "isUriRef", true, &isURIRef, &registry);
   if (!isURIRefStatus.ok()) {
     return isURIStatus;
   }
