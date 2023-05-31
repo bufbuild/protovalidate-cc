@@ -1,6 +1,7 @@
 #include "buf/validate/validator.h"
 
 #include "buf/validate/conformance/cases/bool.pb.h"
+#include "buf/validate/conformance/cases/bytes.pb.h"
 #include "buf/validate/conformance/cases/custom_constraints/custom_constraints.pb.h"
 #include "buf/validate/conformance/cases/strings.pb.h"
 #include "eval/public/activation.h"
@@ -54,6 +55,65 @@ TEST(ValidatorTest, ValidateBool) {
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "bool.const");
   EXPECT_EQ(violations_or.value().violations(0).message(), "value must equal false");
+}
+
+TEST(ValidatorTest, ValidateStringContainsFailure) {
+  conformance::cases::StringContains str_contains;
+  str_contains.set_val("somethingwithout");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_contains);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.contains");
+  EXPECT_EQ(
+      violations_or.value().violations(0).message(), "value does not contain substring `bar`");
+}
+
+TEST(ValidatorTest, ValidateStringContainsSuccess) {
+  conformance::cases::StringContains str_contains;
+  str_contains.set_val("foobar");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_contains);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
+TEST(ValidatorTest, ValidateBytesContainsFailure) {
+  conformance::cases::BytesContains bytes_contains;
+  bytes_contains.set_val("somethingwithout");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(bytes_contains);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "bytes.contains");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "value does not contain 626172");
+}
+
+TEST(ValidatorTest, ValidateBytesContainsSuccess) {
+  conformance::cases::BytesContains bytes_contains;
+  bytes_contains.set_val("foobar");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(bytes_contains);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
 
 TEST(ValidatorTest, ValidateStartsWithFailure) {

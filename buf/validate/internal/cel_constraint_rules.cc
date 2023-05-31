@@ -78,6 +78,7 @@ absl::Status CelConstraintRules::ValidateCel(
     std::string_view fieldPath,
     google::api::expr::runtime::Activation& activation) const {
   activation.InsertValue("rules", rules_);
+  activation.InsertValue("now", cel::runtime::CelValue::CreateTimestamp(absl::Now()));
   absl::Status status = absl::OkStatus();
   for (const auto& expr : exprs_) {
     status = ProcessConstraint(ctx, fieldPath, activation, expr);
