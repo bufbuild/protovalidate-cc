@@ -1,12 +1,10 @@
 #include "buf/validate/internal/extra_func.h"
 
-#include <arpa/inet.h>
-
-#include <algorithm>
 #include <string>
 #include <string_view>
 
 #include "buf/validate/internal/string_format.h"
+#include "buf/validate/internal/validate.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
 #include "google/protobuf/arena.h"
@@ -47,43 +45,9 @@ cel::CelValue endsWith(
   return cel::CelValue::CreateBool(result);
 }
 
-bool checkHostName(absl::string_view val) {
-  if (val.length() > 253) {
-    return false;
-  }
-
-  std::string s(val);
-  absl::string_view delimiter = ".";
-  if (s.length() >= delimiter.length() &&
-      s.compare(s.length() - delimiter.length(), delimiter.length(), delimiter) == 0) {
-    s.substr(0, s.length() - delimiter.length());
-  }
-  std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return std::tolower(c); });
-
-  // split isHostname on '.' and validate each part
-  size_t pos = 0;
-  absl::string_view part;
-  while ((pos = s.find(delimiter)) != absl::string_view::npos) {
-    part = s.substr(0, pos);
-    // if part is empty, longer than 63 chars, or starts/ends with '-', it is invalid
-    if (part.empty() || part.length() > 63 || part.front() == '-' || part.back() == '-') {
-      return false;
-    }
-    // for each character lhs part
-    for (char ch : part) {
-      // if the character is not a-z, 0-9, or '-', it is invalid
-      if ((ch < 'a' || ch > 'z') && (ch < '0' || ch > '9') && ch != '-') {
-        return false;
-      }
-    }
-    s.erase(0, pos + delimiter.length());
-  }
-
-  return true;
-}
-
 cel::CelValue isHostname(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  return cel::CelValue::CreateBool(checkHostName(lhs.value()));
+  std::string s(lhs.value());
+  return cel::CelValue::CreateBool(IsHostname(s));
 }
 
 cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
@@ -102,43 +66,37 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
     return cel::CelValue::CreateBool(false);
   }
 
-  if (localPart.length() < 1 || localPart.length() > 64 || localPart.length()+domainPart.length() > 253) {
+  if (localPart.length() < 1 || localPart.length() > 64 ||
+      localPart.length() + domainPart.length() > 253) {
     return cel::CelValue::CreateBool(false);
   }
 
   // Validate the hostname
-  return cel::CelValue::CreateBool(checkHostName(domainPart));
+  std::string s(domainPart);
+  return cel::CelValue::CreateBool(IsHostname(s));
 }
 
-bool validateIP(absl::string_view addr, int64_t ver) {
-  struct in_addr addr4;
-  struct in6_addr addr6;
-  int result;
-
-  switch (ver) {
+cel::CelValue isIPvX(
+    google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs, cel::CelValue rhs) {
+  std::string s(lhs.value());
+  switch (rhs.Int64OrDie()) {
     case 0:
-      return true;
+      LOG(INFO) << "case0";
+      return cel::CelValue::CreateBool(IsIp(s));
     case 4:
-      result = inet_pton(AF_INET, addr.data(), &(addr4.s_addr));
-      return result == 1;
+      LOG(INFO) << "case4";
+      return cel::CelValue::CreateBool(IsIpv4(s));
     case 6:
-      result = inet_pton(AF_INET6, addr.data(), &(addr6.s6_addr));
-      return result == 1;
+      LOG(INFO) << "case6";
+      return cel::CelValue::CreateBool(IsIpv6(s));
     default:
-      return false;
+      LOG(INFO) << "casedefault";
+      return cel::CelValue::CreateBool(false);
   }
 }
 
 cel::CelValue isIP(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  return cel::CelValue::CreateBool(validateIP(lhs.value(), 0));
-}
-
-cel::CelValue isIPv4(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  return cel::CelValue::CreateBool(validateIP(lhs.value(), 4));
-}
-
-cel::CelValue isIPv6(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  return cel::CelValue::CreateBool(validateIP(lhs.value(), 6));
+  return isIPvX(arena, lhs, cel::CelValue::CreateInt64(0));
 }
 
 absl::Status RegisterExtraFuncs(
@@ -163,6 +121,18 @@ absl::Status RegisterExtraFuncs(
   if (!containsStatus.ok()) {
     return containsStatus;
   }
+  auto isIpvStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue>::
+          CreateAndRegister("isIp", true, &isIPvX, &registry);
+  if (!isIpvStatus.ok()) {
+    return isIpvStatus;
+  }
+  auto isIpStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
+          "isIp", true, &isIP, &registry);
+  if (!isIpStatus.ok()) {
+    return isIpStatus;
+  }
   auto startsWithStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
           CreateAndRegister("startsWith", true, &startsWith, &registry);
@@ -185,28 +155,8 @@ absl::Status RegisterExtraFuncs(
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
           "isEmail", true, &isEmail, &registry);
   if (!isEmailStatus.ok()) {
-    return isHostnameStatus;
+    return isEmailStatus;
   }
-  auto isIPStatus =
-      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
-          "isIP", true, &isIP, &registry);
-  if (!isIPStatus.ok()) {
-    return isHostnameStatus;
-  }
-  auto isIPv4Status =
-      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
-          "isIPv4", true, &isIPv4, &registry);
-  if (!isIPv4Status.ok()) {
-    return isHostnameStatus;
-  }
-  auto isIPv6Status =
-      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
-          "isIPv6", true, &isIPv6, &registry);
-  if (!isIPv6Status.ok()) {
-    return isHostnameStatus;
-  }
-
   return absl::OkStatus();
 }
-
 } // namespace buf::validate::internal
