@@ -1,11 +1,80 @@
 #include "buf/validate/internal/extra_func.h"
 
+#include <algorithm>
+#include <string>
+
 #include "buf/validate/internal/string_format.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
 #include "google/protobuf/arena.h"
 
 namespace buf::validate::internal {
+
+struct Url {
+ public:
+  std::string QueryString, Path, Scheme, Host, Port;
+
+  // Parse parses a URL ref the context of the receiver. The provided URL
+  // may be relative or absolute.
+  static Url& Parse(std::string_view ref) {
+    Url result;
+
+    if (ref.empty()) return result;
+
+    absl::string_view uri_view(ref);
+
+    // get query start
+    size_t queryStart = uri_view.find('?');
+
+    // protocol
+    size_t protocolEnd = uri_view.find(':');
+    if (protocolEnd != absl::string_view::npos) {
+      absl::string_view prot = uri_view.substr(0, protocolEnd);
+      if (absl::EndsWith(prot, "://")) {
+        result.Scheme = std::string(prot.begin(), prot.end());
+        protocolEnd += 3; //      ://
+      } else protocolEnd = 0; // no protocol
+    }
+
+    // host
+    size_t hostStart = protocolEnd;
+    size_t pathStart = uri_view.find('/', hostStart);
+
+    size_t hostEnd = uri_view.find(':', protocolEnd);
+    if (hostEnd != absl::string_view::npos &&
+        (pathStart == absl::string_view::npos || hostEnd < pathStart)) {
+      result.Host = std::string(uri_view.begin() + hostStart, uri_view.begin() + hostEnd);
+      hostEnd++; // Skip ':'
+      size_t portEnd = (pathStart != absl::string_view::npos) ? pathStart : queryStart;
+      result.Port = std::string(uri_view.begin() + hostEnd, uri_view.begin() + portEnd);
+    } else {
+      if (pathStart != absl::string_view::npos)
+        result.Host = std::string(uri_view.begin() + hostStart, uri_view.begin() + pathStart);
+      else result.Host = std::string(uri_view.begin() + hostStart, uri_view.end());
+    }
+
+    // path
+    if (pathStart != absl::string_view::npos)
+      result.Path = std::string(uri_view.begin() + pathStart, uri_view.begin() + queryStart);
+
+    // query
+    if (queryStart != absl::string_view::npos)
+      result.QueryString = std::string(uri_view.begin() + queryStart, uri_view.end());
+
+    return result;
+  }
+
+  // IsAbs reports whether the URL is absolute.
+  // Absolute means that it has a non-empty scheme.
+  bool IsAbs() const { return IsValid() && !Scheme.empty(); }
+
+  bool IsValid() const
+  {
+    // Check if the required components are present
+    return !Scheme.empty() && !Host.empty();
+  }
+};
+
 namespace cel = google::api::expr::runtime;
 
 cel::CelValue startsWith(
@@ -30,35 +99,15 @@ cel::CelValue endsWith(
   return cel::CelValue::CreateBool(result);
 }
 
-cel::CelValue isURICore(google::protobuf::Arena* arena, std::string_view in) {
-  std::unordered_set<std::string> allowedSchemes = {"http", "https", "ftp", "ftps"};
-
-  std::vector<std::string> parts = absl::StrSplit(in, ':');
-  if (parts.size() < 2) {
-    return cel::CelValue::CreateBool(false);
-  }
-
-  std::string scheme = absl::AsciiStrToLower(parts[0]);
-  if (allowedSchemes.find(scheme) == allowedSchemes.end()) {
-    return cel::CelValue::CreateBool(false);
-  }
-
-  return cel::CelValue::CreateBool(true);
-}
-
 cel::CelValue isURI(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  std::string_view in = lhs.value();
-  std::string schemeStr = absl::StrCat(in.substr(0, in.find(':')), "://");
-  std::string::size_type pos = in.find(schemeStr);
-  if (pos == std::string::npos) {
-    return cel::CelValue::CreateBool(false);
-  }
+  struct Url uri = Url::Parse(lhs.value());
 
-  return isURICore(arena, in);
+  return cel::CelValue::CreateBool(uri.IsAbs());
 }
 
 cel::CelValue isURIRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  return isURICore(arena, lhs.value());
+  struct Url uri = Url::Parse(lhs.value());
+  return cel::CelValue::CreateBool(uri.IsValid());
 }
 
 absl::Status RegisterExtraFuncs(
