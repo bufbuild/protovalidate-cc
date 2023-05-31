@@ -1,7 +1,6 @@
 #include "buf/validate/internal/extra_func.h"
 
 #include <algorithm>
-#include <regex>
 #include <string>
 
 #include "absl/strings/match.h"
@@ -10,6 +9,7 @@
 #include "eval/public/cel_value.h"
 #include "eval/public/containers/container_backed_map_impl.h"
 #include "google/protobuf/arena.h"
+#include "re2/re2.h"
 
 namespace buf::validate::internal {
 
@@ -54,8 +54,8 @@ struct Url {
       return true;
     }
     // Regular expression pattern for validating URI path
-    std::regex pathPattern(R"(^\/[\w\/\-\.]*$)");
-    return std::regex_match(path, pathPattern);
+    re2::RE2 pathPattern(R"(^\/[\w\/\-\.]*$)");
+    return re2::RE2::FullMatch(path, pathPattern);
   }
 };
 
