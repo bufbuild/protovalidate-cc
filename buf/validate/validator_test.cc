@@ -71,9 +71,9 @@ TEST(ValidatorTest, ValidateStrRepeatedUniqueFailure) {
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
-  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.contains");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "repeated.unique");
   EXPECT_EQ(
-      violations_or.value().violations(0).message(), "value does not contain substring `bar`");
+      violations_or.value().violations(0).message(), "repeated value must contain unique items");
 }
 
 TEST(ValidatorTest, ValidateStrRepeatedUniqueSuccess) {

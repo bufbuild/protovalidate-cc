@@ -4,26 +4,26 @@
 #include "buf/validate/internal/string_format.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
+#include "eval/public/containers/container_backed_map_impl.h"
 #include "google/protobuf/arena.h"
 
 namespace buf::validate::internal {
 namespace cel = google::api::expr::runtime;
 
-cel::CelValue unique(
-    google::protobuf::Arena* arena, cel::CelValue::BytesHolder lhs, cel::CelValue rhs) {
+cel::CelValue unique(google::protobuf::Arena* arena, cel::CelValue rhs) {
   if (!rhs.IsList()) {
     auto* error = google::protobuf::Arena::Create<cel::CelError>(
         arena, absl::StatusCode::kInvalidArgument, "is not the right value");
     return cel::CelValue::CreateError(error);
   }
   const cel::CelList& cel_list = *rhs.ListOrDie();
+  auto& cel_map = *google::protobuf::Arena::Create<cel::CelMapBuilder>(arena);
+  std::set<cel::CelValue> cel_value_set;
   for (int index = 0; index < cel_list.size(); index++) {
-    cel_list[index];
-    // auto value = (*cel_list).Get(arena, index);
+    cel::CelValue cel_value = cel_list[index];
+    cel_map[cel_value] = cel_value;
   }
-
-  // bool result = absl::StrContains(lhs.value().data(), rhs.BytesOrDie().value());
-  return cel::CelValue::CreateBool(false);
+  return cel::CelValue::CreateBool(cel_list.size() == cel_value_set.size());
 }
 
 cel::CelValue contains(
@@ -75,9 +75,8 @@ absl::Status RegisterExtraFuncs(
   if (!status.ok()) {
     return status;
   }
-  auto uniqueStatus =
-      cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
-          CreateAndRegister("unique", true, &unique, &registry);
+  auto uniqueStatus = cel::FunctionAdapter<cel::CelValue, cel::CelValue>::CreateAndRegister(
+      "unique", true, &unique, &registry);
   if (!uniqueStatus.ok()) {
     return uniqueStatus;
   }
