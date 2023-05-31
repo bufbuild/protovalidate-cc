@@ -66,8 +66,9 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
     return cel::CelValue::CreateBool(false);
   }
 
-  if (localPart.length() < 1 || localPart.length() > 64 ||
-      localPart.length() + domainPart.length() > 253) {
+  int localLength = localPart.length();
+  if (localLength < 1 || localLength > 64 ||
+      localLength + domainPart.length() > 253) {
     return cel::CelValue::CreateBool(false);
   }
 
