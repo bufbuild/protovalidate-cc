@@ -12,7 +12,6 @@
 
 namespace buf::validate::internal {
 namespace cel = google::api::expr::runtime;
-using std::string;
 
 cel::CelValue unique(google::protobuf::Arena* arena, cel::CelValue rhs) {
   if (!rhs.IsList()) {
@@ -65,7 +64,7 @@ cel::CelValue endsWith(
   return cel::CelValue::CreateBool(result);
 }
 
-bool IsHostname(const string& to_validate) {
+bool IsHostname(const std::string& to_validate) {
   if (to_validate.length() > 253) {
     return false;
   }
@@ -118,17 +117,17 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
   return cel::CelValue::CreateBool(IsHostname(s));
 }
 
-bool IsIpv4(const string& to_validate) {
+bool IsIpv4(const std::string& to_validate) {
   struct sockaddr_in sa;
   return !(inet_pton(AF_INET, to_validate.c_str(), &sa.sin_addr) < 1);
 }
 
-bool IsIpv6(const string& to_validate) {
+bool IsIpv6(const std::string& to_validate) {
   struct sockaddr_in6 sa_six;
   return !(inet_pton(AF_INET6, to_validate.c_str(), &sa_six.sin6_addr) < 1);
 }
 
-bool IsIp(const string& to_validate) {
+bool IsIp(const std::string& to_validate) {
   return IsIpv4(to_validate) || IsIpv6(to_validate);
 }
 

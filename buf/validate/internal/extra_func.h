@@ -11,8 +11,8 @@
 
 #include "absl/status/status.h"
 #include "eval/public/cel_function_registry.h"
+#include "google/protobuf/message.h"
 #include "re2/re2.h"
-#include "src/google/protobuf/message.h"
 
 namespace buf::validate::internal {
 
