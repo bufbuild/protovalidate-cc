@@ -104,8 +104,72 @@ absl::Status FieldConstraintRules::Validate(
           field_->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
         return absl::OkStatus();
       }
-    } else if (
-        anyRules_ != nullptr &&
+    }
+
+    if (ignoreEmpty_ && field_->containing_oneof() != nullptr) {
+      // If the field is in a oneof, we have to manually check if the value is 'empty'.
+      switch (field_->type()) {
+        case google::protobuf::FieldDescriptor::TYPE_BYTES: {
+          if (message.GetReflection()->GetString(message, field_).empty()) {
+            return absl::OkStatus();
+          }
+          break;
+        }
+        case google::protobuf::FieldDescriptor::TYPE_STRING: {
+          if (message.GetReflection()->GetString(message, field_).empty()) {
+            return absl::OkStatus();
+          }
+          break;
+        }
+        case google::protobuf::FieldDescriptor::TYPE_SFIXED32:
+        case google::protobuf::FieldDescriptor::TYPE_SINT32:
+        case google::protobuf::FieldDescriptor::TYPE_INT32:
+          if (message.GetReflection()->GetInt32(message, field_) == 0) {
+            return absl::OkStatus();
+          }
+        case google::protobuf::FieldDescriptor::TYPE_SFIXED64:
+        case google::protobuf::FieldDescriptor::TYPE_SINT64:
+        case google::protobuf::FieldDescriptor::TYPE_INT64: {
+          if (message.GetReflection()->GetInt64(message, field_) == 0) {
+            return absl::OkStatus();
+          }
+          break;
+        }
+        case google::protobuf::FieldDescriptor::TYPE_FIXED32:
+        case google::protobuf::FieldDescriptor::TYPE_UINT32:
+          if (message.GetReflection()->GetUInt32(message, field_) == 0) {
+            return absl::OkStatus();
+          }
+        case google::protobuf::FieldDescriptor::TYPE_FIXED64:
+        case google::protobuf::FieldDescriptor::TYPE_UINT64: {
+          if (message.GetReflection()->GetUInt64(message, field_) == 0) {
+            return absl::OkStatus();
+          }
+          break;
+        }
+        case google::protobuf::FieldDescriptor::TYPE_DOUBLE:
+        case google::protobuf::FieldDescriptor::TYPE_FLOAT: {
+          if (message.GetReflection()->GetDouble(message, field_) == 0) {
+            return absl::OkStatus();
+          }
+          break;
+        }
+        case google::protobuf::FieldDescriptor::TYPE_BOOL: {
+          if (!message.GetReflection()->GetBool(message, field_)) {
+            return absl::OkStatus();
+          }
+          break;
+        }
+        case google::protobuf::FieldDescriptor::TYPE_ENUM: {
+          if (message.GetReflection()->GetEnumValue(message, field_) == 0) {
+            return absl::OkStatus();
+          }
+          break;
+        }
+      }
+    }
+
+    if (anyRules_ != nullptr &&
         field_->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
       const auto& anyMsg = message.GetReflection()->GetMessage(message, field_);
       auto status = ValidateAny(ctx, fieldPath, anyMsg);
