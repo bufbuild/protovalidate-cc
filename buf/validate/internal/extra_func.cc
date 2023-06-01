@@ -15,7 +15,7 @@ namespace buf::validate::internal {
 
 struct Url {
  public:
-  std::string scheme, host, path, queryString;
+  std::string_view scheme, host, path, queryString;
 
   // Parse parses a URL ref the context of the receiver. The provided URL
   // may be relative or absolute.
@@ -24,19 +24,19 @@ struct Url {
     if (ref.empty()) {
       return result;
     }
-    std::string remainder(ref);
+    std::string_view remainder(ref);
     if (absl::StrContains(ref, "://")) {
-      std::vector<std::string> split = absl::StrSplit(ref, "://");
+      std::vector<std::string_view> split = absl::StrSplit(ref, "://");
       result.scheme = split[0];
-      std::vector<std::string> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
+      std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
       result.host = hostSplit[0];
-      remainder = hostSplit[1];
+      remainder = absl::StrCat("/", hostSplit[1]);
     }
-    std::vector<std::string> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
+    std::vector<std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
     if (querySplit.size() == 2) {
       result.queryString = querySplit[1];
     }
-    result.path = '/' + querySplit[0];
+    result.path = querySplit[0];
     return result;
   }
 
@@ -49,13 +49,23 @@ struct Url {
     return !scheme.empty() && !host.empty() || !path.empty();
   }
 
-  static bool isValidPath(const std::string& path) {
-    if (path == "/") {
+  static bool isValidPath(const std::string_view& path) {
+    std::string stringPath(path);
+    if (stringPath == "/") {
       return true;
     }
-    // Regular expression pattern for validating URI path
+    /**
+     * ^: Matches the start of the string.
+     * \/: Matches the forward slash ("/") character.
+     * [\w\/\-\.]*: Matches zero or more occurrences of the following characters:
+     * \w: Matches any alphanumeric character (A-Z, a-z, 0-9) or underscore (_).
+     * \/: Matches the forward slash ("/") character.
+     * \-: Matches the hyphen ("-") character.
+     * \.: Matches the period (dot, ".") character.
+     * $: Matches the end of the string.
+     */
     re2::RE2 pathPattern(R"(^\/[\w\/\-\.]*$)");
-    return re2::RE2::FullMatch(path, pathPattern);
+    return re2::RE2::FullMatch(stringPath, pathPattern);
   }
 };
 
@@ -112,12 +122,12 @@ cel::CelValue endsWith(
   return cel::CelValue::CreateBool(result);
 }
 
-cel::CelValue isURI(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
+cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
   auto parsed = Url::parse(lhs.value());
   return cel::CelValue::CreateBool(parsed.isUri());
 }
 
-cel::CelValue isURIRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
+cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
   auto parsed = Url::parse(lhs.value());
   return cel::CelValue::CreateBool(parsed.isUriRef());
 }
@@ -163,13 +173,13 @@ absl::Status RegisterExtraFuncs(
   }
   auto isURIStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
-          "isUri", true, &isURI, &registry);
+          "isUri", true, &isUri, &registry);
   if (!isURIStatus.ok()) {
     return isURIStatus;
   }
   auto isURIRefStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
-          "isUriRef", true, &isURIRef, &registry);
+          "isUriRef", true, &isUriRef, &registry);
   if (!isURIRefStatus.ok()) {
     return isURIStatus;
   }
