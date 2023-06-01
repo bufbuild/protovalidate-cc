@@ -176,6 +176,7 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
     std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
     host = hostSplit[0];
     remainder = absl::StrCat("/", hostSplit[1]);
+    LOG(INFO) << hostSplit[1];
     LOG(INFO) << "remainder";
     LOG(INFO) << remainder;
     LOG(INFO)<< "scheme:";
