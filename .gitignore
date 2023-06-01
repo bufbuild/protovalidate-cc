@@ -1,6 +1,5 @@
 /.tmp/
 *.pprof
-*.svg
 cover.out
 /bazel-*
 .clangd
