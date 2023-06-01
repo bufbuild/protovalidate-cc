@@ -1,4 +1,3 @@
-
 #include "buf/validate/internal/extra_func.h"
 
 #include <string>
