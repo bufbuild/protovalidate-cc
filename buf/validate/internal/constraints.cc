@@ -166,6 +166,8 @@ absl::Status FieldConstraintRules::Validate(
           }
           break;
         }
+        default:
+          break;
       }
     }
 
@@ -187,12 +189,35 @@ absl::Status FieldConstraintRules::Validate(
   return ValidateCel(ctx, fieldPath, activation);
 }
 
+absl::Status EnumConstraintRules::Validate(
+    ConstraintContext& ctx,
+    std::string_view fieldPath,
+    const google::protobuf::Message& message) const {
+  if (auto status = Base::Validate(ctx, fieldPath, message); ctx.shouldReturn(status)) {
+    return status;
+  }
+  if (definedOnly_) {
+    auto value = message.GetReflection()->GetEnumValue(message, field_);
+    if (field_->enum_type()->FindValueByNumber(value) == nullptr) {
+      auto& violation = *ctx.violations.add_violations();
+      *violation.mutable_constraint_id() = "enum.defined_only";
+      *violation.mutable_message() = "enum value must be defined";
+      if (fieldPath.empty()) {
+        *violation.mutable_field_path() = field_->name();
+      } else {
+        *violation.mutable_field_path() = absl::StrCat(fieldPath, ".", field_->name());
+      }
+    }
+  }
+  return absl::OkStatus();
+}
+
 absl::Status RepeatedConstraintRules::Validate(
     ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) const {
   auto status = Base::Validate(ctx, fieldPath, message);
-  if (!status.ok() || itemRules_ == nullptr) {
+  if (ctx.shouldReturn(status) || itemRules_ == nullptr) {
     return status;
   }
   // Validate each item.

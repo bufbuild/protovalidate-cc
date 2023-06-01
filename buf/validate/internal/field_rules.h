@@ -1,6 +1,7 @@
 #pragma once
 
 #include "absl/status/statusor.h"
+#include "buf/validate/internal/cel_rules.h"
 #include "buf/validate/internal/constraints.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/descriptor.h"
@@ -8,7 +9,8 @@
 namespace buf::validate::internal {
 
 template <typename R>
-absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildScalarFieldRules(
+absl::Status BuildScalarFieldRules(
+    FieldConstraintRules& result,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
@@ -31,15 +33,28 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildScalarFieldRules(
           google::protobuf::FieldDescriptor::TypeName(expectedType)));
     }
   }
+  return BuildCelRules(arena, builder, rules, result);
+}
+
+template <typename R>
+absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewScalarFieldRules(
+    google::protobuf::Arena* arena,
+    google::api::expr::runtime::CelExpressionBuilder& builder,
+    const google::protobuf::FieldDescriptor* field,
+    const FieldConstraints& fieldLvl,
+    const R& rules,
+    google::protobuf::FieldDescriptor::Type expectedType,
+    std::string_view wrapperName = "") {
   auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
-  auto status = BuildCelRules(arena, builder, rules, *result);
+  auto status = BuildScalarFieldRules(
+      *result, arena, builder, field, fieldLvl, rules, expectedType, wrapperName);
   if (!status.ok()) {
     return status;
   }
   return result;
 }
 
-absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
+absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
