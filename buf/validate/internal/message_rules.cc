@@ -39,7 +39,7 @@ Constraints NewMessageConstraints(
       continue;
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
-    auto rules_or = BuildFieldRules(arena, builder, field, fieldLvl);
+    auto rules_or = NewFieldRules(arena, builder, field, fieldLvl);
     if (!rules_or.ok()) {
       return rules_or.status();
     }

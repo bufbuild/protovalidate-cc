@@ -4,7 +4,7 @@
 #include "google/protobuf/any.pb.h"
 
 namespace buf::validate::internal {
-absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
+absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
@@ -15,7 +15,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
   absl::StatusOr<std::unique_ptr<FieldConstraintRules>> rules_or;
   switch (fieldLvl.type_case()) {
     case FieldConstraints::kBool:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -25,7 +25,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           "google.protobuf.BoolValue");
       break;
     case FieldConstraints::kFloat:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -35,7 +35,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           "google.protobuf.FloatValue");
       break;
     case FieldConstraints::kDouble:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -45,7 +45,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           "google.protobuf.DoubleValue");
       break;
     case FieldConstraints::kInt32:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -55,7 +55,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           "google.protobuf.Int32Value");
       break;
     case FieldConstraints::kInt64:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -65,7 +65,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           "google.protobuf.Int64Value");
       break;
     case FieldConstraints::kUint32:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -75,7 +75,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           "google.protobuf.UInt32Value");
       break;
     case FieldConstraints::kUint64:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -85,7 +85,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           "google.protobuf.UInt64Value");
       break;
     case FieldConstraints::kSint32:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -94,7 +94,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           google::protobuf::FieldDescriptor::TYPE_SINT32);
       break;
     case FieldConstraints::kSint64:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -103,7 +103,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           google::protobuf::FieldDescriptor::TYPE_SINT64);
       break;
     case FieldConstraints::kFixed32:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -112,7 +112,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           google::protobuf::FieldDescriptor::TYPE_FIXED32);
       break;
     case FieldConstraints::kFixed64:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -121,7 +121,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           google::protobuf::FieldDescriptor::TYPE_FIXED64);
       break;
     case FieldConstraints::kSfixed32:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -130,7 +130,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           google::protobuf::FieldDescriptor::TYPE_SFIXED32);
       break;
     case FieldConstraints::kSfixed64:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -139,7 +139,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           google::protobuf::FieldDescriptor::TYPE_SFIXED64);
       break;
     case FieldConstraints::kString:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -149,7 +149,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           "google.protobuf.StringValue");
       break;
     case FieldConstraints::kBytes:
-      rules_or = BuildScalarFieldRules(
+      rules_or = NewScalarFieldRules(
           arena,
           builder,
           field,
@@ -158,15 +158,21 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
           google::protobuf::FieldDescriptor::TYPE_BYTES,
           "google.protobuf.BytesValue");
       break;
-    case FieldConstraints::kEnum:
-      rules_or = BuildScalarFieldRules(
+    case FieldConstraints::kEnum: {
+      rules_or = std::make_unique<EnumConstraintRules>(field, fieldLvl);
+      auto status = BuildScalarFieldRules(
+          *rules_or.value(),
           arena,
           builder,
           field,
           fieldLvl,
           fieldLvl.enum_(),
           google::protobuf::FieldDescriptor::TYPE_ENUM);
+      if (!status.ok()) {
+        rules_or = status;
+      }
       break;
+    }
     case FieldConstraints::kDuration:
       if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
           field->message_type()->full_name() !=
@@ -205,7 +211,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
       } else {
         std::unique_ptr<FieldConstraintRules> items;
         if (fieldLvl.repeated().has_items()) {
-          auto items_or = BuildFieldRules(arena, builder, field, fieldLvl.repeated().items());
+          auto items_or = NewFieldRules(arena, builder, field, fieldLvl.repeated().items());
           if (!items_or.ok()) {
             return items_or.status();
           }
@@ -225,12 +231,12 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> BuildFieldRules(
         return absl::InvalidArgumentError("map field validator on non-map field");
       } else {
         auto keyRulesOr =
-            BuildFieldRules(arena, builder, field->message_type()->field(0), fieldLvl.map().keys());
+            NewFieldRules(arena, builder, field->message_type()->field(0), fieldLvl.map().keys());
         if (!keyRulesOr.ok()) {
           return keyRulesOr.status();
         }
-        auto valueRulesOr = BuildFieldRules(
-            arena, builder, field->message_type()->field(1), fieldLvl.map().values());
+        auto valueRulesOr =
+            NewFieldRules(arena, builder, field->message_type()->field(1), fieldLvl.map().values());
         if (!valueRulesOr.ok()) {
           return valueRulesOr.status();
         }
