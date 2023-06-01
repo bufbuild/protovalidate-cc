@@ -13,61 +13,24 @@
 
 namespace buf::validate::internal {
 
-struct Url {
- public:
-  std::string_view scheme, host, path, queryString;
-
-  // Parse parses a URL ref the context of the receiver. The provided URL
-  // may be relative or absolute.
-  static Url parse(std::string_view ref) {
-    Url result;
-    if (ref.empty()) {
-      return result;
-    }
-    std::string_view remainder(ref);
-    if (absl::StrContains(ref, "://")) {
-      std::vector<std::string_view> split = absl::StrSplit(ref, "://");
-      result.scheme = split[0];
-      std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
-      result.host = hostSplit[0];
-      remainder = absl::StrCat("/", hostSplit[1]);
-    }
-    std::vector<std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
-    if (querySplit.size() == 2) {
-      result.queryString = querySplit[1];
-    }
-    result.path = querySplit[0];
-    return result;
-  }
-
-  bool isUri() const { return !scheme.empty() && !host.empty(); }
-
-  bool isUriRef() const {
-    if (!isValidPath(path)) {
-      return false;
-    }
-    return !scheme.empty() && !host.empty() || !path.empty();
-  }
-
-  static bool isValidPath(const std::string_view& path) {
-    if (path == "/") {
+bool isPathValid(const std::string_view& path) {
+  if (path == "/") {
       return true;
-    }
-    std::string stringPath(path);
-    /**
-     * ^: Matches the start of the string.
-     * \/: Matches the forward slash ("/") character.
-     * [\w\/\-\.]*: Matches zero or more occurrences of the following characters:
-     * \w: Matches any alphanumeric character (A-Z, a-z, 0-9) or underscore (_).
-     * \/: Matches the forward slash ("/") character.
-     * \-: Matches the hyphen ("-") character.
-     * \.: Matches the period (dot, ".") character.
-     * $: Matches the end of the string.
-     */
-    re2::RE2 pathPattern(R"(^\/[\w\/\-\.]*$)");
-    return re2::RE2::FullMatch(stringPath, pathPattern);
   }
-};
+  std::string stringPath(path);
+  /**
+   * ^: Matches the start of the string.
+   * \/: Matches the forward slash ("/") character.
+   * [\w\/\-\.]*: Matches zero or more occurrences of the following characters:
+   *    \w: Matches any alphanumeric character (A-Z, a-z, 0-9) or underscore (_).
+   *    \/: Matches the forward slash ("/") character.
+   *    \-: Matches the hyphen ("-") character.
+   *    \.: Matches the period (dot, ".") character.
+   * $: Matches the end of the string.
+   */
+  re2::RE2 pathPattern(R"(^\/[\w\/\-\.]*$)");
+  return re2::RE2::FullMatch(stringPath, pathPattern);
+}
 
 namespace cel = google::api::expr::runtime;
 
@@ -123,13 +86,42 @@ cel::CelValue endsWith(
 }
 
 cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  auto parsed = Url::parse(lhs.value());
-  return cel::CelValue::CreateBool(parsed.isUri());
+  const std::string_view &ref = lhs.value();
+  if (ref.empty()) {
+      return cel::CelValue::CreateBool(false);
+  }
+  std::string_view scheme, host;
+  if (!absl::StrContains(ref, "://")) {
+    return cel::CelValue::CreateBool(false);
+  }
+  std::vector <std::string_view> split = absl::StrSplit(ref, "://");
+  scheme = split[0];
+  std::vector <std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
+  host = hostSplit[0];
+  return cel::CelValue::CreateBool(!scheme.empty() && !host.empty());
 }
 
 cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  auto parsed = Url::parse(lhs.value());
-  return cel::CelValue::CreateBool(parsed.isUriRef());
+  const std::string_view &ref = lhs.value();
+  if (ref.empty()) {
+      return cel::CelValue::CreateBool(false);
+  }
+  std::string_view scheme, host, path;
+  std::string_view remainder = ref;
+  if (absl::StrContains(ref, "://")) {
+    std::vector <std::string_view> split = absl::StrSplit(ref, absl::MaxSplits("://", 1));
+    scheme = split[0];
+    std::vector <std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
+    host = hostSplit[0];
+    remainder = absl::StrCat("/", hostSplit[1]);
+  }
+  std::vector <std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
+  path = querySplit[0];
+  if (!isPathValid(path)) {
+    return cel::CelValue::CreateBool(false);
+  }
+  bool parsedResult = !path.empty() || !scheme.empty() && !host.empty();
+  return cel::CelValue::CreateBool(parsedResult);
 }
 
 absl::Status RegisterExtraFuncs(
