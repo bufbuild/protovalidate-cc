@@ -97,7 +97,7 @@ TEST(ValidatorTest, ValidateAbsoluteURIRefWithQueryStringSuccess) {
   auto validator = factory->NewValidator(&arena, false);
   auto violations_or = validator->Validate(str_uri_ref);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
-  EXPECT_EQ(violations_or.value().violations_size(), 0);
+  EXPECT_EQ(violations_or.value().violations_size(), 0) << violations_or.value().DebugString();
 }
 
 TEST(ValidatorTest, ValidateAbsoluteURIRefSuccess) {

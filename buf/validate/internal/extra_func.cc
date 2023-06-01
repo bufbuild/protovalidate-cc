@@ -216,7 +216,7 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
   }
   // If the scheme and host are invalid, then the input is a URI ref (so make sure path exists).
   // If the scheme and host are valid, then the input is a URI.
-  bool parsedResult = !path.empty() || !scheme.empty() && !host.empty();
+  bool parsedResult = !path.empty() || (!scheme.empty() && !host.empty());
   return cel::CelValue::CreateBool(parsedResult);
 }
 
