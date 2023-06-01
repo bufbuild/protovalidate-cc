@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/bufbuild/protovalidate-cc/actions/workflows/ci.yaml/badge.svg)](https://github.com/bufbuild/protovalidate-cc/actions/workflows/ci.yaml)
 [![Conformance](https://github.com/bufbuild/protovalidate-cc/actions/workflows/conformance.yaml/badge.svg)](https://github.com/bufbuild/protovalidate-cc/actions/workflows/conformance.yaml)
-[![Quality](https://img.shields.io/lgtm/grade/cpp/g/bufbuild/protovalidate-cc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/bufbuild/protovalidate-cc/context:cpp)
 [![BSR](https://img.shields.io/badge/BSR-Module-0C65EC)][buf-mod]
 
 `protovalidate-cc` is the C++ language implementation
