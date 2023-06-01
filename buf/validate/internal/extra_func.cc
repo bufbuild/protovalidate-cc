@@ -15,7 +15,7 @@ namespace buf::validate::internal {
 
 bool isPathValid(const std::string_view& path) {
   if (path == "/") {
-      return true;
+    return true;
   }
   std::string stringPath(path);
   /**
@@ -86,36 +86,36 @@ cel::CelValue endsWith(
 }
 
 cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  const std::string_view &ref = lhs.value();
+  const std::string_view& ref = lhs.value();
   if (ref.empty()) {
-      return cel::CelValue::CreateBool(false);
+    return cel::CelValue::CreateBool(false);
   }
   std::string_view scheme, host;
   if (!absl::StrContains(ref, "://")) {
     return cel::CelValue::CreateBool(false);
   }
-  std::vector <std::string_view> split = absl::StrSplit(ref, "://");
+  std::vector<std::string_view> split = absl::StrSplit(ref, absl::MaxSplits("://", 1));
   scheme = split[0];
-  std::vector <std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
+  std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
   host = hostSplit[0];
   return cel::CelValue::CreateBool(!scheme.empty() && !host.empty());
 }
 
 cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  const std::string_view &ref = lhs.value();
+  const std::string_view& ref = lhs.value();
   if (ref.empty()) {
-      return cel::CelValue::CreateBool(false);
+    return cel::CelValue::CreateBool(false);
   }
   std::string_view scheme, host, path;
   std::string_view remainder = ref;
   if (absl::StrContains(ref, "://")) {
-    std::vector <std::string_view> split = absl::StrSplit(ref, absl::MaxSplits("://", 1));
+    std::vector<std::string_view> split = absl::StrSplit(ref, absl::MaxSplits("://", 1));
     scheme = split[0];
-    std::vector <std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
+    std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
     host = hostSplit[0];
     remainder = absl::StrCat("/", hostSplit[1]);
   }
-  std::vector <std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
+  std::vector<std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
   path = querySplit[0];
   if (!isPathValid(path)) {
     return cel::CelValue::CreateBool(false);
