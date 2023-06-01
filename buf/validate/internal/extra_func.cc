@@ -161,6 +161,7 @@ cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder 
  * Naive URI ref validation.
  */
 cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
+  LOG(INFO) << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~";
   const std::string_view& ref = lhs.value();
   if (ref.empty()) {
     LOG(INFO) << "empty";
@@ -168,6 +169,7 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
   }
   std::string_view scheme, host, path;
   std::string_view remainder = ref;
+  LOG(INFO) << ref;
   if (absl::StrContains(ref, "://")) {
     std::vector<std::string_view> split = absl::StrSplit(ref, absl::MaxSplits("://", 1));
     scheme = split[0];
@@ -176,10 +178,15 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
     remainder = absl::StrCat("/", hostSplit[1]);
     LOG(INFO) << "remainder";
     LOG(INFO) << remainder;
+    LOG(INFO)<< "scheme:";
+    LOG(INFO)<< scheme;
+    LOG(INFO)<< "host:";
+    LOG(INFO)<< host;
+
   }
   std::vector<std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
   path = querySplit[0];
-      LOG(INFO) << path;
+  LOG(INFO) << path;
   if (!isPathValid(path)) {
     LOG(INFO) << "invalid path";
     return cel::CelValue::CreateBool(false);
