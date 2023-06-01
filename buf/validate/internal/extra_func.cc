@@ -2,9 +2,11 @@
 
 #include <algorithm>
 #include <string>
+#include <string_view>
 
 #include "absl/strings/match.h"
 #include "buf/validate/internal/string_format.h"
+#include "buf/validate/internal/validate.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
 #include "eval/public/containers/container_backed_map_impl.h"
@@ -85,6 +87,56 @@ cel::CelValue endsWith(
   return cel::CelValue::CreateBool(result);
 }
 
+cel::CelValue isHostname(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
+  std::string s(lhs.value());
+  return cel::CelValue::CreateBool(IsHostname(s));
+}
+
+cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
+  absl::string_view addr = lhs.value();
+  absl::string_view::size_type pos = addr.find('<');
+  if (pos != absl::string_view::npos) {
+    return cel::CelValue::CreateBool(false);
+  }
+
+  absl::string_view localPart, domainPart;
+  std::vector<std::string> atPos = absl::StrSplit(addr, '@');
+  if (!atPos.empty()) {
+    localPart = atPos[0];
+    domainPart = atPos[1];
+  } else {
+    return cel::CelValue::CreateBool(false);
+  }
+
+  int localLength = localPart.length();
+  if (localLength < 1 || localLength > 64 || localLength + domainPart.length() > 253) {
+    return cel::CelValue::CreateBool(false);
+  }
+
+  // Validate the hostname
+  std::string s(domainPart);
+  return cel::CelValue::CreateBool(IsHostname(s));
+}
+
+cel::CelValue isIPvX(
+    google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs, cel::CelValue rhs) {
+  std::string s(lhs.value());
+  switch (rhs.Int64OrDie()) {
+    case 0:
+      return cel::CelValue::CreateBool(IsIp(s));
+    case 4:
+      return cel::CelValue::CreateBool(IsIpv4(s));
+    case 6:
+      return cel::CelValue::CreateBool(IsIpv6(s));
+    default:
+      return cel::CelValue::CreateBool(false);
+  }
+}
+
+cel::CelValue isIP(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
+  return isIPvX(arena, lhs, cel::CelValue::CreateInt64(0));
+}
+
 /**
  * Naive URI validation.
  */
@@ -160,6 +212,18 @@ absl::Status RegisterExtraFuncs(
   if (!containsStatus.ok()) {
     return containsStatus;
   }
+  auto isIpvStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue>::
+          CreateAndRegister("isIp", true, &isIPvX, &registry);
+  if (!isIpvStatus.ok()) {
+    return isIpvStatus;
+  }
+  auto isIpStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
+          "isIp", true, &isIP, &registry);
+  if (!isIpStatus.ok()) {
+    return isIpStatus;
+  }
   auto startsWithStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
           CreateAndRegister("startsWith", true, &startsWith, &registry);
@@ -184,7 +248,18 @@ absl::Status RegisterExtraFuncs(
   if (!isUriRefStatus.ok()) {
     return isUriStatus;
   }
+  auto isHostnameStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
+          "isHostname", true, &isHostname, &registry);
+  if (!isHostnameStatus.ok()) {
+    return isHostnameStatus;
+  }
+  auto isEmailStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
+          "isEmail", true, &isEmail, &registry);
+  if (!isEmailStatus.ok()) {
+    return isEmailStatus;
+  }
   return absl::OkStatus();
 }
-
 } // namespace buf::validate::internal

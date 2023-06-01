@@ -106,12 +106,18 @@ cc_library(
     hdrs = ["extra_func.h"],
     deps = [
         ":string_format",
+        ":validate",
         "@com_google_absl//absl/status",
         "@com_google_cel_cpp//eval/public:cel_function_adapter",
         "@com_google_cel_cpp//eval/public:cel_function_registry",
         "@com_google_cel_cpp//eval/public/containers:container_backed_map_impl",
         "@com_googlesource_code_re2//:re2",
     ],
+)
+
+cc_library(
+    name = "validate",
+    hdrs = ["validate.h"],
 )
 
 cc_library(
