@@ -33,7 +33,8 @@ Other `protovalidate` runtime implementations coming soon include:
 To install `protovalidate-cc`, clone the repository and build the project:
 
 ```shell
-git clone https://github.com/bufbuild/protovalidate-cc.git && cd protovalidate-cc
+git clone https://github.com/bufbuild/protovalidate-cc.git
+cd protovalidate-cc
 make build
 ```
 
