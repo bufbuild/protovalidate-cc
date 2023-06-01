@@ -163,6 +163,7 @@ cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder 
 cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
   const std::string_view& ref = lhs.value();
   if (ref.empty()) {
+    LOG(INFO) << "empty";
     return cel::CelValue::CreateBool(false);
   }
   std::string_view scheme, host, path;
@@ -173,10 +174,14 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
     std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
     host = hostSplit[0];
     remainder = absl::StrCat("/", hostSplit[1]);
+    LOG(INFO) << "remainder";
+    LOG(INFO) << remainder;
   }
   std::vector<std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
   path = querySplit[0];
+      LOG(INFO) << path;
   if (!isPathValid(path)) {
+    LOG(INFO) << "invalid path";
     return cel::CelValue::CreateBool(false);
   }
   // If the scheme and host are invalid, then the input is a URI ref (so make sure path exists).
