@@ -53,6 +53,22 @@ class FieldConstraintRules : public CelConstraintRules {
   const AnyRules* anyRules_ = nullptr;
 };
 
+class EnumConstraintRules : public FieldConstraintRules {
+  using Base = FieldConstraintRules;
+
+ public:
+  EnumConstraintRules(const google::protobuf::FieldDescriptor* desc, const FieldConstraints& field)
+      : Base(desc, field), definedOnly_(field.enum_().defined_only()) {}
+
+  absl::Status Validate(
+      ConstraintContext& ctx,
+      std::string_view fieldPath,
+      const google::protobuf::Message& message) const override;
+
+ private:
+  bool definedOnly_;
+};
+
 class RepeatedConstraintRules : public FieldConstraintRules {
   using Base = FieldConstraintRules;
 
