@@ -30,7 +30,7 @@ bool isPathValid(const std::string_view& path) {
    *    \.: Matches the period (dot, ".") character.
    * $: Matches the end of the string.
    */
-  re2::RE2 pathPattern(R"(^\/[\w\/\-\.]*$)");
+  re2::RE2 pathPattern(R"(^[\/]*[\w\/\-\.]*$)");
   return re2::RE2::FullMatch(stringPath, pathPattern);
 }
 
@@ -175,7 +175,7 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
     scheme = split[0];
     std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
     host = hostSplit[0];
-    remainder = absl::StrCat("/", hostSplit[1]);
+    remainder = hostSplit[1];
     LOG(INFO) << hostSplit[1];
     LOG(INFO) << "remainder";
     LOG(INFO) << remainder;
