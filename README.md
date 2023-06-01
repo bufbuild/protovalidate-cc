@@ -1,6 +1,8 @@
 # [![The Buf logo](.github/buf-logo.svg)][buf] protovalidate-cc
 
 [![CI](https://github.com/bufbuild/protovalidate-cc/actions/workflows/ci.yaml/badge.svg)](https://github.com/bufbuild/protovalidate-cc/actions/workflows/ci.yaml)
+[![Conformance](https://github.com/bufbuild/protovalidate-cc/actions/workflows/conformance.yaml/badge.svg)](https://github.com/bufbuild/protovalidate-cc/actions/workflows/conformance.yaml)
+[![Quality](https://img.shields.io/lgtm/grade/cpp/g/bufbuild/protovalidate-cc.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/bufbuild/protovalidate-cc/context:cpp)
 [![BSR](https://img.shields.io/badge/BSR-Module-0C65EC)][buf-mod]
 
 `protovalidate-cc` is the C++ language implementation
@@ -21,11 +23,7 @@ Head over to the core [`protovalidate`](https://github.com/bufbuild/protovalidat
 - [Migration tooling](https://github.com/bufbuild/protovalidate/tree/main/docs/migrate.md): incrementally migrate from `protoc-gen-validate`
 - [Conformance testing utilities](https://github.com/bufbuild/protovalidate/tree/main/docs/conformance.md): for acceptance testing of `protovalidate` implementations
 
-Other `protovalidate` runtime implementations include:
-
-- Go: [`protovalidate-go`](https://github.com/bufbuild/protovalidate-go)
-
-Others coming soon include:
+Other `protovalidate` runtime implementations coming soon include:
 
 - Java: `protovalidate-java`
 - Python: `protovalidate-py`
@@ -33,22 +31,15 @@ Others coming soon include:
 
 ## Installation
 
-**Requires the `c++` toolchain (≥ $VERSION)** ...
-
-To install the package, use the `bazel` gitcommand from within your Go module:
+To install `protovalidate-cc`, clone the repository and build the project:
 
 ```shell
-go get github.com/bufbuild/protovalidate-go
+git clone https://github.com/bufbuild/protovalidate-cc.git && cd protovalidate-cc
+make build
 ```
 
-Import the package into your Go project:
-
-```go
-import "github.com/bufbuild/protovalidate-go"
-```
-
-Remember to always check for the latest version of `protovalidate-go` on the
-project's [GitHub releases page](https://github.com/bufbuild/protovalidate-go/releases)
+Remember to always check for the latest version of `protovalidate-cc` on the
+project's [GitHub releases page](https://github.com/bufbuild/protovalidate-cc/releases)
 to ensure you're using the most up-to-date version.
 
 ## Usage
@@ -73,7 +64,9 @@ message Transaction {
   google.protobuf.Timestamp delivery_date = 3;
   
   string price = 4 [(buf.validate.field).cel = {
-    id: "transaction.price",
+   
+
+ id: "transaction.price",
     message: "price must be positive and include a valid currency symbol ($ or £)",
     expression: "(this.startsWith('$') || this.startsWith('£')) && double(this.substring(1)) > 0"
   }];
@@ -86,144 +79,43 @@ message Transaction {
 }
 ```
 
-#### Buf managed mode
-
-`protovalidate-go` assumes the constraint extensions are imported into
-the generated code via `buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go`.
-
-If you are using Buf [managed mode](https://buf.build/docs/generate/managed-mode/) to augment Go code generation, ensure
-that the `protovalidate` module is excluded in your [`buf.gen.yaml`](https://buf.build/docs/configuration/v1/buf-gen-yaml#except):
-
-```yaml
-version: v1
-# <snip>
-managed:
-  enabled: true
-  go_package_prefix:
-    except:
-      - buf.build/bufbuild/protovalidate
-# <snip>
-```
-
 ### Example
 
-```go
-package main
+In your C++ code, include the header file and use the `Validate` function to validate your messages.
 
-import (
-	"fmt"
-	"time"
-	
-	pb "github.com/path/to/generated/protos"
-	"github.com/bufbuild/protovalidate-go"
-	"google.golang.org/protobuf/types/known/timestamppb"
-)
+```cpp
+#include <iostream>
+#include "path/to/generated/protos/transaction.pb.h"
+#include "bufbuild/protovalidate/cc/validator.h"
 
-func main() {
-	msg := &pb.Transaction{
-		Id:           1234,
-		Price:        "$5.67",
-		PurchaseDate: timestamppb.New(time.Now()),
-		DeliveryDate: timestamppb.New(time.Now().Add(time.Hour)),
-	}
+int main() {
+  my::package::Transaction transaction;
+  transaction.set_id(1234);
+  transaction.set_price("$5.67");
 
-	v, err := protovalidate.New()
-	if err != nil {
-		fmt.Println("failed to initialize validator:", err)
-	}
+  google::protobuf::Timestamp* purchase_date = transaction.mutable_purchase_date();
+  google::protobuf::Timestamp* delivery_date = transaction.mutable_delivery_date();
+  // set time for purchase_date and delivery_date
 
-	if err = v.Validate(msg); err != nil {
-		fmt.Println("validation failed:", err)
-	} else {
-		fmt.Println("validation succeeded")
-	}
+  bufbuild::protovalidate::cc::Validator validator;
+  std::string error_message;
+  if (!validator.Validate(transaction, &error_message)) {
+    std::cout << "validation failed: " << error_message << std::endl;
+  } else {
+    std::cout << "validation succeeded" << std::endl;
+  }
+  return 0;
 }
 ```
 
-### Lazy mode
-
-`protovalidate-go` defaults to lazily construct validation logic for Protobuf
-message types the first time they are encountered. A validator's internal
-cache can be pre-warmed with the `WithMessages` or `WithDescriptors` options
-during initialization:
-
-```go
-validator, err := protovalidate.New(
-  protovalidate.WithMessages(
-    &pb.MyFoo{}, 
-    &pb.MyBar{}, 
-  ),
-)
-```
-
-Lazy mode requires usage of a mutex to keep the validator thread-safe, which
-results in about 50% of CPU time spent obtaining a read lock. While [performance](#performance)
-is sub-microsecond, the mutex overhead can be further reduced by disabling lazy
-mode with the `WithDisableLazy` option. Note that all expected messages must be
-provided during initialization of the validator:
-
-```go
-validator, err := protovalidate.New(
-  protovalidate.WithDisableLazy(true),
-  protovalidate.WithMessages(
-    &pb.MyFoo{},
-    &pb.MyBar{},
-  ),
-)
-```
-
-### Support legacy `protoc-gen-validate` constraints
-
-The `protovalidate-go` module comes with a `legacy` package which adds opt-in support
-for existing `protoc-gen-validate` constraints. Provide the`legacy.WithLegacySupport`
-option when initializing the validator:
-
-```go
-validator, err := protovalidate.New(
-  legacy.WithLegacySupport(legacy.ModeMerge),
-)
-```
-
-`protoc-gen-validate` code generation is **not** used by `protovalidate-go`. The
-`legacy` package assumes the `protoc-gen-validate` extensions are imported into
-the generated code via `github.com/envoyproxy/protoc-gen-validate/validate`.
-
-A [migration tool](https://github.com/bufbuild/protovalidate/tree/main/tools/protovalidate-migrate) is also available to incrementally upgrade legacy constraints in `.proto` files.
-
 ## Performance
 
-[Benchmarks](validator_bench_test.go) are provided to test a variety of use-cases. Generally, after the
-initial cold start, validation on a message is sub-microsecond
-and only allocates in the event of a validation error.
-
-```
-[circa 15 May 2023]
-goos: darwin
-goarch: arm64
-pkg: github.com/bufbuild/protovalidate-go
-BenchmarkValidator
-BenchmarkValidator/ColdStart
-BenchmarkValidator/ColdStart-10         	    4372	    276457 ns/op	  470780 B/op	    9255 allocs/op
-BenchmarkValidator/Lazy/Valid
-BenchmarkValidator/Lazy/Valid-10        	 9022392	     134.1 ns/op	       0 B/op	       0 allocs/op
-BenchmarkValidator/Lazy/Invalid
-BenchmarkValidator/Lazy/Invalid-10      	 3416996	     355.9 ns/op	     632 B/op	      14 allocs/op
-BenchmarkValidator/Lazy/FailFast
-BenchmarkValidator/Lazy/FailFast-10     	 6751131	     172.6 ns/op	     168 B/op	       3 allocs/op
-BenchmarkValidator/PreWarmed/Valid
-BenchmarkValidator/PreWarmed/Valid-10   	17557560	     69.10 ns/op	       0 B/op	       0 allocs/op
-BenchmarkValidator/PreWarmed/Invalid
-BenchmarkValidator/PreWarmed/Invalid-10 	 3621961	     332.9 ns/op	     632 B/op	      14 allocs/op
-BenchmarkValidator/PreWarmed/FailFast
-BenchmarkValidator/PreWarmed/FailFast-10	13960359	     92.22 ns/op	     168 B/op	       3 allocs/op
-PASS
-```
+Benchmarking tools are provided to test a variety of use-cases. Due to the inherent differences between languages and their runtimes, performance may vary from the Go implementation. However, the objective is to keep validation times as low as possible, ideally under a microsecond for a majority of cases after the initial warm-up period.
 
 ### Ecosystem
 
 - [`protovalidate`](https://github.com/bufbuild/protovalidate) core repository
 - [Buf][buf]
-- [CEL Go][cel-go]
 - [CEL Spec][cel-spec]
 
 ## Legal
@@ -233,5 +125,4 @@ Offered under the [Apache 2 license][license].
 [license]: LICENSE
 [buf]: https://buf.build
 [buf-mod]: https://buf.build/bufbuild/protovalidate
-[cel-go]: https://github.com/google/cel-go
 [cel-spec]: https://github.com/google/cel-spec
