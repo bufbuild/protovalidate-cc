@@ -207,7 +207,7 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
     scheme = split[0];
     std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
     host = hostSplit[0];
-    remainder = absl::StrCat("/", hostSplit[1]);
+    remainder = hostSplit[1];
   }
   std::vector<std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
   path = querySplit[0];
