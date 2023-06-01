@@ -1,3 +1,4 @@
+
 #include "buf/validate/internal/extra_func.h"
 
 #include <string>
@@ -5,7 +6,6 @@
 
 #include "absl/strings/match.h"
 #include "buf/validate/internal/string_format.h"
-#include "buf/validate/internal/validate.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
 #include "eval/public/containers/container_backed_map_impl.h"
