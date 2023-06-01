@@ -105,8 +105,8 @@ cc_library(
     srcs = ["extra_func.cc"],
     hdrs = ["extra_func.h"],
     deps = [
-        ":cc_validate",
         ":string_format",
+        ":validate",
         "@com_google_absl//absl/status",
         "@com_google_cel_cpp//eval/public:cel_function_adapter",
         "@com_google_cel_cpp//eval/public:cel_function_registry",
@@ -115,7 +115,7 @@ cc_library(
 )
 
 cc_library(
-    name = "cc_validate",
+    name = "validate",
     hdrs = ["validate.h"],
 )
 
