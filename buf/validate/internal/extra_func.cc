@@ -85,6 +85,9 @@ cel::CelValue endsWith(
   return cel::CelValue::CreateBool(result);
 }
 
+/**
+ * Naive URI validation.
+ */
 cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
   const std::string_view& ref = lhs.value();
   if (ref.empty()) {
@@ -101,6 +104,9 @@ cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder 
   return cel::CelValue::CreateBool(!scheme.empty() && !host.empty());
 }
 
+/**
+ * Naive URI ref validation.
+ */
 cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
   const std::string_view& ref = lhs.value();
   if (ref.empty()) {
@@ -163,17 +169,17 @@ absl::Status RegisterExtraFuncs(
   if (!endsWithStatus.ok()) {
     return endsWithStatus;
   }
-  auto isURIStatus =
+  auto isUriStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
           "isUri", true, &isUri, &registry);
-  if (!isURIStatus.ok()) {
-    return isURIStatus;
+  if (!isUriStatus.ok()) {
+    return isUriStatus;
   }
-  auto isURIRefStatus =
+  auto isUriRefStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
           "isUriRef", true, &isUriRef, &registry);
-  if (!isURIRefStatus.ok()) {
-    return isURIStatus;
+  if (!isUriRefStatus.ok()) {
+    return isUriStatus;
   }
   return absl::OkStatus();
 }
