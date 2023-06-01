@@ -1,5 +1,4 @@
-#ifndef _VALIDATE_H
-#define _VALIDATE_H
+#pragma once
 
 #include <functional>
 #include <stdexcept>
@@ -178,5 +177,3 @@ inline size_t Utf8Len(const string& narrow_string) {
 } // namespace
 
 } // namespace buf::validate::internal
-
-#endif // _VALIDATE_H
