@@ -21,7 +21,7 @@ bool isPathValid(const std::string_view& path) {
   std::string stringPath(path);
   /**
    * ^: Matches the start of the string.
-   * \/: Matches the forward slash ("/") character.
+   * [\/]*: Matches zero or more occurrences of the forward slash ("/") character.
    * [\w\/\-\.]*: Matches zero or more occurrences of the following characters:
    *    \w: Matches any alphanumeric character (A-Z, a-z, 0-9) or underscore (_).
    *    \/: Matches the forward slash ("/") character.
@@ -29,7 +29,7 @@ bool isPathValid(const std::string_view& path) {
    *    \.: Matches the period (dot, ".") character.
    * $: Matches the end of the string.
    */
-  re2::RE2 pathPattern(R"(^\/[\w\/\-\.]*$)");
+  re2::RE2 pathPattern(R"(^[\/]*[\w\/\-\.]*$)");
   return re2::RE2::FullMatch(stringPath, pathPattern);
 }
 
