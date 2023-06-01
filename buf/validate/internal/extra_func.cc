@@ -50,10 +50,10 @@ struct Url {
   }
 
   static bool isValidPath(const std::string_view& path) {
-    std::string stringPath(path);
-    if (stringPath == "/") {
+    if (path == "/") {
       return true;
     }
+    std::string stringPath(path);
     /**
      * ^: Matches the start of the string.
      * \/: Matches the forward slash ("/") character.
