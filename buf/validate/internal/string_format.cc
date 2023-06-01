@@ -52,7 +52,7 @@ absl::Status StringFormat::format(
       index++;
       continue;
     }
-    if (argIndex >= args.size()) {
+    if (argIndex >= static_cast<int>(args.size())) {
       return absl::InvalidArgumentError("format: not enough arguments");
     }
     const cel::CelValue& arg = args[argIndex++];
@@ -103,7 +103,7 @@ absl::Status StringFormat::format(
       return status;
     }
   }
-  if (argIndex < args.size()) {
+  if (argIndex < static_cast<int>(args.size())) {
     return absl::InvalidArgumentError("format: too many arguments");
   }
   return absl::OkStatus();
@@ -267,6 +267,8 @@ absl::Status StringFormat::formatString(
 absl::Status StringFormat::formatStringSafe(
     std::string& builder, const google::api::expr::runtime::CelValue& val) const {
   switch (val.type()) {
+    default:
+      break;
     case cel::CelValue::Type::kBool:
       builder += val.BoolOrDie() ? "true" : "false";
       break;

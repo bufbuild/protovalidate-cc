@@ -1,5 +1,6 @@
 #include "buf/validate/internal/extra_func.h"
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 
@@ -9,8 +10,29 @@
 #include "eval/public/cel_value.h"
 #include "eval/public/containers/container_backed_map_impl.h"
 #include "google/protobuf/arena.h"
+#include "re2/re2.h"
 
 namespace buf::validate::internal {
+
+bool isPathValid(const std::string_view& path) {
+  if (path == "/") {
+    return true;
+  }
+  std::string stringPath(path);
+  /**
+   * ^: Matches the start of the string.
+   * [\/]*: Matches zero or more occurrences of the forward slash ("/") character.
+   * [\w\/\-\.]*: Matches zero or more occurrences of the following characters:
+   *    \w: Matches any alphanumeric character (A-Z, a-z, 0-9) or underscore (_).
+   *    \/: Matches the forward slash ("/") character.
+   *    \-: Matches the hyphen ("-") character.
+   *    \.: Matches the period (dot, ".") character.
+   * $: Matches the end of the string.
+   */
+  re2::RE2 pathPattern(R"(^[\/]*[\w\/\-\.]*$)");
+  return re2::RE2::FullMatch(stringPath, pathPattern);
+}
+
 namespace cel = google::api::expr::runtime;
 
 cel::CelValue unique(google::protobuf::Arena* arena, cel::CelValue rhs) {
@@ -150,6 +172,54 @@ cel::CelValue isIP(google::protobuf::Arena* arena, cel::CelValue::StringHolder l
   return isIPvX(arena, lhs, cel::CelValue::CreateInt64(0));
 }
 
+/**
+ * Naive URI validation.
+ */
+cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
+  const std::string_view& ref = lhs.value();
+  if (ref.empty()) {
+    return cel::CelValue::CreateBool(false);
+  }
+  std::string_view scheme, host;
+  if (!absl::StrContains(ref, "://")) {
+    return cel::CelValue::CreateBool(false);
+  }
+  std::vector<std::string_view> split = absl::StrSplit(ref, absl::MaxSplits("://", 1));
+  scheme = split[0];
+  std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
+  host = hostSplit[0];
+  // Just checking that scheme and host are present.
+  return cel::CelValue::CreateBool(!scheme.empty() && !host.empty());
+}
+
+/**
+ * Naive URI ref validation.
+ */
+cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
+  const std::string_view& ref = lhs.value();
+  if (ref.empty()) {
+    return cel::CelValue::CreateBool(false);
+  }
+  std::string_view scheme, host, path;
+  std::string_view remainder = ref;
+  if (absl::StrContains(ref, "://")) {
+    std::vector<std::string_view> split = absl::StrSplit(ref, absl::MaxSplits("://", 1));
+    scheme = split[0];
+    std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
+    host = hostSplit[0];
+    remainder = hostSplit[1];
+  }
+  std::vector<std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
+  path = querySplit[0];
+  if (!isPathValid(path)) {
+    return cel::CelValue::CreateBool(false);
+  }
+  // If the scheme and host are invalid, then the input is a URI ref (so make sure path exists).
+  // If the scheme and host are valid, then the input is a URI.
+  bool parsedResult = !path.empty() || (!scheme.empty() && !host.empty());
+  return cel::CelValue::CreateBool(parsedResult);
+}
+
 absl::Status RegisterExtraFuncs(
     google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena) {
   // TODO(afuller): This should be specialized for the locale.
@@ -200,6 +270,18 @@ absl::Status RegisterExtraFuncs(
           CreateAndRegister("endsWith", true, &endsWith, &registry);
   if (!endsWithStatus.ok()) {
     return endsWithStatus;
+  }
+  auto isUriStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
+          "isUri", true, &isUri, &registry);
+  if (!isUriStatus.ok()) {
+    return isUriStatus;
+  }
+  auto isUriRefStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
+          "isUriRef", true, &isUriRef, &registry);
+  if (!isUriRefStatus.ok()) {
+    return isUriStatus;
   }
   auto isHostnameStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(

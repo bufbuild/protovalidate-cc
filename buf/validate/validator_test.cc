@@ -58,6 +58,95 @@ TEST(ValidatorTest, ValidateBool) {
   EXPECT_EQ(violations_or.value().violations(0).message(), "value must equal false");
 }
 
+TEST(ValidatorTest, ValidateURISuccess) {
+  conformance::cases::StringURI str_uri;
+  str_uri.set_val("https://example.com/foo/bar?baz=quux");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_uri);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
+TEST(ValidatorTest, ValidateRelativeURIFailure) {
+  conformance::cases::StringURI str_uri;
+  str_uri.set_val("/foo/bar?baz=quux");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_uri);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.uri");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "value must be a valid URI");
+}
+
+TEST(ValidatorTest, ValidateAbsoluteURIRefWithQueryStringSuccess) {
+  conformance::cases::StringURIRef str_uri_ref;
+  str_uri_ref.set_val("https://example.com/foo/bar?baz=quux");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_uri_ref);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
+  for (const auto& violation : violations_or.value().violations()) {
+    EXPECT_EQ(violation.field_path(), "");
+    EXPECT_EQ(violation.constraint_id(), "");
+    EXPECT_EQ(violation.message(), "");
+  }
+}
+
+TEST(ValidatorTest, ValidateAbsoluteURIRefSuccess) {
+  conformance::cases::StringURIRef str_uri_ref;
+  str_uri_ref.set_val("https://example.com/foo/bar");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_uri_ref);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
+TEST(ValidatorTest, ValidateURIRefPathSuccess) {
+  conformance::cases::StringURIRef str_uri_ref;
+  str_uri_ref.set_val("/foo/bar?baz=quux");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_uri_ref);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
+TEST(ValidatorTest, ValidateBadURIRefFailure) {
+  conformance::cases::StringURIRef str_uri_ref;
+  str_uri_ref.set_val("!@#$%^&*");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator->Validate(str_uri_ref);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
+  EXPECT_EQ(violations_or.value().violations(0).constraint_id(), "string.uri_ref");
+  EXPECT_EQ(violations_or.value().violations(0).message(), "value must be a valid URI");
+}
+
 TEST(ValidatorTest, ValidateStrRepeatedUniqueFailure) {
   conformance::cases::RepeatedUnique str_repeated;
   str_repeated.add_val("1");
