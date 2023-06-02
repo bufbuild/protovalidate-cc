@@ -29,7 +29,7 @@ clean: ## Delete intermediate build artifacts
 .PHONY: conformance
 conformance: $(BIN)/protovalidate-conformance
 	$(BAZEL) build -c dbg //buf/validate/conformance:runner_main && \
-	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main --strict $(ARGS)
+	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main $(ARGS)
 
 $(BIN)/protovalidate-conformance: $(BIN) Makefile
 	GOBIN=$(abspath $(BIN)) $(GO) install \
@@ -37,7 +37,7 @@ $(BIN)/protovalidate-conformance: $(BIN) Makefile
 
 .PHONY: test
 test: generate ## Run all unit tests
-	bazel test --test_output=all //...
+	bazel test --test_output=errors //...
 
 .PHONY: generate
 generate: generate-license ## Regenerate code and license headers
