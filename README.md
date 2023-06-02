@@ -87,8 +87,11 @@ In your C++ code, include the header file and use the `Validate` function to val
 
 ```cpp
 #include <iostream>
-#include "path/to/generated/protos/transaction.pb.h"
+
 #include "buf/validate/validator.h"
+#include "google/protobuf/Arena.h"
+
+#include "path/to/generated/protos/transaction.pb.h"
 
 int main() {
   my::package::Transaction transaction;
