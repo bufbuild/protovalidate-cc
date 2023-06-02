@@ -106,13 +106,13 @@ bool IsHostname(const std::string_view to_validate) {
     return false;
   }
   const re2::RE2 component_regex("^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$");
-  std::vector<std::string> split = absl::StrSplit(to_validate, '.');
-  std::vector<std::string> search = {split.begin(), split.end() - 1};
+  std::vector<std::string_view> split = absl::StrSplit(to_validate, '.');
+  std::vector<std::string_view> search = {split.begin(), split.end() - 1};
   if (split.size() < 2) {
     return re2::RE2::FullMatch(split[0], component_regex);
   }
-  std::string last = split[split.size() - 1];
-  for (const std::string& part : search) {
+  std::string_view last = split[split.size() - 1];
+  for (const std::string_view& part : search) {
     if (part.empty() || part.size() > 63) {
       return false;
     }
@@ -152,23 +152,22 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
   return cel::CelValue::CreateBool(IsHostname(domainPart));
 }
 
-bool IsIpv4(const std::string& to_validate) {
+bool IsIpv4(const std::string_view& to_validate) {
   struct sockaddr_in sa;
   return !(inet_pton(AF_INET, to_validate.c_str(), &sa.sin_addr) < 1);
 }
 
-bool IsIpv6(const std::string& to_validate) {
+bool IsIpv6(const std::string_view& to_validate) {
   struct sockaddr_in6 sa_six;
   return !(inet_pton(AF_INET6, to_validate.c_str(), &sa_six.sin6_addr) < 1);
 }
 
-bool IsIp(const std::string& to_validate) {
+bool IsIp(const std::string_view& to_validate) {
   return IsIpv4(to_validate) || IsIpv6(to_validate);
 }
 
 cel::CelValue isIPvX(
     google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs, cel::CelValue rhs) {
-  std::string s(lhs.value());
   switch (rhs.Int64OrDie()) {
     case 0:
       return cel::CelValue::CreateBool(IsIp(s));
