@@ -101,7 +101,7 @@ cel::CelValue endsWith(
   return cel::CelValue::CreateBool(result);
 }
 
-bool IsHostname(const std::string& to_validate) {
+bool IsHostname(const std::string_view to_validate) {
   if (to_validate.length() > 253) {
     return false;
   }
@@ -136,8 +136,8 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
   }
 
   absl::string_view localPart, domainPart;
-  std::vector<std::string> atPos = absl::StrSplit(addr, '@');
-  if (!atPos.empty()) {
+  std::vector<std::string_view> atPos = absl::StrSplit(addr, '@');
+  if (atPos.size() > 2) {
     localPart = atPos[0];
     domainPart = atPos[1];
   } else {
@@ -150,8 +150,7 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
   }
 
   // Validate the hostname
-  std::string s(domainPart);
-  return cel::CelValue::CreateBool(IsHostname(s));
+  return cel::CelValue::CreateBool(IsHostname(domainPart));
 }
 
 bool IsIpv4(const std::string& to_validate) {
