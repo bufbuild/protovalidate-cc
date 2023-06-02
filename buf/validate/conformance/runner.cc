@@ -42,7 +42,7 @@ harness::TestResult TestRunner::runTestCase(
 harness::TestResult TestRunner::runTestCase(const google::protobuf::Message& message) {
   harness::TestResult result;
   auto validator = validatorFactory_->NewValidator(&arena_, false);
-  auto violations_or = validator->Validate(message);
+  auto violations_or = validator.Validate(message);
   if (!violations_or.ok()) {
     switch (violations_or.status().code()) {
       case absl::StatusCode::kInvalidArgument:

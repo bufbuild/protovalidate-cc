@@ -20,6 +20,12 @@ class Validator {
   absl::StatusOr<Violations> Validate(
       const google::protobuf::Message& message, std::string_view fieldPath = {});
 
+  // Move only.
+  Validator(const Validator&) = delete;
+  Validator& operator=(const Validator&) = delete;
+  Validator(Validator&&) = default;
+  Validator& operator=(Validator&&) = default;
+
  private:
   friend class ValidatorFactory;
 
@@ -50,9 +56,8 @@ class ValidatorFactory {
  public:
   static absl::StatusOr<std::unique_ptr<ValidatorFactory>> New();
 
-  [[nodiscard]] std::unique_ptr<Validator> NewValidator(
-      google::protobuf::Arena* arena, bool failFast) {
-    return std::unique_ptr<Validator>(new Validator(this, arena, failFast));
+  [[nodiscard]] Validator NewValidator(google::protobuf::Arena* arena, bool failFast) {
+    return {this, arena, failFast};
   }
 
  private:

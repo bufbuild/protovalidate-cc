@@ -50,7 +50,7 @@ TEST(ValidatorTest, ValidateBool) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(bool_const_false);
+  auto violations_or = validator.Validate(bool_const_false);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   ASSERT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -66,7 +66,7 @@ TEST(ValidatorTest, ValidateURISuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_uri);
+  auto violations_or = validator.Validate(str_uri);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
@@ -79,7 +79,7 @@ TEST(ValidatorTest, ValidateRelativeURIFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_uri);
+  auto violations_or = validator.Validate(str_uri);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -95,7 +95,7 @@ TEST(ValidatorTest, ValidateAbsoluteURIRefWithQueryStringSuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_uri_ref);
+  auto violations_or = validator.Validate(str_uri_ref);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
   for (const auto& violation : violations_or.value().violations()) {
@@ -113,7 +113,7 @@ TEST(ValidatorTest, ValidateAbsoluteURIRefSuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_uri_ref);
+  auto violations_or = validator.Validate(str_uri_ref);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
@@ -126,7 +126,7 @@ TEST(ValidatorTest, ValidateURIRefPathSuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_uri_ref);
+  auto violations_or = validator.Validate(str_uri_ref);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
@@ -139,7 +139,7 @@ TEST(ValidatorTest, ValidateBadURIRefFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_uri_ref);
+  auto violations_or = validator.Validate(str_uri_ref);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -156,7 +156,7 @@ TEST(ValidatorTest, ValidateStrRepeatedUniqueFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_repeated);
+  auto violations_or = validator.Validate(str_repeated);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -174,7 +174,7 @@ TEST(ValidatorTest, ValidateStrRepeatedUniqueSuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_repeated);
+  auto violations_or = validator.Validate(str_repeated);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
@@ -187,7 +187,7 @@ TEST(ValidatorTest, ValidateStringContainsFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_contains);
+  auto violations_or = validator.Validate(str_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -204,7 +204,7 @@ TEST(ValidatorTest, ValidateStringContainsSuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_contains);
+  auto violations_or = validator.Validate(str_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
@@ -217,7 +217,7 @@ TEST(ValidatorTest, ValidateBytesContainsFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(bytes_contains);
+  auto violations_or = validator.Validate(bytes_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -233,7 +233,7 @@ TEST(ValidatorTest, ValidateBytesContainsSuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(bytes_contains);
+  auto violations_or = validator.Validate(bytes_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
@@ -246,7 +246,7 @@ TEST(ValidatorTest, ValidateStartsWithFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_starts_with);
+  auto violations_or = validator.Validate(str_starts_with);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -262,7 +262,7 @@ TEST(ValidatorTest, ValidateStartsWithSuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_starts_with);
+  auto violations_or = validator.Validate(str_starts_with);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
@@ -275,7 +275,7 @@ TEST(ValidatorTest, ValidateEndsWithFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_ends_with);
+  auto violations_or = validator.Validate(str_ends_with);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -291,7 +291,7 @@ TEST(ValidatorTest, ValidateHostnameSuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_hostname);
+  auto violations_or = validator.Validate(str_hostname);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
@@ -304,7 +304,7 @@ TEST(ValidatorTest, ValidateGarbageHostnameFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_hostname);
+  auto violations_or = validator.Validate(str_hostname);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -319,7 +319,7 @@ TEST(ValidatorTest, ValidateHostnameFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_hostname);
+  auto violations_or = validator.Validate(str_hostname);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -334,7 +334,7 @@ TEST(ValidatorTest, ValidateHostnameDoubleDotFailure) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_hostname);
+  auto violations_or = validator.Validate(str_hostname);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "val");
@@ -349,7 +349,7 @@ TEST(ValidatorTest, ValidateEndsWithSuccess) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(str_ends_with);
+  auto violations_or = validator.Validate(str_ends_with);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
@@ -362,7 +362,7 @@ TEST(ValidatorTest, MessageConstraint) {
   auto factory = std::move(factory_or).value();
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
-  auto violations_or = validator->Validate(message_expressions);
+  auto violations_or = validator.Validate(message_expressions);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   ASSERT_EQ(violations_or.value().violations_size(), 3);
   EXPECT_EQ(violations_or.value().violations(0).field_path(), "");
