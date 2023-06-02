@@ -124,8 +124,7 @@ bool IsHostname(const std::string_view to_validate) {
 }
 
 cel::CelValue isHostname(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  std::string s(lhs.value());
-  return cel::CelValue::CreateBool(IsHostname(s));
+  return cel::CelValue::CreateBool(IsHostname(lhs.value()));
 }
 
 cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
