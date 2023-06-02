@@ -10,12 +10,6 @@ rules_buf_dependencies()
 
 rules_buf_toolchains(version = "v1.19.0")
 
-load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
-
-rules_proto_dependencies()
-
-rules_proto_toolchains()
-
 load("@com_google_cel_cpp//bazel:deps.bzl", "base_deps", "parser_deps")
 
 base_deps()
@@ -32,3 +26,9 @@ switched_rules_by_language(
 load("@com_github_protocolbuffers_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
+
+load("@rules_proto//proto:repositories.bzl", "rules_proto_dependencies", "rules_proto_toolchains")
+
+rules_proto_dependencies()
+
+rules_proto_toolchains()
