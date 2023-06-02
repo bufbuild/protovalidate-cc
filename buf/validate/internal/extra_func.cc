@@ -19,6 +19,7 @@
 #include <string_view>
 
 #include "absl/strings/match.h"
+#include "absl/strings/str_split.h"
 #include "buf/validate/internal/string_format.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
