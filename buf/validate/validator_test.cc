@@ -64,11 +64,30 @@ TEST(ValidatorTest, ValidateURISuccess) {
   auto factory_or = ValidatorFactory::New();
   ASSERT_TRUE(factory_or.ok()) << factory_or.status();
   auto factory = std::move(factory_or).value();
+  factory->DisableLazyLoading();
+  EXPECT_TRUE(factory->Add(conformance::cases::StringURI::descriptor()).ok());
   google::protobuf::Arena arena;
   auto validator = factory->NewValidator(&arena, false);
   auto violations_or = validator.Validate(str_uri);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
+TEST(ValidatorTest, ValidateURI_NotFound) {
+  conformance::cases::StringURI str_uri;
+  str_uri.set_val("https://example.com/foo/bar?baz=quux");
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  factory->DisableLazyLoading();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator.Validate(str_uri);
+  ASSERT_FALSE(violations_or.ok());
+  EXPECT_EQ(violations_or.status().code(), absl::StatusCode::kNotFound);
+  EXPECT_EQ(
+      violations_or.status().message(),
+      "constraints not loaded for message: buf.validate.conformance.cases.StringURI");
 }
 
 TEST(ValidatorTest, ValidateRelativeURIFailure) {

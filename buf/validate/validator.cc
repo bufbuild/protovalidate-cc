@@ -6,11 +6,15 @@ absl::Status Validator::ValidateMessage(
     internal::ConstraintContext& ctx,
     std::string_view fieldPath,
     const google::protobuf::Message& message) {
-  const auto& constraints_or = factory_->GetMessageConstraints(message.GetDescriptor());
-  if (!constraints_or.ok()) {
-    return constraints_or.status();
+  const auto* constraints_or = factory_->GetMessageConstraints(message.GetDescriptor());
+  if (constraints_or == nullptr) {
+    return absl::NotFoundError(
+        "constraints not loaded for message: " + message.GetDescriptor()->full_name());
   }
-  for (const auto& constraint : constraints_or.value()) {
+  if (!constraints_or->ok()) {
+    return constraints_or->status();
+  }
+  for (const auto& constraint : constraints_or->value()) {
     auto status = constraint->Validate(ctx, fieldPath, message);
     if (ctx.shouldReturn(status)) {
       return status;
@@ -98,27 +102,57 @@ absl::StatusOr<std::unique_ptr<ValidatorFactory>> ValidatorFactory::New() {
   if (!builder_or.ok()) {
     return builder_or.status();
   }
+  absl::MutexLock lock(&result->mutex_);
   result->builder_ = std::move(builder_or).value();
   return result;
 }
 
-const internal::Constraints& ValidatorFactory::GetMessageConstraints(
+absl::Status ValidatorFactory::Add(const google::protobuf::Descriptor* desc) {
+  {
+    absl::WriterMutexLock lock(&mutex_);
+    auto iter = constraints_.find(desc);
+    if (iter != constraints_.end()) {
+      return iter->second.status();
+    }
+    auto status =
+        constraints_.emplace(desc, internal::NewMessageConstraints(&arena_, *builder_, desc))
+            .first->second.status();
+    if (!status.ok()) {
+      return status;
+    }
+  }
+
+  // Add all message fields recursively.
+  for (int i = 0; i < desc->field_count(); i++) {
+    const google::protobuf::FieldDescriptor* field = desc->field(i);
+    if (field->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
+      if (auto status = Add(field->message_type()); !status.ok()) {
+        return status;
+      }
+    }
+  }
+  return absl::OkStatus();
+}
+
+const internal::Constraints* ValidatorFactory::GetMessageConstraints(
     const google::protobuf::Descriptor* desc) {
   {
     absl::ReaderMutexLock lock(&mutex_);
     auto iter = constraints_.find(desc);
     if (iter != constraints_.end()) {
-      return iter->second;
+      return &iter->second;
+    }
+    if (disableLazyLoading_) {
+      return nullptr;
     }
   }
   absl::WriterMutexLock lock(&mutex_);
   auto iter = constraints_.find(desc);
   if (iter != constraints_.end()) {
-    return iter->second;
+    return &iter->second;
   }
-  auto itr =
-      constraints_.emplace(desc, internal::NewMessageConstraints(&arena_, *builder_, desc)).first;
-  return itr->second;
+  return &constraints_.emplace(desc, internal::NewMessageConstraints(&arena_, *builder_, desc))
+              .first->second;
 }
 
 } // namespace buf::validate
