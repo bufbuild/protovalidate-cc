@@ -88,7 +88,7 @@ In your C++ code, include the header file and use the `Validate` function to val
 ```cpp
 #include <iostream>
 #include "path/to/generated/protos/transaction.pb.h"
-#include "bufbuild/protovalidate/cc/validator.h"
+#include "buf/validate/validator.h"
 
 int main() {
   my::package::Transaction transaction;
@@ -99,10 +99,13 @@ int main() {
   google::protobuf::Timestamp* delivery_date = transaction.mutable_delivery_date();
   // set time for purchase_date and delivery_date
 
-  bufbuild::protovalidate::cc::Validator validator;
-  std::string error_message;
-  if (!validator.Validate(transaction, &error_message)) {
-    std::cout << "validation failed: " << error_message << std::endl;
+  std::unique_ptr<buf::validate::ValidatorFactory> factory =
+      buf::validate::ValidatorFactory::New().value();
+  google::protobuf::Arena arena;
+  Validator validator = factory->NewValidator(&arena);
+  buf::validate::Violations results = validator.Validate(transaction).value();
+  if (results.violations_size() > 0) {
+    std::cout << "validation failed: " << results.DebugString() << std::endl;
   } else {
     std::cout << "validation succeeded" << std::endl;
   }
