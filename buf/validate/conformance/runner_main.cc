@@ -16,10 +16,10 @@
 #include "buf/validate/conformance/runner.h"
 
 int main(int argc, char** argv) {
+  google::protobuf::DescriptorPool descriptorPool;
   buf::validate::conformance::TestRunner runner;
   buf::validate::conformance::harness::TestConformanceRequest request;
   request.ParseFromIstream(&std::cin);
-  google::protobuf::DescriptorPool descriptorPool;
   for (const auto& file : request.fdset().file()) {
     descriptorPool.BuildFile(file);
   }

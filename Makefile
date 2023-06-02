@@ -30,7 +30,7 @@ clean: ## Delete intermediate build artifacts
 
 .PHONY: conformance
 conformance: $(BIN)/protovalidate-conformance
-	$(BAZEL) build -c dbg //buf/validate/conformance:runner_main && \
+	$(BAZEL) build -c dbg --config=asan //buf/validate/conformance:runner_main && \
 	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main $(ARGS)
 
 $(BIN)/protovalidate-conformance: $(BIN) Makefile
