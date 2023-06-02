@@ -66,11 +66,9 @@ message Transaction {
   uint64 id = 1 [(buf.validate.field).uint64.gt = 999];
   google.protobuf.Timestamp purchase_date = 2;
   google.protobuf.Timestamp delivery_date = 3;
-  
-  string price = 4 [(buf.validate.field).cel = {
-   
 
- id: "transaction.price",
+  string price = 4 [(buf.validate.field).cel = {
+    id: "transaction.price",
     message: "price must be positive and include a valid currency symbol ($ or £)",
     expression: "(this.startsWith('$') || this.startsWith('£')) && double(this.substring(1)) > 0"
   }];
@@ -111,10 +109,6 @@ int main() {
   return 0;
 }
 ```
-
-## Performance
-
-Benchmarking tools are provided to test a variety of use-cases. Due to the inherent differences between languages and their runtimes, performance may vary from the Go implementation. However, the objective is to keep validation times as low as possible, ideally under a microsecond for a majority of cases after the initial warm-up period.
 
 ### Ecosystem
 
