@@ -34,6 +34,8 @@ And others coming soon:
 
 ## Installation
 
+### Building from source
+
 To install `protovalidate-cc`, clone the repository and build the project:
 
 ```shell
@@ -45,6 +47,40 @@ make build
 Remember to always check for the latest version of `protovalidate-cc` on the
 project's [GitHub releases page](https://github.com/bufbuild/protovalidate-cc/releases)
 to ensure you're using the most up-to-date version.
+
+### Bazel external repository
+
+To use `protovalidate-cc` as an external Bazel repository, add the following to the `WORKSPACE` file:
+
+```bzl
+
+load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+http_archive(
+    name = "com_github_bufbuild_protovalidate_cc",
+    sha256 = ...,
+    strip_prefix = "protovalidate-cc-{verion}",
+    urls = [
+        "https://github.com/bufbuild/protovalidate-cc/archive/v{verion}.tar.gz",
+    ],
+)
+
+load("@com_github_bufbuild_protovalidate_cc//bazel:deps.bzl", "protovalidate_cc_dependencies")
+
+protovalidate_cc_dependencies()
+```
+
+Then add a dependency to a `cc_library` or `cc_binary` target:
+
+```bzl
+cc_library(
+    ...
+    deps = [
+        "@com_github_bufbuild_protovalidate_cc//buf/validate:validator",
+        ...
+    ]
+)
+```
 
 ## Usage
 
