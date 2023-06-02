@@ -89,7 +89,7 @@ In your C++ code, include the header file and use the `Validate` function to val
 #include <iostream>
 
 #include "buf/validate/validator.h"
-#include "google/protobuf/Arena.h"
+#include "google/protobuf/arena.h"
 
 #include "path/to/generated/protos/transaction.pb.h"
 
