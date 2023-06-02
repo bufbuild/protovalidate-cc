@@ -101,18 +101,17 @@ cel::CelValue endsWith(
   return cel::CelValue::CreateBool(result);
 }
 
-bool IsHostname(const std::string& to_validate) {
+bool IsHostname(std::string_view to_validate) {
   if (to_validate.length() > 253) {
     return false;
   }
-  const re2::RE2 component_regex("^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$");
-  std::vector<std::string> split = absl::StrSplit(to_validate, '.');
-  std::vector<std::string> search = {split.begin(), split.end() - 1};
+  static const re2::RE2 component_regex("^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$");
+  std::vector<std::string_view> split = absl::StrSplit(to_validate, '.');
   if (split.size() < 2) {
-    return re2::RE2::FullMatch(split[0], component_regex);
+    return re2::RE2::FullMatch(to_validate, component_regex);
   }
-  std::string last = split[split.size() - 1];
-  for (const std::string& part : search) {
+  for (size_t i = 0; i < split.size() - 1; i++) {
+    const std::string_view& part = split[i];
     if (part.empty() || part.size() > 63) {
       return false;
     }
@@ -124,34 +123,33 @@ bool IsHostname(const std::string& to_validate) {
 }
 
 cel::CelValue isHostname(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  std::string s(lhs.value());
-  return cel::CelValue::CreateBool(IsHostname(s));
+  return cel::CelValue::CreateBool(IsHostname(lhs.value()));
 }
 
 cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
   absl::string_view addr = lhs.value();
+  if (addr.size() > 254 || addr.size() < 3) {
+    return cel::CelValue::CreateBool(false);
+  }
   absl::string_view::size_type pos = addr.find('<');
   if (pos != absl::string_view::npos) {
     return cel::CelValue::CreateBool(false);
   }
 
-  absl::string_view localPart, domainPart;
-  std::vector<std::string> atPos = absl::StrSplit(addr, '@');
-  if (!atPos.empty()) {
-    localPart = atPos[0];
-    domainPart = atPos[1];
-  } else {
+  size_t atPos = addr.find('@');
+  if (atPos == absl::string_view::npos) {
     return cel::CelValue::CreateBool(false);
   }
+  absl::string_view localPart = addr.substr(0, atPos);
+  absl::string_view domainPart = addr.substr(atPos + 1);
 
   int localLength = localPart.length();
-  if (localLength < 1 || localLength > 64 || localLength + domainPart.length() > 253) {
+  if (localLength < 1 || localLength > 64) {
     return cel::CelValue::CreateBool(false);
   }
 
   // Validate the hostname
-  std::string s(domainPart);
-  return cel::CelValue::CreateBool(IsHostname(s));
+  return cel::CelValue::CreateBool(IsHostname(domainPart));
 }
 
 bool IsIpv4(const std::string& to_validate) {
