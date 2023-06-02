@@ -28,3 +28,7 @@ switched_rules_by_language(
     name = "com_google_googleapis_imports",
     cc = True,
 )
+
+load("@com_github_protocolbuffers_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
