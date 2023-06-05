@@ -28,28 +28,24 @@ clean: ## Delete intermediate build artifacts
 	@# -X only removes untracked files, -d recurses into directories, -f actually removes files/dirs
 	git clean -Xdf
 
-.PHONY: conformance
-conformance: $(BIN)/protovalidate-conformance
-	$(BAZEL) build -c dbg //buf/validate/conformance:runner_main && \
-	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main $(ARGS)
-
-$(BIN)/protovalidate-conformance: $(BIN) Makefile
-	GOBIN=$(abspath $(BIN)) $(GO) install \
-    	github.com/bufbuild/protovalidate/tools/protovalidate-conformance@latest
+.PHONY: generate
+generate: generate-license ## Regenerate code and license headers
 
 .PHONY: test
 test: generate ## Run all unit tests
 	bazel test --test_output=errors //...
 
-.PHONY: generate
-generate: generate-license ## Regenerate code and license headers
-
-.PHONY: bazel
-bazel:
+.PHONY: build
+build: ## Build the project
 	bazel build //...
 
+.PHONY: conformance
+conformance: $(BIN)/protovalidate-conformance
+	$(BAZEL) build -c dbg //buf/validate/conformance:runner_main && \
+	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main $(ARGS)
+
 .PHONY: generate-license
-generate-license: $(BIN)/license-header
+generate-license: $(BIN)/license-header ## Generate license headers for files
 	@# We want to operate on a list of modified and new files, excluding
 	@# deleted and ignored files. git-ls-files can't do this alone. comm -23 takes
 	@# two files and prints the union, dropping lines common to both (-3) and
@@ -68,16 +64,19 @@ generate-license: $(BIN)/license-header
 checkgenerate: generate
 	@# Used in CI to verify that `make generate` doesn't produce a diff.
 	test -z "$$(git status --porcelain | tee /dev/stderr)"
-
 $(BIN):
 	@mkdir -p $(BIN)
 
 $(BIN)/buf: $(BIN) Makefile
 	GOBIN=$(abspath $(@D)) $(GO) install github.com/bufbuild/buf/cmd/buf@latest
 
+$(BIN)/golangci-lint: $(BIN) Makefile
+	GOBIN=$(abspath $(@D)) $(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
+
 $(BIN)/license-header: $(BIN) Makefile
 	GOBIN=$(abspath $(@D)) $(GO) install \
 		  github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@$(LICENSE_HEADER_VERSION)
 
-$(BIN)/golangci-lint: $(BIN) Makefile
-	GOBIN=$(abspath $(@D)) $(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.52.2
+$(BIN)/protovalidate-conformance: $(BIN) Makefile
+	GOBIN=$(abspath $(BIN)) $(GO) install \
+    	github.com/bufbuild/protovalidate/tools/protovalidate-conformance@latest
