@@ -141,7 +141,7 @@ int main() {
   std::unique_ptr<buf::validate::ValidatorFactory> factory =
       buf::validate::ValidatorFactory::New().value();
   google::protobuf::Arena arena;
-  Validator validator = factory->NewValidator(&arena);
+  buf::validate::Validator validator = factory->NewValidator(&arena);
   buf::validate::Violations results = validator.Validate(transaction).value();
   if (results.violations_size() > 0) {
     std::cout << "validation failed: " << results.DebugString() << std::endl;
