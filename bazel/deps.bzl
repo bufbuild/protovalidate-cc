@@ -38,8 +38,6 @@ _dependencies = {
             "https://github.com/bazelbuild/rules_proto/archive/refs/tags/5.3.0-21.7.tar.gz",
         ],
     },
-    # TODO(afuller): Remove the buf_lint rules from protovalidate-api and only
-    # depend on rules from rules_proto.
     "rules_buf": {
         "sha256": "523a4e06f0746661e092d083757263a249fedca535bd6dd819a8c50de074731a",
         "strip_prefix": "rules_buf-0.1.1",

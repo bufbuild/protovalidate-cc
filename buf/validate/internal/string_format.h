@@ -24,7 +24,6 @@ namespace buf::validate::internal {
 constexpr const char kUpperHexDigits[17] = "0123456789ABCDEF";
 constexpr const char kLowerHexDigits[17] = "0123456789abcdef";
 
-// TODO: Support locale-specific formatting.
 class StringFormat {
  public:
   google::api::expr::runtime::CelValue format(

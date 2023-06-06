@@ -235,7 +235,6 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
 
 absl::Status RegisterExtraFuncs(
     google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena) {
-  // TODO(afuller): This should be specialized for the locale.
   auto* formatter = google::protobuf::Arena::Create<StringFormat>(regArena);
   auto status = cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue>::
       CreateAndRegister(
