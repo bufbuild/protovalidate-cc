@@ -316,10 +316,10 @@ absl::Status StringFormat::formatStringSafe(
       const char* delim = "";
       const auto& list = *val.ListOrDie();
       for (int i = 0; i < list.size(); i++) {
+        builder += delim;
         if (auto status = formatStringSafe(builder, list[i]); !status.ok()) {
           return status;
         }
-        builder += delim;
         delim = ", ";
       }
       builder += "]";
