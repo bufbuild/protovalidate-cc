@@ -34,7 +34,7 @@ struct ConstraintContext {
     return !status.ok() || (failFast && violations.violations_size() > 0);
   }
 
-  void prefixFieldPath(std::string_view prefix, size_t start) {
+  void prefixFieldPath(std::string_view prefix, int start) {
     for (int i = start; i < violations.violations_size(); i++) {
       auto* violation = violations.mutable_violations(i);
       if (violation->field_path().empty()) {

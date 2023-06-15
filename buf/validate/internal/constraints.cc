@@ -255,7 +255,7 @@ absl::Status MapConstraintRules::Validate(
   for (int i = 0; i < mapVal.size(); i++) {
     const auto& elemMsg = message.GetReflection()->GetRepeatedMessage(message, field_, i);
     // std::string elemPath = absl::StrCat(subPath, "[", makeMapKeyString(elemMsg, keyField), "]");
-    size_t pos = ctx.violations.violations_size();
+    int pos = ctx.violations.violations_size();
     auto key = keys[i];
     if (keyRules_ != nullptr) {
       activation.InsertValue("this", key);
