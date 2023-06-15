@@ -66,7 +66,7 @@ absl::Status Validator::ValidateFields(
       for (int i = 0; i < size; i++) {
         const auto& elemMsg = message.GetReflection()->GetRepeatedMessage(message, field, i);
         const auto& valueMsg = elemMsg.GetReflection()->GetMessage(elemMsg, valueField);
-        size_t pos = ctx.violations.violations_size();
+        int pos = ctx.violations.violations_size();
         auto status = ValidateMessage(ctx, valueMsg);
         if (pos < ctx.violations.violations_size()) {
           ctx.prefixFieldPath(
@@ -80,7 +80,7 @@ absl::Status Validator::ValidateFields(
     } else if (field->is_repeated()) {
       int size = message.GetReflection()->FieldSize(message, field);
       for (int i = 0; i < size; i++) {
-        size_t pos = ctx.violations.violations_size();
+        int pos = ctx.violations.violations_size();
         const auto& subMsg = message.GetReflection()->GetRepeatedMessage(message, field, i);
         auto status = ValidateMessage(ctx, subMsg);
         if (pos < ctx.violations.violations_size()) {
@@ -92,7 +92,7 @@ absl::Status Validator::ValidateFields(
       }
     } else {
       const auto& subMsg = message.GetReflection()->GetMessage(message, field);
-      size_t pos = ctx.violations.violations_size();
+      int pos = ctx.violations.violations_size();
       auto status = ValidateMessage(ctx, subMsg);
       if (pos < ctx.violations.violations_size()) {
         ctx.prefixFieldPath(field->name(), pos);

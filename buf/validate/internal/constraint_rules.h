@@ -35,7 +35,7 @@ struct ConstraintContext {
   }
 
   void prefixFieldPath(std::string_view prefix, size_t start) {
-    for (size_t i = start; i < violations.violations_size(); i++) {
+    for (int i = start; i < violations.violations_size(); i++) {
       auto* violation = violations.mutable_violations(i);
       if (violation->field_path().empty()) {
         *violation->mutable_field_path() = prefix;
