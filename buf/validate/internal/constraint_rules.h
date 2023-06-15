@@ -33,6 +33,17 @@ struct ConstraintContext {
   [[nodiscard]] bool shouldReturn(const absl::Status status) {
     return !status.ok() || (failFast && violations.violations_size() > 0);
   }
+
+  void prefixFieldPath(std::string_view prefix, int start) {
+    for (int i = start; i < violations.violations_size(); i++) {
+      auto* violation = violations.mutable_violations(i);
+      if (violation->field_path().empty()) {
+        *violation->mutable_field_path() = prefix;
+      } else {
+        violation->set_field_path(absl::StrCat(prefix, ".", violation->field_path()));
+      }
+    }
+  }
 };
 
 class ConstraintRules {
@@ -44,9 +55,7 @@ class ConstraintRules {
   void operator=(const ConstraintRules&) = delete;
 
   virtual absl::Status Validate(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message) const = 0;
+      ConstraintContext& ctx, const google::protobuf::Message& message) const = 0;
 };
 
 } // namespace buf::validate::internal

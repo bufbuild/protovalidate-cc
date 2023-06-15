@@ -49,7 +49,7 @@ class CelConstraintRules : public ConstraintRules {
   // Validate all the cel rules given the activation that already has 'this' bound.
   absl::Status ValidateCel(
       ConstraintContext& ctx,
-      std::string_view fieldPath,
+      std::string_view fieldName,
       google::api::expr::runtime::Activation& activation) const;
 
   void setRules(google::api::expr::runtime::CelValue rules) { rules_ = rules; }

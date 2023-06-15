@@ -29,10 +29,8 @@ class MessageConstraintRules final : public CelConstraintRules {
  public:
   MessageConstraintRules() = default;
 
-  virtual absl::Status Validate(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message) const;
+  absl::Status Validate(
+      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
 };
 
 class FieldConstraintRules : public CelConstraintRules {
@@ -48,14 +46,12 @@ class FieldConstraintRules : public CelConstraintRules {
 
   [[nodiscard]] const google::protobuf::FieldDescriptor* getField() const { return field_; }
 
-  virtual absl::Status Validate(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message) const;
+  absl::Status Validate(
+      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
 
   absl::Status ValidateAny(
       ConstraintContext& ctx,
-      std::string_view fieldPath,
+      std::string_view fieldName,
       const google::protobuf::Message& anyMsg) const;
 
   [[nodiscard]] const AnyRules* getAnyRules() const { return anyRules_; }
@@ -75,9 +71,7 @@ class EnumConstraintRules : public FieldConstraintRules {
       : Base(desc, field), definedOnly_(field.enum_().defined_only()) {}
 
   absl::Status Validate(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message) const override;
+      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
 
  private:
   bool definedOnly_;
@@ -94,9 +88,7 @@ class RepeatedConstraintRules : public FieldConstraintRules {
       : Base(desc, field), itemRules_(std::move(itemRules)) {}
 
   absl::Status Validate(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message) const override;
+      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
 
  private:
   std::unique_ptr<FieldConstraintRules> itemRules_;
@@ -114,9 +106,7 @@ class MapConstraintRules : public FieldConstraintRules {
       : Base(desc, field), keyRules_(std::move(keyRules)), valueRules_(std::move(valueRules)) {}
 
   absl::Status Validate(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message) const override;
+      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
 
  private:
   std::unique_ptr<FieldConstraintRules> keyRules_;
@@ -132,9 +122,7 @@ class OneofConstraintRules : public ConstraintRules {
       : oneof_(desc), required_(oneof.required()) {}
 
   absl::Status Validate(
-      ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message) const override;
+      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
 
  private:
   const google::protobuf::OneofDescriptor* oneof_ = nullptr;
