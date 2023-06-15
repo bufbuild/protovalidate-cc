@@ -13,7 +13,7 @@ LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
-ARGS ?= --strict --strict_message
+ARGS ?= --strict
 BAZEL ?= bazel
 
 .PHONY: help
