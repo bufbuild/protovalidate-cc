@@ -89,13 +89,13 @@ absl::Status CelConstraintRules::Add(
 
 absl::Status CelConstraintRules::ValidateCel(
     ConstraintContext& ctx,
-    std::string_view fieldPath,
+    std::string_view fieldName,
     google::api::expr::runtime::Activation& activation) const {
   activation.InsertValue("rules", rules_);
   activation.InsertValue("now", cel::runtime::CelValue::CreateTimestamp(absl::Now()));
   absl::Status status = absl::OkStatus();
   for (const auto& expr : exprs_) {
-    status = ProcessConstraint(ctx, fieldPath, activation, expr);
+    status = ProcessConstraint(ctx, fieldName, activation, expr);
     if (ctx.shouldReturn(status)) {
       break;
     }

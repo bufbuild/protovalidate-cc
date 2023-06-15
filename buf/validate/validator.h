@@ -39,8 +39,7 @@ class Validator {
   /// An empty Violations object is returned, if the message passes validation.
   /// If the message fails validation, a Violations object with the violations is returned.
   /// If there is an error while validating, a Status with the error is returned.
-  absl::StatusOr<Violations> Validate(
-      const google::protobuf::Message& message, std::string_view fieldPath = {});
+  absl::StatusOr<Violations> Validate(const google::protobuf::Message& message);
 
   // Move only.
   Validator(const Validator&) = delete;
@@ -59,14 +58,10 @@ class Validator {
       : factory_(factory), arena_(arena), failFast_(failFast) {}
 
   absl::Status ValidateMessage(
-      internal::ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message);
+      internal::ConstraintContext& ctx, const google::protobuf::Message& message);
 
   absl::Status ValidateFields(
-      internal::ConstraintContext& ctx,
-      std::string_view fieldPath,
-      const google::protobuf::Message& message);
+      internal::ConstraintContext& ctx, const google::protobuf::Message& message);
 };
 
 /// A factory that stores shared state for creating validators.

@@ -13,7 +13,7 @@ LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
-ARGS ?=
+ARGS ?= --strict --strict_message
 BAZEL ?= bazel
 
 .PHONY: help
@@ -41,7 +41,7 @@ build: ## Build the project
 
 .PHONY: conformance
 conformance: $(BIN)/protovalidate-conformance
-	$(BAZEL) build -c dbg //buf/validate/conformance:runner_main && \
+	$(BAZEL) build -c opt //buf/validate/conformance:runner_main && \
 	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main $(ARGS)
 
 .PHONY: generate-license

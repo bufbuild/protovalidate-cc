@@ -17,9 +17,7 @@
 namespace buf::validate {
 
 absl::Status Validator::ValidateMessage(
-    internal::ConstraintContext& ctx,
-    std::string_view fieldPath,
-    const google::protobuf::Message& message) {
+    internal::ConstraintContext& ctx, const google::protobuf::Message& message) {
   const auto* constraints_or = factory_->GetMessageConstraints(message.GetDescriptor());
   if (constraints_or == nullptr) {
     return absl::NotFoundError(
@@ -29,18 +27,16 @@ absl::Status Validator::ValidateMessage(
     return constraints_or->status();
   }
   for (const auto& constraint : constraints_or->value()) {
-    auto status = constraint->Validate(ctx, fieldPath, message);
+    auto status = constraint->Validate(ctx, message);
     if (ctx.shouldReturn(status)) {
       return status;
     }
   }
-  return ValidateFields(ctx, fieldPath, message);
+  return ValidateFields(ctx, message);
 }
 
 absl::Status Validator::ValidateFields(
-    internal::ConstraintContext& ctx,
-    std::string_view fieldPath,
-    const google::protobuf::Message& message) {
+    internal::ConstraintContext& ctx, const google::protobuf::Message& message) {
   // Validate any set fields that are messages.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
   message.GetReflection()->ListFields(message, &fields);
@@ -56,8 +52,6 @@ absl::Status Validator::ValidateFields(
         continue;
       }
     }
-    std::string subFieldPath =
-        fieldPath.empty() ? field->name() : absl::StrCat(fieldPath, ".", field->name());
     if (field->is_map()) {
       const auto* mapEntryDesc = field->message_type();
       const auto* keyField = mapEntryDesc->FindFieldByName("key");
@@ -68,29 +62,42 @@ absl::Status Validator::ValidateFields(
       if (valueField->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
         continue;
       }
-
       int size = message.GetReflection()->FieldSize(message, field);
       for (int i = 0; i < size; i++) {
         const auto& elemMsg = message.GetReflection()->GetRepeatedMessage(message, field, i);
         const auto& valueMsg = elemMsg.GetReflection()->GetMessage(elemMsg, valueField);
-        std::string elemPath =
-            absl::StrCat(subFieldPath, "[", internal::makeMapKeyString(elemMsg, keyField), "]");
-        if (auto status = ValidateMessage(ctx, elemPath, valueMsg); ctx.shouldReturn(status)) {
+        size_t pos = ctx.violations.violations_size();
+        auto status = ValidateMessage(ctx, valueMsg);
+        if (pos < ctx.violations.violations_size()) {
+          ctx.prefixFieldPath(
+              absl::StrCat(field->name(), "[", internal::makeMapKeyString(elemMsg, keyField), "]"),
+              pos);
+        }
+        if (ctx.shouldReturn(status)) {
           return status;
         }
       }
     } else if (field->is_repeated()) {
       int size = message.GetReflection()->FieldSize(message, field);
       for (int i = 0; i < size; i++) {
-        std::string elemPath = absl::StrCat(subFieldPath, "[", i, "]");
+        size_t pos = ctx.violations.violations_size();
         const auto& subMsg = message.GetReflection()->GetRepeatedMessage(message, field, i);
-        if (auto status = ValidateMessage(ctx, elemPath, subMsg); ctx.shouldReturn(status)) {
+        auto status = ValidateMessage(ctx, subMsg);
+        if (pos < ctx.violations.violations_size()) {
+          ctx.prefixFieldPath(absl::StrCat(field->name(), "[", i, "]"), pos);
+        }
+        if (ctx.shouldReturn(status)) {
           return status;
         }
       }
     } else {
       const auto& subMsg = message.GetReflection()->GetMessage(message, field);
-      if (auto status = ValidateMessage(ctx, subFieldPath, subMsg); ctx.shouldReturn(status)) {
+      size_t pos = ctx.violations.violations_size();
+      auto status = ValidateMessage(ctx, subMsg);
+      if (pos < ctx.violations.violations_size()) {
+        ctx.prefixFieldPath(field->name(), pos);
+      }
+      if (ctx.shouldReturn(status)) {
         return status;
       }
     }
@@ -98,12 +105,11 @@ absl::Status Validator::ValidateFields(
   return absl::OkStatus();
 }
 
-absl::StatusOr<Violations> Validator::Validate(
-    const google::protobuf::Message& message, std::string_view fieldPath) {
+absl::StatusOr<Violations> Validator::Validate(const google::protobuf::Message& message) {
   internal::ConstraintContext ctx;
   ctx.failFast = failFast_;
   ctx.arena = arena_;
-  auto status = ValidateMessage(ctx, fieldPath, message);
+  auto status = ValidateMessage(ctx, message);
   if (!status.ok()) {
     return status;
   }
