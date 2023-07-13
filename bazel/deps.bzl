@@ -55,10 +55,10 @@ _dependencies = {
         "patch_args": ["-p1"],
     },
     "com_github_bufbuild_protovalidate": {
-        "sha256": "0eac3ba444770fa4050602d29a018492a03a289b76e62f236f2507af802dc684",
-        "strip_prefix": "protovalidate-0.1.12",
+        "sha256": "101718474c884cf6a5e36540d07054370fb318403357dd87d2d5490cded37072",
+        "strip_prefix": "protovalidate-0.2.2",
         "urls": [
-            "https://github.com/bufbuild/protovalidate/archive/v0.1.12.tar.gz",
+            "https://github.com/bufbuild/protovalidate/archive/v0.2.2.tar.gz",
         ],
     },
 }
