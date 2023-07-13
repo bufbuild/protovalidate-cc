@@ -141,9 +141,9 @@ inline std::string makeMapKeyString(
     case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
       return std::to_string(message.GetReflection()->GetInt64(message, keyField));
     case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-      return "0x" + absl::StrCat(absl::Hex(message.GetReflection()->GetUInt32(message, keyField)));
+      return std::to_string(message.GetReflection()->GetUInt32(message, keyField));
     case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-      return "0x" + absl::StrCat(absl::Hex(message.GetReflection()->GetUInt64(message, keyField)));
+      return std::to_string(message.GetReflection()->GetUInt64(message, keyField));
     case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
       return std::to_string(message.GetReflection()->GetDouble(message, keyField));
     case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:

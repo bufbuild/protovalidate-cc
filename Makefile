@@ -10,7 +10,7 @@ BIN := .tmp/bin
 COPYRIGHT_YEARS := 2023
 LICENSE_IGNORE := -e internal/testdata/
 LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
-PROTOVALIDATE_VERSION ?= v0.1.14
+PROTOVALIDATE_VERSION ?= v0.2.2
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
@@ -22,7 +22,7 @@ help: ## Describe useful make targets
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "%-15s %s\n", $$1, $$2}'
 
 .PHONY: all
-all: test ## Run all tests and lint (default)
+all: test conformance ## Run all unit and conformance tests
 
 .PHONY: clean
 clean: ## Delete intermediate build artifacts
