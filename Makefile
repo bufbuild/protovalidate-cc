@@ -10,7 +10,7 @@ BIN := .tmp/bin
 COPYRIGHT_YEARS := 2023
 LICENSE_IGNORE := -e internal/testdata/
 LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
-PROTOVALIDATE_VERSION ?= v0.2.2
+PROTOVALIDATE_VERSION ?= v0.2.6
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
@@ -42,6 +42,8 @@ build: ## Build the project
 
 .PHONY: conformance
 conformance: $(BIN)/protovalidate-conformance
+	GOBIN=$(abspath $(BIN)) $(GO) install \
+    	github.com/bufbuild/protovalidate/tools/protovalidate-conformance@$(PROTOVALIDATE_VERSION)
 	$(BAZEL) build -c opt //buf/validate/conformance:runner_main && \
 	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main $(ARGS)
 
@@ -76,5 +78,3 @@ $(BIN)/license-header: $(BIN) Makefile
 		  github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@$(LICENSE_HEADER_VERSION)
 
 $(BIN)/protovalidate-conformance: $(BIN) Makefile
-	GOBIN=$(abspath $(BIN)) $(GO) install \
-    	github.com/bufbuild/protovalidate/tools/protovalidate-conformance@$(PROTOVALIDATE_VERSION)
