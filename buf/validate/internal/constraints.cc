@@ -254,7 +254,6 @@ absl::Status MapConstraintRules::Validate(
   const auto& keys = *std::move(keys_or).value();
   for (int i = 0; i < mapVal.size(); i++) {
     const auto& elemMsg = message.GetReflection()->GetRepeatedMessage(message, field_, i);
-    // std::string elemPath = absl::StrCat(subPath, "[", makeMapKeyString(elemMsg, keyField), "]");
     int pos = ctx.violations.violations_size();
     auto key = keys[i];
     if (keyRules_ != nullptr) {
@@ -262,6 +261,11 @@ absl::Status MapConstraintRules::Validate(
       status = keyRules_->ValidateCel(ctx, "", activation);
       if (!status.ok()) {
         return status;
+      }
+      if (ctx.violations.violations_size() > pos) {
+        for (int j = pos; j < ctx.violations.violations_size(); j++) {
+          ctx.violations.mutable_violations(j)->set_for_key(true);
+        }
       }
       activation.RemoveValueEntry("this");
     }
