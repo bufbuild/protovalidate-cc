@@ -25,11 +25,11 @@ Head over to the core [`protovalidate`](https://github.com/bufbuild/protovalidat
 Other `protovalidate` runtime implementations include
 
 - Go: [`protovalidate-go`](https://github.com/bufbuild/protovalidate-go)
+- Java: [`protovalidate-java`](https://github.com/bufbuild/protovalidate-java)
 - Python: [`protovalidate-python`](https://github.com/bufbuild/protovalidate-python)
 
 And others coming soon:
 
-- Java: `protovalidate-java`
 - TypeScript: `protovalidate-ts`
 
 ## Installation
