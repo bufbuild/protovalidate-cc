@@ -10,7 +10,7 @@ BIN := .tmp/bin
 COPYRIGHT_YEARS := 2023
 LICENSE_IGNORE := -e internal/testdata/
 LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
-PROTOVALIDATE_VERSION ?= v0.2.6
+PROTOVALIDATE_VERSION ?= v0.3.1
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
