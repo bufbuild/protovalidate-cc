@@ -14,13 +14,11 @@
 
 #include "buf/validate/internal/extra_func.h"
 
+#include <algorithm>
 #include <string>
 #include <string_view>
 
 #include "absl/strings/match.h"
-#include <algorithm>
-#include <string>
-
 #include "absl/strings/str_split.h"
 #include "buf/validate/internal/string_format.h"
 #include "eval/public/cel_function_adapter.h"
@@ -51,6 +49,41 @@ bool isPathValid(const std::string_view path) {
 }
 
 namespace cel = google::api::expr::runtime;
+
+cel::CelValue isNan(google::protobuf::Arena* arena, cel::CelValue rhs) {
+  if (!rhs.IsDouble()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "expected a double value");
+    return cel::CelValue::CreateError(error);
+  }
+  return cel::CelValue::CreateBool(std::isnan(rhs.DoubleOrDie()));
+}
+
+cel::CelValue isInfX(google::protobuf::Arena* arena, cel::CelValue rhs, cel::CelValue sign) {
+  if (!rhs.IsDouble()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "expected a double value");
+    return cel::CelValue::CreateError(error);
+  }
+  if (!sign.IsInt64()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "expected an int64 value");
+    return cel::CelValue::CreateError(error);
+  }
+  double value = rhs.DoubleOrDie();
+  int64_t sign_value = sign.Int64OrDie();
+  if (sign_value > 0) {
+    return cel::CelValue::CreateBool(std::isinf(value) && value > 0);
+  } else if (sign_value < 0) {
+    return cel::CelValue::CreateBool(std::isinf(value) && value < 0);
+  } else {
+    return cel::CelValue::CreateBool(std::isinf(value));
+  }
+}
+
+cel::CelValue isInf(google::protobuf::Arena* arena, cel::CelValue rhs) {
+  return isInfX(arena, rhs, cel::CelValue::CreateInt64(0));
+}
 
 cel::CelValue unique(google::protobuf::Arena* arena, cel::CelValue rhs) {
   if (!rhs.IsList()) {
@@ -249,6 +282,22 @@ absl::Status RegisterExtraFuncs(
           &registry);
   if (!status.ok()) {
     return status;
+  }
+  auto isNanStatus = cel::FunctionAdapter<cel::CelValue, cel::CelValue>::CreateAndRegister(
+      "isNan", true, &isNan, &registry);
+  if (!isNanStatus.ok()) {
+    return isNanStatus;
+  }
+  auto isInfXStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue, cel::CelValue>::CreateAndRegister(
+          "isInf", true, &isInfX, &registry);
+  if (!isInfXStatus.ok()) {
+    return isInfXStatus;
+  }
+  auto isInfStatus = cel::FunctionAdapter<cel::CelValue, cel::CelValue>::CreateAndRegister(
+      "isInf", true, &isInf, &registry);
+  if (!isInfStatus.ok()) {
+    return isInfStatus;
   }
   auto uniqueStatus = cel::FunctionAdapter<cel::CelValue, cel::CelValue>::CreateAndRegister(
       "unique", true, &unique, &registry);
