@@ -54,6 +54,7 @@ _dependencies = {
         "patches": ["@com_github_bufbuild_protovalidate_cc//bazel:cel_cpp.patch"],
         "patch_args": ["-p1"],
     },
+    # NOTE: Keep Version in sync with `/Makefile`.
     "com_github_bufbuild_protovalidate": {
         "sha256": "0dfa0a054f8739938172e28cdaa666c3e175e337d1fbf411ef76e729458be232",
         "strip_prefix": "protovalidate-0.4.2",
