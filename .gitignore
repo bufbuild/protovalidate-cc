@@ -36,6 +36,7 @@
 *.pprof
 cover.out
 /bazel-*
+/build
 .clangd
 clang.bazelrc
 user.bazelrc
