@@ -221,6 +221,130 @@ cel::CelValue isIP(google::protobuf::Arena* arena, cel::CelValue::StringHolder l
 }
 
 /**
+ * IP Prefix Validation
+ */
+bool IsIpv4Prefix(const std::string_view to_validate, bool strict) {
+  std::vector<std::string> split = absl::StrSplit(to_validate.data(), '/');
+  if (split.size() != 2) {
+    return false;
+  }
+  std::string ip = split[0];
+  std::string prefixlen = split[1];
+
+  // validate ip
+  if (!IsIpv4(ip)) {
+    return false;
+  }
+
+  // validate prefixlen
+  if (prefixlen.empty()) {
+    return false;
+  }
+  int prefixlen_int;
+  if (!absl::SimpleAtoi(prefixlen, &prefixlen_int)) {
+    return false;
+  }
+  if (prefixlen_int <= 0 || prefixlen_int >= 32) {
+    return false;
+  }
+
+  // check host part is all-zero if strict
+  if (strict) {
+    struct sockaddr_in sa;
+    if (inet_pton(AF_INET, ip.c_str(), &sa.sin_addr) != 1) {
+      return false;
+    }
+    struct in_addr mask;
+    mask.s_addr = htonl(std::pow(2, 32 - prefixlen_int) - 1);
+    return ((sa.sin_addr.s_addr & mask.s_addr) == 0);
+  }
+
+  return true;
+}
+
+bool IsIpv6Prefix(const std::string_view to_validate, bool strict) {
+  std::vector<std::string> split = absl::StrSplit(to_validate.data(), '/');
+  if (split.size() != 2) {
+    return false;
+  }
+  std::string ip = split[0];
+  std::string prefixlen = split[1];
+
+  // validate ip
+  if (!IsIpv6(ip)) {
+    return false;
+  }
+
+  // validate prefixlen
+  if (prefixlen.empty()) {
+    return false;
+  }
+  int prefixlen_int;
+  if (!absl::SimpleAtoi(prefixlen, &prefixlen_int)) {
+    return false;
+  }
+  if (prefixlen_int <= 0 || prefixlen_int >= 128) {
+    return false;
+  }
+
+  // check host part is all-zero if strict
+  if (strict) {
+    struct sockaddr_in6 sa_six;
+    if (inet_pton(AF_INET6, ip.c_str(), &sa_six.sin6_addr) != 1) {
+      return false;
+    }
+    struct in6_addr mask;
+    for (int i=0; i<4; i++) {
+      if ((prefixlen_int / 32) < i) {
+        mask.__in6_u.__u6_addr32[i] = htonl(0xffffffff);
+      } else if ((prefixlen_int / 32) == i) {
+        mask.__in6_u.__u6_addr32[i] = htonl(std::pow(2, 32*(i+1) - prefixlen_int) - 1);
+      } else {
+        mask.__in6_u.__u6_addr32[i] = htonl(0);
+      }
+    }
+    for (int i=0; i<4; i++) {
+      if ((sa_six.sin6_addr.__in6_u.__u6_addr32[i] & mask.__in6_u.__u6_addr32[i]) != 0) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool IsIpPrefix(const std::string_view to_validate, bool strict) {
+  return IsIpv4Prefix(to_validate, strict) || IsIpv6Prefix(to_validate, strict);
+}
+
+cel::CelValue isIpPrefix(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs, cel::CelValue rhs1, cel::CelValue rhs2) {
+  std::string_view str = lhs.value();
+  bool strict = false;
+  int ver = 0;
+  if (rhs1.IsBool()) {
+    strict = rhs1.BoolOrDie();
+  } else if (rhs1.IsInt64()) {
+    ver = rhs1.Int64OrDie();
+    if (rhs2.IsBool()) {
+      strict = rhs2.BoolOrDie();
+    }
+  } else {
+    return cel::CelValue::CreateBool(false);
+  }
+
+  switch (ver) {
+    case 0:
+      return cel::CelValue::CreateBool(IsIpPrefix(str, strict));
+    case 4:
+      return cel::CelValue::CreateBool(IsIpv4Prefix(str, strict));
+    case 6:
+      return cel::CelValue::CreateBool(IsIpv6Prefix(str, strict));
+    default:
+      return cel::CelValue::CreateBool(false);
+  }
+}
+
+/**
  * Naive URI validation.
  */
 cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
@@ -321,6 +445,12 @@ absl::Status RegisterExtraFuncs(
           "isIp", true, &isIP, &registry);
   if (!isIpStatus.ok()) {
     return isIpStatus;
+  }
+  auto isIpPrefixStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue, cel::CelValue>::
+          CreateAndRegister("isIpPrefix", true, &isIpPrefix, &registry);
+  if (!isIpPrefixStatus.ok()) {
+    return isIpPrefixStatus;
   }
   auto startsWithStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::

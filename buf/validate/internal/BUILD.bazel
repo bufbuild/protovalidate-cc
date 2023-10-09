@@ -131,3 +131,12 @@ cc_test(
         "@com_google_googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "extra_func_test",
+    srcs = ["extra_func_test.cc"],
+    deps = [
+        ":extra_func",
+        "@com_google_googletest//:gtest_main",
+    ],
+)

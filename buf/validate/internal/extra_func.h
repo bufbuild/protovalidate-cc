@@ -33,4 +33,9 @@ namespace buf::validate::internal {
 absl::Status RegisterExtraFuncs(
     google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena);
 
+// define for testing
+bool IsIpv4Prefix(const std::string_view to_validate, bool strict);
+bool IsIpv6Prefix(const std::string_view to_validate, bool strict);
+bool IsIpPrefix(const std::string_view to_validate, bool strict);
+
 } // namespace buf::validate::internal
