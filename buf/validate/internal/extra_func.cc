@@ -244,7 +244,7 @@ bool IsIpv4Prefix(const std::string_view to_validate, bool strict) {
   if (!absl::SimpleAtoi(prefixlen, &prefixlen_int)) {
     return false;
   }
-  if (prefixlen_int <= 0 || prefixlen_int >= 32) {
+  if (prefixlen_int < 0 || prefixlen_int > 32) {
     return false;
   }
 
@@ -283,7 +283,7 @@ bool IsIpv6Prefix(const std::string_view to_validate, bool strict) {
   if (!absl::SimpleAtoi(prefixlen, &prefixlen_int)) {
     return false;
   }
-  if (prefixlen_int <= 0 || prefixlen_int >= 128) {
+  if (prefixlen_int < 0 || prefixlen_int > 128) {
     return false;
   }
 
