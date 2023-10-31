@@ -11,7 +11,7 @@ COPYRIGHT_YEARS := 2023
 LICENSE_IGNORE := -e internal/testdata/
 LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
 # NOTE: Keep this version in sync with the version in `/bazel/deps.bzl`.
-PROTOVALIDATE_VERSION ?= v0.4.2
+PROTOVALIDATE_VERSION ?= v0.5.1
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
