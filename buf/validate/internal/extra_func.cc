@@ -252,7 +252,7 @@ bool IsIpv4Prefix(const std::string_view to_validate, bool strict) {
   // check host part is all-zero if strict
   if (strict) {
     struct in_addr mask;
-    mask.s_addr = htonl((1 << (32 - prefixlen_int)) - 1);
+    mask.s_addr = htonl((1ull << (32 - prefixlen_int)) - 1);
     return ((addr.s_addr & mask.s_addr) == 0);
   }
 
