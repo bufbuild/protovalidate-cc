@@ -103,75 +103,8 @@ absl::Status FieldConstraintRules::Validate(
         *violation.mutable_message() = "value is required";
         *violation.mutable_field_path() = field_->name();
         return absl::OkStatus();
-      } else if (
-          ignoreEmpty_ || field_->containing_oneof() != nullptr ||
-          field_->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
+      } else if (ignoreEmpty_) {
         return absl::OkStatus();
-      }
-    }
-
-    if (ignoreEmpty_ && field_->containing_oneof() != nullptr) {
-      // If the field is in a oneof, we have to manually check if the value is 'empty'.
-      switch (field_->type()) {
-        case google::protobuf::FieldDescriptor::TYPE_BYTES: {
-          if (message.GetReflection()->GetString(message, field_).empty()) {
-            return absl::OkStatus();
-          }
-          break;
-        }
-        case google::protobuf::FieldDescriptor::TYPE_STRING: {
-          if (message.GetReflection()->GetString(message, field_).empty()) {
-            return absl::OkStatus();
-          }
-          break;
-        }
-        case google::protobuf::FieldDescriptor::TYPE_SFIXED32:
-        case google::protobuf::FieldDescriptor::TYPE_SINT32:
-        case google::protobuf::FieldDescriptor::TYPE_INT32:
-          if (message.GetReflection()->GetInt32(message, field_) == 0) {
-            return absl::OkStatus();
-          }
-        case google::protobuf::FieldDescriptor::TYPE_SFIXED64:
-        case google::protobuf::FieldDescriptor::TYPE_SINT64:
-        case google::protobuf::FieldDescriptor::TYPE_INT64: {
-          if (message.GetReflection()->GetInt64(message, field_) == 0) {
-            return absl::OkStatus();
-          }
-          break;
-        }
-        case google::protobuf::FieldDescriptor::TYPE_FIXED32:
-        case google::protobuf::FieldDescriptor::TYPE_UINT32:
-          if (message.GetReflection()->GetUInt32(message, field_) == 0) {
-            return absl::OkStatus();
-          }
-        case google::protobuf::FieldDescriptor::TYPE_FIXED64:
-        case google::protobuf::FieldDescriptor::TYPE_UINT64: {
-          if (message.GetReflection()->GetUInt64(message, field_) == 0) {
-            return absl::OkStatus();
-          }
-          break;
-        }
-        case google::protobuf::FieldDescriptor::TYPE_DOUBLE:
-        case google::protobuf::FieldDescriptor::TYPE_FLOAT: {
-          if (message.GetReflection()->GetDouble(message, field_) == 0) {
-            return absl::OkStatus();
-          }
-          break;
-        }
-        case google::protobuf::FieldDescriptor::TYPE_BOOL: {
-          if (!message.GetReflection()->GetBool(message, field_)) {
-            return absl::OkStatus();
-          }
-          break;
-        }
-        case google::protobuf::FieldDescriptor::TYPE_ENUM: {
-          if (message.GetReflection()->GetEnumValue(message, field_) == 0) {
-            return absl::OkStatus();
-          }
-          break;
-        }
-        default:
-          break;
       }
     }
 
@@ -210,6 +143,25 @@ absl::Status EnumConstraintRules::Validate(
   return absl::OkStatus();
 }
 
+bool isEmptyItem(cel::runtime::CelValue item) {
+  switch (item.type()) {
+  case ::cel::Kind::kBool:
+    return !item.BoolOrDie();
+  case ::cel::Kind::kInt:
+    return item.Int64OrDie() == 0;
+  case ::cel::Kind::kUint:
+    return item.Uint64OrDie() == 0;
+  case ::cel::Kind::kDouble:
+    return item.DoubleOrDie() == 0;
+  case ::cel::Kind::kString:
+    return item.StringOrDie().value() == "";
+  case ::cel::Kind::kBytes:
+    return item.BytesOrDie().value() == "";
+  default:
+    return false;
+  }
+}
+
 absl::Status RepeatedConstraintRules::Validate(
     ConstraintContext& ctx, const google::protobuf::Message& message) const {
   auto status = Base::Validate(ctx, message);
@@ -220,8 +172,12 @@ absl::Status RepeatedConstraintRules::Validate(
   auto& list = *google::protobuf::Arena::Create<cel::runtime::FieldBackedListImpl>(
       ctx.arena, &message, field_, ctx.arena);
   for (int i = 0; i < list.size(); i++) {
+    auto item = list[i];
+    if (itemRules_->getIgnoreEmpty() && isEmptyItem(item)) {
+      continue;
+    }
     cel::runtime::Activation activation;
-    activation.InsertValue("this", list[i]);
+    activation.InsertValue("this", item);
     int pos = ctx.violations.violations_size();
     status = itemRules_->ValidateCel(ctx, "", activation);
     if (itemRules_->getAnyRules() != nullptr) {
@@ -257,22 +213,24 @@ absl::Status MapConstraintRules::Validate(
     int pos = ctx.violations.violations_size();
     auto key = keys[i];
     if (keyRules_ != nullptr) {
-      activation.InsertValue("this", key);
-      status = keyRules_->ValidateCel(ctx, "", activation);
-      if (!status.ok()) {
-        return status;
-      }
-      if (ctx.violations.violations_size() > pos) {
-        for (int j = pos; j < ctx.violations.violations_size(); j++) {
-          ctx.violations.mutable_violations(j)->set_for_key(true);
+      if (!keyRules_->getIgnoreEmpty() || !isEmptyItem(key)) {
+        activation.InsertValue("this", key);
+        status = keyRules_->ValidateCel(ctx, "", activation);
+        if (!status.ok()) {
+          return status;
         }
+        if (ctx.violations.violations_size() > pos) {
+          for (int j = pos; j < ctx.violations.violations_size(); j++) {
+            ctx.violations.mutable_violations(j)->set_for_key(true);
+          }
+        }
+        activation.RemoveValueEntry("this");
       }
-      activation.RemoveValueEntry("this");
     }
     if (valueRules_ != nullptr) {
-      auto value = mapVal[key];
-      if (value.has_value()) {
-        activation.InsertValue("this", *value);
+      auto value = *mapVal[key];
+      if (!valueRules_->getIgnoreEmpty() || !isEmptyItem(value)) {
+        activation.InsertValue("this", value);
         status = valueRules_->ValidateCel(ctx, "", activation);
         if (!status.ok()) {
           return status;
