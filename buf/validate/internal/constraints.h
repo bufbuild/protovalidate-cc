@@ -40,7 +40,7 @@ class FieldConstraintRules : public CelConstraintRules {
       const FieldConstraints& field,
       const AnyRules* anyRules = nullptr)
       : field_(desc),
-        ignoreEmpty_(field.ignore_empty()),
+        ignoreEmpty_(field.ignore_empty() || desc->has_presence()),
         required_(field.required()),
         anyRules_(anyRules) {}
 
@@ -55,6 +55,8 @@ class FieldConstraintRules : public CelConstraintRules {
       const google::protobuf::Message& anyMsg) const;
 
   [[nodiscard]] const AnyRules* getAnyRules() const { return anyRules_; }
+
+  [[nodiscard]] const bool getIgnoreEmpty() const { return ignoreEmpty_; }
 
  protected:
   const google::protobuf::FieldDescriptor* field_ = nullptr;
