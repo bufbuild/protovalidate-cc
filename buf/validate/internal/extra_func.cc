@@ -188,13 +188,13 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
 }
 
 bool IsIpv4(const std::string_view to_validate) {
-  struct sockaddr_in sa;
-  return !(inet_pton(AF_INET, to_validate.data(), &sa.sin_addr) < 1);
+  struct in_addr result;
+  return inet_pton(AF_INET, to_validate.data(), &result) == 1;
 }
 
 bool IsIpv6(const std::string_view to_validate) {
-  struct sockaddr_in6 sa_six;
-  return !(inet_pton(AF_INET6, to_validate.data(), &sa_six.sin6_addr) < 1);
+  struct in6_addr result;
+  return inet_pton(AF_INET6, to_validate.data(), &result) == 1;
 }
 
 bool IsIp(const std::string_view to_validate) {
@@ -218,6 +218,123 @@ cel::CelValue isIPvX(
 
 cel::CelValue isIP(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
   return isIPvX(arena, lhs, cel::CelValue::CreateInt64(0));
+}
+
+/**
+ * IP Prefix Validation
+ */
+bool IsIpv4Prefix(const std::string_view to_validate, bool strict) {
+  std::vector<std::string> split = absl::StrSplit(to_validate.data(), '/');
+  if (split.size() != 2) {
+    return false;
+  }
+  std::string ip = split[0];
+  std::string prefixlen = split[1];
+
+  // validate ip
+  struct in_addr addr;
+  if (inet_pton(AF_INET, ip.c_str(), &addr) != 1) {
+    return false;
+  }
+
+  // validate prefixlen
+  if (prefixlen.empty()) {
+    return false;
+  }
+  int prefixlen_int;
+  if (!absl::SimpleAtoi(prefixlen, &prefixlen_int)) {
+    return false;
+  }
+  if (prefixlen_int < 0 || prefixlen_int > 32) {
+    return false;
+  }
+
+  // check host part is all-zero if strict
+  if (strict) {
+    struct in_addr mask;
+    mask.s_addr = htonl((1ull << (32 - prefixlen_int)) - 1);
+    return ((addr.s_addr & mask.s_addr) == 0);
+  }
+
+  return true;
+}
+
+bool IsIpv6Prefix(const std::string_view to_validate, bool strict) {
+  std::vector<std::string> split = absl::StrSplit(to_validate.data(), '/');
+  if (split.size() != 2) {
+    return false;
+  }
+  std::string ip = split[0];
+  std::string prefixlen = split[1];
+
+  // validate ip
+  struct in6_addr addr;
+  if (inet_pton(AF_INET6, ip.c_str(), &addr) != 1) {
+    return false;
+  }
+
+  // validate prefixlen
+  if (prefixlen.empty()) {
+    return false;
+  }
+  int prefixlen_int;
+  if (!absl::SimpleAtoi(prefixlen, &prefixlen_int)) {
+    return false;
+  }
+  if (prefixlen_int < 0 || prefixlen_int > 128) {
+    return false;
+  }
+
+  // check host part is all-zero if strict
+  if (strict) {
+    int i;
+    int l;
+    for (i = 15, l = (128 - prefixlen_int); l > 0; i--, l -= 8) {
+      uint8_t mask = (l < 8) ? (1 << l) - 1 : 0xff;
+      if ((addr.s6_addr[i] & mask) != 0) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+bool IsIpPrefix(const std::string_view to_validate, bool strict) {
+  return IsIpv4Prefix(to_validate, strict) || IsIpv6Prefix(to_validate, strict);
+}
+
+cel::CelValue isIpPrefixXY(
+    google::protobuf::Arena* arena,
+    cel::CelValue::StringHolder lhs,
+    cel::CelValue rhs1,
+    cel::CelValue rhs2) {
+  std::string_view str = lhs.value();
+  int ver = rhs1.Int64OrDie();
+  bool strict = rhs2.BoolOrDie();
+
+  switch (ver) {
+    case 0:
+      return cel::CelValue::CreateBool(IsIpPrefix(str, strict));
+    case 4:
+      return cel::CelValue::CreateBool(IsIpv4Prefix(str, strict));
+    case 6:
+      return cel::CelValue::CreateBool(IsIpv6Prefix(str, strict));
+    default:
+      return cel::CelValue::CreateBool(false);
+  }
+}
+
+cel::CelValue isIpPrefixX(
+    google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs, cel::CelValue rhs) {
+  if (rhs.IsBool()) {
+    return isIpPrefixXY(arena, lhs, cel::CelValue::CreateInt64(0), rhs);
+  }
+  return isIpPrefixXY(arena, lhs, rhs, cel::CelValue::CreateBool(false));
+}
+
+cel::CelValue isIpPrefix(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
+  return isIpPrefixXY(arena, lhs, cel::CelValue::CreateInt64(0), cel::CelValue::CreateBool(false));
 }
 
 /**
@@ -321,6 +438,24 @@ absl::Status RegisterExtraFuncs(
           "isIp", true, &isIP, &registry);
   if (!isIpStatus.ok()) {
     return isIpStatus;
+  }
+  auto isIpPrefixStatusXY = cel::
+      FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue, cel::CelValue>::
+          CreateAndRegister("isIpPrefix", true, &isIpPrefixXY, &registry);
+  if (!isIpPrefixStatusXY.ok()) {
+    return isIpPrefixStatusXY;
+  }
+  auto isIpPrefixStatusX =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue>::
+          CreateAndRegister("isIpPrefix", true, &isIpPrefixX, &registry);
+  if (!isIpPrefixStatusX.ok()) {
+    return isIpPrefixStatusX;
+  }
+  auto isIpPrefixStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder>::CreateAndRegister(
+          "isIpPrefix", true, &isIpPrefix, &registry);
+  if (!isIpPrefixStatus.ok()) {
+    return isIpPrefixStatus;
   }
   auto startsWithStatus =
       cel::FunctionAdapter<cel::CelValue, cel::CelValue::BytesHolder, cel::CelValue>::
