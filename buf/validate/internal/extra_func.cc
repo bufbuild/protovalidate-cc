@@ -141,11 +141,17 @@ bool IsHostname(std::string_view to_validate) {
     return false;
   }
   static const re2::RE2 component_regex("^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$");
+  static const re2::RE2 all_digits("^[0-9]*$");
+  to_validate = absl::StripSuffix(to_validate, ".");
   std::vector<std::string_view> split = absl::StrSplit(to_validate, '.');
   if (split.size() < 2) {
-    return re2::RE2::FullMatch(to_validate, component_regex);
+    return re2::RE2::FullMatch(to_validate, component_regex)
+      && !re2::RE2::FullMatch(to_validate, all_digits);
   }
-  for (size_t i = 0; i < split.size() - 1; i++) {
+  if (re2::RE2::FullMatch(split[split.size()-1], all_digits)) {
+    return false;
+  }
+  for (size_t i = 0; i < split.size(); i++) {
     const std::string_view& part = split[i];
     if (part.empty() || part.size() > 63) {
       return false;
@@ -188,13 +194,17 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
 }
 
 bool IsIpv4(const std::string_view to_validate) {
-  struct in_addr result;
-  return inet_pton(AF_INET, to_validate.data(), &result) == 1;
+  // need to copy as string_view might not be null terminated
+  const auto str = std::string{to_validate};
+  struct in_addr result{};
+  return inet_pton(AF_INET, str.data(), &result) == 1;
 }
 
 bool IsIpv6(const std::string_view to_validate) {
-  struct in6_addr result;
-  return inet_pton(AF_INET6, to_validate.data(), &result) == 1;
+  // need to copy as string_view might not be null terminated
+  const auto str = std::string{to_validate};
+  struct in6_addr result{};
+  return inet_pton(AF_INET6, str.data(), &result) == 1;
 }
 
 bool IsIp(const std::string_view to_validate) {
@@ -219,6 +229,53 @@ cel::CelValue isIPvX(
 cel::CelValue isIP(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
   return isIPvX(arena, lhs, cel::CelValue::CreateInt64(0));
 }
+
+bool IsPort(const std::string_view str) {
+  uint32_t port;
+  if (!absl::SimpleAtoi(str, &port)) {
+    return false;
+  }
+  static constexpr uint32_t MAX_PORT = 65535;
+  return port <= MAX_PORT;
+}
+
+bool IsHostAndPort(const std::string_view str, const bool portRequired) {
+  if (str.empty()) {
+    return false;
+  }
+
+  const auto splitIdx = str.rfind(':');
+  if (str.front() == '[') {
+    const auto end = str.find(']');
+    const auto afterEnd = end+1;
+    if (afterEnd == str.size()) { // no port
+      const auto host = str.substr(1, end-1);
+      return !portRequired && IsIpv6(host);
+    }
+    if (afterEnd == splitIdx) { // port
+      const auto host = str.substr(1, end-1);
+      const auto port = str.substr(splitIdx+1);
+      return IsIpv6(host)
+        && IsPort(port);
+    }
+    return false;
+  }
+
+  if (splitIdx == std::string_view::npos) {
+    return !portRequired && (IsHostname(str) || IsIpv4(str));
+  }
+  const auto host = str.substr(0, splitIdx);
+  const auto port = str.substr(splitIdx+1);
+  return (IsHostname(host) || IsIpv4(host)) && IsPort(port);
+}
+
+cel::CelValue isHostAndPort(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs, cel::CelValue rhs) {
+  const std::string_view str = lhs.value();
+  const bool portReq = rhs.BoolOrDie();
+  return cel::CelValue::CreateBool(IsHostAndPort(str, portReq));
+}
+
+
 
 /**
  * IP Prefix Validation
@@ -492,6 +549,12 @@ absl::Status RegisterExtraFuncs(
           "isUriRef", true, &isUriRef, &registry);
   if (!isUriRefStatus.ok()) {
     return isUriStatus;
+  }
+  auto isHostAndPortStatus =
+     cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue>::
+         CreateAndRegister("isHostAndPort", true, &isHostAndPort, &registry);
+  if (!isHostAndPortStatus.ok()) {
+    return isHostAndPortStatus;
   }
   return absl::OkStatus();
 }
