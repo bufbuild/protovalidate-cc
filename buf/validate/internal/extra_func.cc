@@ -275,8 +275,6 @@ cel::CelValue isHostAndPort(google::protobuf::Arena* arena, cel::CelValue::Strin
   return cel::CelValue::CreateBool(IsHostAndPort(str, portReq));
 }
 
-
-
 /**
  * IP Prefix Validation
  */
