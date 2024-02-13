@@ -14,8 +14,6 @@ jobs:
   conformance:
     name: Conformance Testing
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
     steps:
       - name: Setup Cache
         uses: actions/cache@v3
@@ -29,7 +27,7 @@ jobs:
       - name: Install go
         uses: actions/setup-go@v5
         with:
-          go-version: ${{ matrix.go-version }}
+          go-version: stable
           cache: true
       - name: Test conformance
         run: make conformance

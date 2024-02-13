@@ -27,6 +27,7 @@ jobs:
       - name: Install go
         uses: actions/setup-go@v5
         with:
+          go-version: stable
           cache: true
       - name: Execute tests
         run: make test

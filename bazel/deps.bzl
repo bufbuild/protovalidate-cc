@@ -56,10 +56,10 @@ _dependencies = {
     },
     # NOTE: Keep Version in sync with `/Makefile`.
     "com_github_bufbuild_protovalidate": {
-        "sha256": "03ee49c344d350355c7e21b36456d709cbcba493f2cfa2029be99fc065aa7c48",
-        "strip_prefix": "protovalidate-0.5.3",
+        "sha256": "a6fd142c780c82104198138d609bace9b1b145c99e265aa33de1f651e90047d8",
+        "strip_prefix": "protovalidate-0.5.6",
         "urls": [
-            "https://github.com/bufbuild/protovalidate/archive/v0.5.3.tar.gz",
+            "https://github.com/bufbuild/protovalidate/archive/v0.5.6.tar.gz",
         ],
     },
 }
