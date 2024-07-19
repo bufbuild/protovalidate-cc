@@ -4,6 +4,10 @@ load("//bazel:deps.bzl", "protovalidate_cc_dependencies")
 
 protovalidate_cc_dependencies()
 
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+
+protobuf_deps()
+
 load("@rules_buf//buf:repositories.bzl", "rules_buf_dependencies", "rules_buf_toolchains")
 
 rules_buf_dependencies()
@@ -23,7 +27,7 @@ switched_rules_by_language(
     cc = True,
 )
 
-load("@com_github_protocolbuffers_protobuf//:protobuf_deps.bzl", "protobuf_deps")
+load("@com_google_protobuf//:protobuf_deps.bzl", "protobuf_deps")
 
 protobuf_deps()
 
