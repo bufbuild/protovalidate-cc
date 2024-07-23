@@ -35,11 +35,11 @@ generate: generate-license ## Regenerate code and license headers
 
 .PHONY: test
 test: generate ## Run all unit tests
-	bazel test --test_output=errors //...
+	$(BAZEL) test --test_output=errors //...
 
 .PHONY: build
 build: ## Build the project
-	bazel build //...
+	$(BAZEL) build //...
 
 .PHONY: conformance
 conformance: $(BIN)/protovalidate-conformance
