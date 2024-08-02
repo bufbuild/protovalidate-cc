@@ -13,7 +13,7 @@ permissions:
 jobs:
   conformance:
     name: Conformance Testing
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Setup Cache
         uses: actions/cache@v3
