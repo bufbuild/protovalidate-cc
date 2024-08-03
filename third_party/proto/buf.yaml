@@ -1,0 +1,11 @@
+version: v2
+deps:
+  - buf.build/googleapis/googleapis
+lint:
+  except:
+    - FIELD_NOT_REQUIRED
+    - PACKAGE_NO_IMPORT_CYCLE
+breaking:
+  except:
+    - EXTENSION_NO_DELETE
+    - FIELD_SAME_DEFAULT
