@@ -1,0 +1,12 @@
+[submodule "third_party/protobuf"]
+	path = third_party/protobuf
+	url = https://github.com/protocolbuffers/protobuf
+[submodule "third_party/protovalidate"]
+	path = third_party/protovalidate
+	url = https://github.com/bufbuild/protovalidate
+[submodule "third_party/abseil-cpp"]
+	path = third_party/abseil-cpp
+	url = https://github.com/abseil/abseil-cpp
+[submodule "third_party/cel-cpp"]
+	path = third_party/cel-cpp
+	url = https://github.com/google/cel-cpp
