@@ -22,3 +22,4 @@ set(protobuf_BUILD_TESTS OFF)
 
 add_subdirectory(buf/validate)
 add_subdirectory(third_party/protobuf)
+add_subdirectory(third_party/re2)

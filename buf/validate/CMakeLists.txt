@@ -35,12 +35,13 @@ add_library(
   ${CMAKE_BINARY_DIR}/include/google/api/expr/v1alpha1/syntax.pb.cc
 )
 
-target_link_libraries(validator PUBLIC abseil protobuf)
+target_link_libraries(validator PUBLIC abseil protobuf re2)
 target_include_directories(validator PUBLIC
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}>
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/protobuf/src>
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/abseil-cpp>
   $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/cel-cpp>
+  $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/third_party/re2>
   $<BUILD_INTERFACE:${CMAKE_BINARY_DIR}/include>
   $<INSTALL_INTERFACE:include>
 )
