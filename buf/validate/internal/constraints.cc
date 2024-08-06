@@ -30,6 +30,28 @@
 
 namespace buf::validate::internal {
 namespace cel = google::api::expr;
+namespace {
+
+bool isEmptyItem(cel::runtime::CelValue item) {
+  switch (item.type()) {
+    case ::cel::Kind::kBool:
+      return !item.BoolOrDie();
+    case ::cel::Kind::kInt:
+      return item.Int64OrDie() == 0;
+    case ::cel::Kind::kUint:
+      return item.Uint64OrDie() == 0;
+    case ::cel::Kind::kDouble:
+      return item.DoubleOrDie() == 0;
+    case ::cel::Kind::kString:
+      return item.StringOrDie().value().empty();
+    case ::cel::Kind::kBytes:
+      return item.BytesOrDie().value().empty();
+    default:
+      return false;
+  }
+}
+
+}
 
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder(google::protobuf::Arena* arena) {
@@ -141,25 +163,6 @@ absl::Status EnumConstraintRules::Validate(
     }
   }
   return absl::OkStatus();
-}
-
-bool isEmptyItem(cel::runtime::CelValue item) {
-  switch (item.type()) {
-  case ::cel::Kind::kBool:
-    return !item.BoolOrDie();
-  case ::cel::Kind::kInt:
-    return item.Int64OrDie() == 0;
-  case ::cel::Kind::kUint:
-    return item.Uint64OrDie() == 0;
-  case ::cel::Kind::kDouble:
-    return item.DoubleOrDie() == 0;
-  case ::cel::Kind::kString:
-    return item.StringOrDie().value() == "";
-  case ::cel::Kind::kBytes:
-    return item.BytesOrDie().value() == "";
-  default:
-    return false;
-  }
 }
 
 absl::Status RepeatedConstraintRules::Validate(

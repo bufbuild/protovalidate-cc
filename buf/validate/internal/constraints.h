@@ -40,7 +40,11 @@ class FieldConstraintRules : public CelConstraintRules {
       const FieldConstraints& field,
       const AnyRules* anyRules = nullptr)
       : field_(desc),
-        ignoreEmpty_(field.ignore_empty() || desc->has_presence()),
+        mapEntryField_(desc->containing_type()->options().map_entry()),
+        ignoreEmpty_(field.ignore() == IGNORE_IF_DEFAULT_VALUE ||
+                     field.ignore() == IGNORE_IF_UNPOPULATED ||
+                     field.ignore_empty() ||
+                     (desc->has_presence() && !mapEntryField_)),
         required_(field.required()),
         anyRules_(anyRules) {}
 
@@ -56,10 +60,11 @@ class FieldConstraintRules : public CelConstraintRules {
 
   [[nodiscard]] const AnyRules* getAnyRules() const { return anyRules_; }
 
-  [[nodiscard]] const bool getIgnoreEmpty() const { return ignoreEmpty_; }
+  [[nodiscard]] bool getIgnoreEmpty() const { return ignoreEmpty_; }
 
  protected:
   const google::protobuf::FieldDescriptor* field_ = nullptr;
+  bool mapEntryField_ = false;
   bool ignoreEmpty_ = false;
   bool required_ = false;
   const AnyRules* anyRules_ = nullptr;
