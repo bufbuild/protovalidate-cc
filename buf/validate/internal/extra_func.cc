@@ -189,6 +189,13 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
     return cel::CelValue::CreateBool(false);
   }
 
+  // Based on https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
+  // Note that we are currently _stricter_ than this as we enforce length limits
+  static const re2::RE2 localPart_regex("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+$");
+  if (!re2::RE2::FullMatch(localPart, localPart_regex)) {
+    return cel::CelValue::CreateBool(false);
+  }
+
   // Validate the hostname
   return cel::CelValue::CreateBool(IsHostname(domainPart));
 }
