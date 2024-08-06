@@ -23,7 +23,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
     const FieldConstraints& fieldLvl) {
-  if (fieldLvl.skipped()) {
+  if (fieldLvl.ignore() == IGNORE_ALWAYS || fieldLvl.skipped()) {
     return nullptr;
   }
   absl::StatusOr<std::unique_ptr<FieldConstraintRules>> rules_or;
