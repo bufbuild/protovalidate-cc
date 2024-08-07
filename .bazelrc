@@ -1,6 +1,10 @@
 build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
 build --cxxopt=-fsized-deallocation
 
+# Ensure we use the protobuf compiler from deps
+build --proto_compiler=@com_google_protobuf//:protoc
+build --proto_toolchain_for_cc=@com_google_protobuf//:cc_toolchain
+
 # Enable matchers in googletest
 build --define absl=1
 

@@ -16,6 +16,15 @@ load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 _dependencies = {
+    # This is needed due to an unresolved issue with protobuf v27+.
+    # https://github.com/protocolbuffers/protobuf/issues/17200
+    "rules_python": {
+        "sha256": "0a8003b044294d7840ac7d9d73eef05d6ceb682d7516781a4ec62eeb34702578",
+        "strip_prefix": "rules_python-0.24.0",
+        "urls": [
+            "https://github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",
+        ],
+    },
     "bazel_skylib": {
         "sha256": "74d544d96f4a5bb630d465ca8bbcfe231e3594e5aae57e1edbf17a6eb3ca2506",
         "urls": [
@@ -23,12 +32,12 @@ _dependencies = {
             "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
         ],
     },
-    "com_github_protocolbuffers_protobuf": {
-        "sha256": "75be42bd736f4df6d702a0e4e4d30de9ee40eac024c4b845d17ae4cc831fe4ae",
-        "strip_prefix": "protobuf-21.7",
+    "com_google_protobuf": {
+        "sha256": "e4ff2aeb767da6f4f52485c2e72468960ddfe5262483879ef6ad552e52757a77",
+        "strip_prefix": "protobuf-27.2",
         "urls": [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v21.7.tar.gz",
-            "https://github.com/protocolbuffers/protobuf/archive/v21.7.tar.gz",
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v27.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/archive/v27.2.tar.gz",
         ],
     },
     "rules_proto": {
@@ -56,10 +65,10 @@ _dependencies = {
     },
     # NOTE: Keep Version in sync with `/Makefile`.
     "com_github_bufbuild_protovalidate": {
-        "sha256": "a6fd142c780c82104198138d609bace9b1b145c99e265aa33de1f651e90047d8",
-        "strip_prefix": "protovalidate-0.5.6",
+        "sha256": "ccb3952c38397d2cb53fe841af66b05fc012dd17fa754cbe35d9abb547cdf92d",
+        "strip_prefix": "protovalidate-0.7.1",
         "urls": [
-            "https://github.com/bufbuild/protovalidate/archive/v0.5.6.tar.gz",
+            "https://github.com/bufbuild/protovalidate/archive/v0.7.1.tar.gz",
         ],
     },
 }

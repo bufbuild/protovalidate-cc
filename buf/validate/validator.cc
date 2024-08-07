@@ -46,9 +46,12 @@ absl::Status Validator::ValidateFields(
     }
     if (field->options().HasExtension(validate::field)) {
       const auto& fieldExt = field->options().GetExtension(validate::field);
-      if (fieldExt.skipped() ||
-          (fieldExt.has_repeated() && fieldExt.repeated().items().skipped()) ||
-          (fieldExt.has_map() && fieldExt.map().values().skipped())) {
+      if (fieldExt.ignore() == IGNORE_ALWAYS ||
+          fieldExt.skipped() ||
+          (fieldExt.has_repeated() && (fieldExt.repeated().items().ignore() == IGNORE_ALWAYS ||
+                                       fieldExt.repeated().items().skipped())) ||
+          (fieldExt.has_map() && (fieldExt.map().values().ignore() == IGNORE_ALWAYS ||
+                                  fieldExt.map().values().skipped()))) {
         continue;
       }
     }

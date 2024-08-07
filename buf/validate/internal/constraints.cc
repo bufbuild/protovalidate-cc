@@ -27,9 +27,70 @@
 #include "eval/public/structs/cel_proto_wrapper.h"
 #include "google/protobuf/any.pb.h"
 #include "google/protobuf/descriptor.pb.h"
+#include "google/protobuf/dynamic_message.h"
+#include "google/protobuf/util/message_differencer.h"
 
 namespace buf::validate::internal {
 namespace cel = google::api::expr;
+namespace {
+
+bool isEmptyItem(cel::runtime::CelValue item) {
+  switch (item.type()) {
+    case ::cel::Kind::kBool:
+      return !item.BoolOrDie();
+    case ::cel::Kind::kInt:
+      return item.Int64OrDie() == 0;
+    case ::cel::Kind::kUint:
+      return item.Uint64OrDie() == 0;
+    case ::cel::Kind::kDouble:
+      return item.DoubleOrDie() == 0;
+    case ::cel::Kind::kString:
+      return item.StringOrDie().value().empty();
+    case ::cel::Kind::kBytes:
+      return item.BytesOrDie().value().empty();
+    default:
+      return false;
+  }
+}
+
+bool isDefaultItem(cel::runtime::CelValue item, const google::protobuf::FieldDescriptor *field) {
+  using google::protobuf::FieldDescriptor;
+  using google::protobuf::DynamicMessageFactory;
+  using google::protobuf::util::MessageDifferencer;
+  switch (field->cpp_type()) {
+    case FieldDescriptor::CPPTYPE_INT32:
+      return item.IsInt64() && item.Int64OrDie() == field->default_value_int32();
+    case FieldDescriptor::CPPTYPE_INT64:
+      return item.IsInt64() && item.Int64OrDie() == field->default_value_int64();
+    case FieldDescriptor::CPPTYPE_UINT32:
+      return item.IsUint64() && item.Uint64OrDie() == field->default_value_uint32();
+    case FieldDescriptor::CPPTYPE_UINT64:
+      return item.IsUint64() && item.Uint64OrDie() == field->default_value_uint64();
+    case FieldDescriptor::CPPTYPE_DOUBLE:
+      return item.IsDouble() && item.DoubleOrDie() == field->default_value_double();
+    case FieldDescriptor::CPPTYPE_FLOAT:
+      return item.IsDouble() && item.DoubleOrDie() == field->default_value_float();
+    case FieldDescriptor::CPPTYPE_BOOL:
+      return item.IsBool() && item.BoolOrDie() == field->default_value_bool();
+    case FieldDescriptor::CPPTYPE_ENUM:
+      return item.IsInt64() && item.Int64OrDie() == field->default_value_enum()->number();
+    case FieldDescriptor::CPPTYPE_STRING:
+      return item.IsString() && item.StringOrDie().value() == field->default_value_string();
+    case FieldDescriptor::CPPTYPE_MESSAGE:
+      if (item.IsMessage()) {
+        DynamicMessageFactory dmf;
+        const auto *message = item.MessageOrDie();
+        auto* empty = dmf.GetPrototype(message->GetDescriptor())->New();
+        return MessageDifferencer::Equals(*message, *empty);
+      }
+      break;
+    default:
+      break;
+  }
+  return false;
+}
+
+}
 
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder(google::protobuf::Arena* arena) {
@@ -121,6 +182,10 @@ absl::Status FieldConstraintRules::Validate(
     if (!status.ok()) {
       return status;
     }
+
+    if (ignoreDefault_ && isDefaultItem(result, field_)) {
+      return absl::OkStatus();
+    }
   }
   activation.InsertValue("this", result);
   return ValidateCel(ctx, field_->name(), activation);
@@ -143,25 +208,6 @@ absl::Status EnumConstraintRules::Validate(
   return absl::OkStatus();
 }
 
-bool isEmptyItem(cel::runtime::CelValue item) {
-  switch (item.type()) {
-  case ::cel::Kind::kBool:
-    return !item.BoolOrDie();
-  case ::cel::Kind::kInt:
-    return item.Int64OrDie() == 0;
-  case ::cel::Kind::kUint:
-    return item.Uint64OrDie() == 0;
-  case ::cel::Kind::kDouble:
-    return item.DoubleOrDie() == 0;
-  case ::cel::Kind::kString:
-    return item.StringOrDie().value() == "";
-  case ::cel::Kind::kBytes:
-    return item.BytesOrDie().value() == "";
-  default:
-    return false;
-  }
-}
-
 absl::Status RepeatedConstraintRules::Validate(
     ConstraintContext& ctx, const google::protobuf::Message& message) const {
   auto status = Base::Validate(ctx, message);
@@ -174,6 +220,9 @@ absl::Status RepeatedConstraintRules::Validate(
   for (int i = 0; i < list.size(); i++) {
     auto item = list[i];
     if (itemRules_->getIgnoreEmpty() && isEmptyItem(item)) {
+      continue;
+    }
+    if (itemRules_->getIgnoreDefault() && isDefaultItem(item, field_)) {
       continue;
     }
     cel::runtime::Activation activation;
