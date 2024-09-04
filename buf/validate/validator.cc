@@ -46,12 +46,13 @@ absl::Status Validator::ValidateFields(
     }
     if (field->options().HasExtension(validate::field)) {
       const auto& fieldExt = field->options().GetExtension(validate::field);
-      if (fieldExt.ignore() == IGNORE_ALWAYS ||
-          fieldExt.skipped() ||
-          (fieldExt.has_repeated() && (fieldExt.repeated().items().ignore() == IGNORE_ALWAYS ||
-                                       fieldExt.repeated().items().skipped())) ||
-          (fieldExt.has_map() && (fieldExt.map().values().ignore() == IGNORE_ALWAYS ||
-                                  fieldExt.map().values().skipped()))) {
+      if (fieldExt.ignore() == IGNORE_ALWAYS || fieldExt.skipped() ||
+          (fieldExt.has_repeated() &&
+           (fieldExt.repeated().items().ignore() == IGNORE_ALWAYS ||
+            fieldExt.repeated().items().skipped())) ||
+          (fieldExt.has_map() &&
+           (fieldExt.map().values().ignore() == IGNORE_ALWAYS ||
+            fieldExt.map().values().skipped()))) {
         continue;
       }
     }
@@ -138,7 +139,9 @@ absl::Status ValidatorFactory::Add(const google::protobuf::Descriptor* desc) {
       return iter->second.status();
     }
     auto status =
-        constraints_.emplace(desc, internal::NewMessageConstraints(&arena_, *builder_, desc))
+        constraints_
+            .emplace(
+                desc, internal::NewMessageConstraints(messageFactory_, &arena_, *builder_, desc))
             .first->second.status();
     if (!status.ok()) {
       return status;
@@ -174,7 +177,9 @@ const internal::Constraints* ValidatorFactory::GetMessageConstraints(
   if (iter != constraints_.end()) {
     return &iter->second;
   }
-  return &constraints_.emplace(desc, internal::NewMessageConstraints(&arena_, *builder_, desc))
+  return &constraints_
+              .emplace(
+                  desc, internal::NewMessageConstraints(messageFactory_, &arena_, *builder_, desc))
               .first->second;
 }
 

@@ -16,6 +16,7 @@
 
 #include "absl/status/status.h"
 #include "buf/validate/internal/cel_constraint_rules.h"
+#include "buf/validate/internal/message_factory.h"
 #include "buf/validate/validate.pb.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/descriptor.h"
@@ -24,22 +25,38 @@ namespace buf::validate::internal {
 
 template <typename R>
 absl::Status BuildCelRules(
+    std::unique_ptr<MessageFactory>& messageFactory,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const R& rules,
     CelConstraintRules& result) {
-  result.setRules(&rules, arena);
   // Look for constraints on the set fields.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
-  R::GetReflection()->ListFields(rules, &fields);
+  google::protobuf::Message* reparsedRules;
+  if (messageFactory) {
+    reparsedRules = messageFactory->messageFactory()
+                        ->GetPrototype(messageFactory->descriptorPool()->FindMessageTypeByName(
+                            rules.GetTypeName()))
+                        ->New(arena);
+    if (!Reparse(*messageFactory, rules, reparsedRules)) {
+      reparsedRules = nullptr;
+    }
+  }
+  if (reparsedRules) {
+    result.setRules(reparsedRules, arena);
+    reparsedRules->GetReflection()->ListFields(*reparsedRules, &fields);
+  } else {
+    result.setRules(&rules, arena);
+    R::GetReflection()->ListFields(rules, &fields);
+  }
   for (const auto* field : fields) {
     if (!field->options().HasExtension(buf::validate::priv::field)) {
       continue;
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::priv::field);
     for (const auto& constraint : fieldLvl.cel()) {
-      auto status =
-          result.Add(builder, constraint.id(), constraint.message(), constraint.expression());
+      auto status = result.Add(
+          builder, constraint.id(), constraint.message(), constraint.expression(), field);
       if (!status.ok()) {
         return status;
       }

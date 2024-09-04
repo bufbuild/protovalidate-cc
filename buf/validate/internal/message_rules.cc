@@ -23,7 +23,7 @@ absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
     const MessageConstraints& constraints) {
   auto result = std::make_unique<MessageConstraintRules>();
   for (const auto& constraint : constraints.cel()) {
-    if (auto status = result->Add(builder, constraint); !status.ok()) {
+    if (auto status = result->Add(builder, constraint, nullptr); !status.ok()) {
       return status;
     }
   }
@@ -31,6 +31,7 @@ absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
 }
 
 Constraints NewMessageConstraints(
+    std::unique_ptr<MessageFactory>& messageFactory,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
@@ -53,7 +54,7 @@ Constraints NewMessageConstraints(
       continue;
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
-    auto rules_or = NewFieldRules(arena, builder, field, fieldLvl);
+    auto rules_or = NewFieldRules(messageFactory, arena, builder, field, fieldLvl);
     if (!rules_or.ok()) {
       return rules_or.status();
     }

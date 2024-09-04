@@ -14,6 +14,10 @@
 
 #include "buf/validate/internal/cel_constraint_rules.h"
 
+#include "base/values/struct_value.h"
+#include "eval/public/containers/field_access.h"
+#include "eval/public/containers/field_backed_list_impl.h"
+#include "eval/public/containers/field_backed_map_impl.h"
 #include "eval/public/structs/cel_proto_wrapper.h"
 #include "parser/parser.h"
 
@@ -57,10 +61,31 @@ absl::Status ProcessConstraint(
   return absl::OkStatus();
 }
 
+cel::runtime::CelValue ProtoFieldToCelValue(
+    const google::protobuf::Message* message,
+    const google::protobuf::FieldDescriptor* field,
+    google::protobuf::Arena* arena) {
+  if (field->is_map()) {
+    return cel::runtime::CelValue::CreateMap(
+        google::protobuf::Arena::Create<cel::runtime::FieldBackedMapImpl>(
+            arena, message, field, arena));
+  } else if (field->is_repeated()) {
+    return cel::runtime::CelValue::CreateList(
+        google::protobuf::Arena::Create<cel::runtime::FieldBackedListImpl>(
+            arena, message, field, arena));
+  } else if (cel::runtime::CelValue result;
+             cel::runtime::CreateValueFromSingleField(message, field, arena, &result).ok()) {
+    return result;
+  }
+  return cel::runtime::CelValue::CreateNull();
+}
+
 } // namespace
 
 absl::Status CelConstraintRules::Add(
-    google::api::expr::runtime::CelExpressionBuilder& builder, Constraint constraint) {
+    google::api::expr::runtime::CelExpressionBuilder& builder,
+    Constraint constraint,
+    const google::protobuf::FieldDescriptor* rule) {
   auto pexpr_or = cel::parser::Parse(constraint.expression());
   if (!pexpr_or.ok()) {
     return pexpr_or.status();
@@ -71,7 +96,7 @@ absl::Status CelConstraintRules::Add(
     return expr_or.status();
   }
   std::unique_ptr<cel::runtime::CelExpression> expr = std::move(expr_or).value();
-  exprs_.emplace_back(CompiledConstraint{std::move(constraint), std::move(expr)});
+  exprs_.emplace_back(CompiledConstraint{std::move(constraint), std::move(expr), rule});
   return absl::OkStatus();
 }
 
@@ -79,12 +104,13 @@ absl::Status CelConstraintRules::Add(
     google::api::expr::runtime::CelExpressionBuilder& builder,
     std::string_view id,
     std::string_view message,
-    std::string_view expression) {
+    std::string_view expression,
+    const google::protobuf::FieldDescriptor* rule) {
   Constraint constraint;
   *constraint.mutable_id() = id;
   *constraint.mutable_message() = message;
   *constraint.mutable_expression() = expression;
-  return Add(builder, constraint);
+  return Add(builder, constraint, rule);
 }
 
 absl::Status CelConstraintRules::ValidateCel(
@@ -94,11 +120,17 @@ absl::Status CelConstraintRules::ValidateCel(
   activation.InsertValue("rules", rules_);
   activation.InsertValue("now", cel::runtime::CelValue::CreateTimestamp(absl::Now()));
   absl::Status status = absl::OkStatus();
+
   for (const auto& expr : exprs_) {
+    if (rules_.IsMessage() && expr.rule) {
+      activation.InsertValue(
+          "rule", ProtoFieldToCelValue(rules_.MessageOrDie(), expr.rule, ctx.arena));
+    }
     status = ProcessConstraint(ctx, fieldName, activation, expr);
     if (ctx.shouldReturn(status)) {
       break;
     }
+    activation.RemoveValueEntry("rule");
   }
   activation.RemoveValueEntry("rules");
   return status;

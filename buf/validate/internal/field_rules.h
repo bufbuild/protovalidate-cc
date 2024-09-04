@@ -25,6 +25,7 @@ namespace buf::validate::internal {
 template <typename R>
 absl::Status BuildScalarFieldRules(
     FieldConstraintRules& result,
+    std::unique_ptr<MessageFactory>& messageFactory,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
@@ -47,11 +48,12 @@ absl::Status BuildScalarFieldRules(
           google::protobuf::FieldDescriptor::TypeName(expectedType)));
     }
   }
-  return BuildCelRules(arena, builder, rules, result);
+  return BuildCelRules(messageFactory, arena, builder, rules, result);
 }
 
 template <typename R>
 absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewScalarFieldRules(
+    std::unique_ptr<MessageFactory>& messageFactory,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
@@ -61,7 +63,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewScalarFieldRules(
     std::string_view wrapperName = "") {
   auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
   auto status = BuildScalarFieldRules(
-      *result, arena, builder, field, fieldLvl, rules, expectedType, wrapperName);
+      *result, messageFactory, arena, builder, field, fieldLvl, rules, expectedType, wrapperName);
   if (!status.ok()) {
     return status;
   }
@@ -69,6 +71,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewScalarFieldRules(
 }
 
 absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
+    std::unique_ptr<MessageFactory>& messageFactory,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
