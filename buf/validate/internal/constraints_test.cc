@@ -48,7 +48,7 @@ class ExpressionTest : public testing::Test {
     constraint.set_expression(std::move(expr));
     constraint.set_message(std::move(message));
     constraint.set_id(std::move(id));
-    return constraints_->Add(*builder_, constraint);
+    return constraints_->Add(*builder_, constraint, nullptr);
   }
 
   absl::Status Validate(

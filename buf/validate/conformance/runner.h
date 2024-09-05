@@ -22,7 +22,9 @@ namespace buf::validate::conformance {
 
 class TestRunner {
  public:
-  explicit TestRunner(const google::protobuf::DescriptorPool* descriptorPool)
+  explicit TestRunner(
+      const google::protobuf::DescriptorPool* descriptorPool =
+          google::protobuf::DescriptorPool::generated_pool())
       : descriptorPool_(descriptorPool), validatorFactory_(ValidatorFactory::New().value()) {
     validatorFactory_->SetMessageFactory(&messageFactory_, descriptorPool_);
   }
