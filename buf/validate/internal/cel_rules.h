@@ -32,7 +32,7 @@ absl::Status BuildCelRules(
     CelConstraintRules& result) {
   // Look for constraints on the set fields.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
-  google::protobuf::Message* reparsedRules;
+  google::protobuf::Message* reparsedRules{};
   if (messageFactory) {
     reparsedRules = messageFactory->messageFactory()
                         ->GetPrototype(messageFactory->descriptorPool()->FindMessageTypeByName(
