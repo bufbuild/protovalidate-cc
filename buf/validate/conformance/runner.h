@@ -27,6 +27,7 @@ class TestRunner {
           google::protobuf::DescriptorPool::generated_pool())
       : descriptorPool_(descriptorPool), validatorFactory_(ValidatorFactory::New().value()) {
     validatorFactory_->SetMessageFactory(&messageFactory_, descriptorPool_);
+    validatorFactory_->SetAllowUnknownFields(false);
   }
 
   harness::TestConformanceResponse runTest(const harness::TestConformanceRequest& request);

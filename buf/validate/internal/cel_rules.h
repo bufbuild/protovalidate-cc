@@ -26,6 +26,7 @@ namespace buf::validate::internal {
 template <typename R>
 absl::Status BuildCelRules(
     std::unique_ptr<MessageFactory>& messageFactory,
+    bool allowUnknownFields,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const R& rules,
@@ -33,7 +34,7 @@ absl::Status BuildCelRules(
   // Look for constraints on the set fields.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
   google::protobuf::Message* reparsedRules{};
-  if (messageFactory) {
+  if (messageFactory && rules.unknown_fields().field_count() > 0) {
     reparsedRules = messageFactory->messageFactory()
                         ->GetPrototype(messageFactory->descriptorPool()->FindMessageTypeByName(
                             rules.GetTypeName()))
@@ -43,9 +44,18 @@ absl::Status BuildCelRules(
     }
   }
   if (reparsedRules) {
+    if (!allowUnknownFields &&
+        !reparsedRules->GetReflection()->GetUnknownFields(*reparsedRules).empty()) {
+      return absl::FailedPreconditionError(
+          absl::StrCat("unknown constraints in ", reparsedRules->GetTypeName()));
+    }
     result.setRules(reparsedRules, arena);
     reparsedRules->GetReflection()->ListFields(*reparsedRules, &fields);
   } else {
+    if (!allowUnknownFields && !R::GetReflection()->GetUnknownFields(rules).empty()) {
+      return absl::FailedPreconditionError(
+          absl::StrCat("unknown constraints in ", rules.GetTypeName()));
+    }
     result.setRules(&rules, arena);
     R::GetReflection()->ListFields(rules, &fields);
   }

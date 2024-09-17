@@ -20,6 +20,7 @@
 namespace buf::validate::internal {
 absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     std::unique_ptr<MessageFactory>& messageFactory,
+    bool allowUnknownFields,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
@@ -32,6 +33,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kBool:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -43,6 +45,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kFloat:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -54,6 +57,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kDouble:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -65,6 +69,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kInt32:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -76,6 +81,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kInt64:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -87,6 +93,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kUint32:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -98,6 +105,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kUint64:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -109,6 +117,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kSint32:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -119,6 +128,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kSint64:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -129,6 +139,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kFixed32:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -139,6 +150,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kFixed64:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -149,6 +161,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kSfixed32:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -159,6 +172,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kSfixed64:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -169,6 +183,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kString:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -180,6 +195,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     case FieldConstraints::kBytes:
       rules_or = NewScalarFieldRules(
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -193,6 +209,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
       auto status = BuildScalarFieldRules(
           *rules_or.value(),
           messageFactory,
+          allowUnknownFields,
           arena,
           builder,
           field,
@@ -211,7 +228,8 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
         return absl::InvalidArgumentError("duration field validator on non-duration field");
       } else {
         auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
-        auto status = BuildCelRules(messageFactory, arena, builder, fieldLvl.duration(), *result);
+        auto status = BuildCelRules(
+            messageFactory, allowUnknownFields, arena, builder, fieldLvl.duration(), *result);
         if (!status.ok()) {
           rules_or = status;
         } else {
@@ -226,7 +244,8 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
         return absl::InvalidArgumentError("timestamp field validator on non-timestamp field");
       } else {
         auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
-        auto status = BuildCelRules(messageFactory, arena, builder, fieldLvl.timestamp(), *result);
+        auto status = BuildCelRules(
+            messageFactory, allowUnknownFields, arena, builder, fieldLvl.timestamp(), *result);
         if (!status.ok()) {
           rules_or = status;
         } else {
@@ -242,15 +261,21 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
       } else {
         std::unique_ptr<FieldConstraintRules> items;
         if (fieldLvl.repeated().has_items()) {
-          auto items_or =
-              NewFieldRules(messageFactory, arena, builder, field, fieldLvl.repeated().items());
+          auto items_or = NewFieldRules(
+              messageFactory,
+              allowUnknownFields,
+              arena,
+              builder,
+              field,
+              fieldLvl.repeated().items());
           if (!items_or.ok()) {
             return items_or.status();
           }
           items = std::move(items_or).value();
         }
         auto result = std::make_unique<RepeatedConstraintRules>(field, fieldLvl, std::move(items));
-        auto status = BuildCelRules(messageFactory, arena, builder, fieldLvl.repeated(), *result);
+        auto status = BuildCelRules(
+            messageFactory, allowUnknownFields, arena, builder, fieldLvl.repeated(), *result);
         if (!status.ok()) {
           rules_or = status;
         } else {
@@ -263,12 +288,18 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
         return absl::InvalidArgumentError("map field validator on non-map field");
       } else {
         auto keyRulesOr = NewFieldRules(
-            messageFactory, arena, builder, field->message_type()->field(0), fieldLvl.map().keys());
+            messageFactory,
+            allowUnknownFields,
+            arena,
+            builder,
+            field->message_type()->field(0),
+            fieldLvl.map().keys());
         if (!keyRulesOr.ok()) {
           return keyRulesOr.status();
         }
         auto valueRulesOr = NewFieldRules(
             messageFactory,
+            allowUnknownFields,
             arena,
             builder,
             field->message_type()->field(1),
@@ -278,7 +309,8 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
         }
         auto result = std::make_unique<MapConstraintRules>(
             field, fieldLvl, std::move(keyRulesOr).value(), std::move(valueRulesOr).value());
-        auto status = BuildCelRules(messageFactory, arena, builder, fieldLvl.map(), *result);
+        auto status = BuildCelRules(
+            messageFactory, allowUnknownFields, arena, builder, fieldLvl.map(), *result);
         if (!status.ok()) {
           rules_or = status;
         } else {
@@ -292,7 +324,8 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
         return absl::InvalidArgumentError("any field validator on non-any field");
       } else {
         auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl, &fieldLvl.any());
-        auto status = BuildCelRules(messageFactory, arena, builder, fieldLvl.any(), *result);
+        auto status = BuildCelRules(
+            messageFactory, allowUnknownFields, arena, builder, fieldLvl.any(), *result);
         if (!status.ok()) {
           rules_or = status;
         } else {

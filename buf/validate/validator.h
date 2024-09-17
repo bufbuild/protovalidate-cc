@@ -102,11 +102,17 @@ class ValidatorFactory {
     messageFactory_ = std::make_unique<internal::MessageFactory>(messageFactory, descriptorPool);
   }
 
+  /// Set whether or not unknown constraint fields will be tolerated. Defaults to false.
+  void SetAllowUnknownFields(bool allowUnknownFields) {
+    allowUnknownFields_ = allowUnknownFields;
+  }
+
  private:
   friend class Validator;
   google::protobuf::Arena arena_;
   absl::Mutex mutex_;
   std::unique_ptr<internal::MessageFactory> messageFactory_;
+  bool allowUnknownFields_;
   absl::flat_hash_map<const google::protobuf::Descriptor*, internal::Constraints> constraints_
       ABSL_GUARDED_BY(mutex_);
   std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder> builder_

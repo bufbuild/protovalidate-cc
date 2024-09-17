@@ -28,6 +28,7 @@ using Constraints = absl::StatusOr<std::vector<std::unique_ptr<ConstraintRules>>
 
 Constraints NewMessageConstraints(
     std::unique_ptr<MessageFactory>& messageFactory,
+    bool allowUnknownFields,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor);

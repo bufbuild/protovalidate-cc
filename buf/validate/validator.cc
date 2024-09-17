@@ -141,7 +141,7 @@ absl::Status ValidatorFactory::Add(const google::protobuf::Descriptor* desc) {
     auto status =
         constraints_
             .emplace(
-                desc, internal::NewMessageConstraints(messageFactory_, &arena_, *builder_, desc))
+                desc, internal::NewMessageConstraints(messageFactory_, allowUnknownFields_, &arena_, *builder_, desc))
             .first->second.status();
     if (!status.ok()) {
       return status;
@@ -179,7 +179,7 @@ const internal::Constraints* ValidatorFactory::GetMessageConstraints(
   }
   return &constraints_
               .emplace(
-                  desc, internal::NewMessageConstraints(messageFactory_, &arena_, *builder_, desc))
+                  desc, internal::NewMessageConstraints(messageFactory_, allowUnknownFields_, &arena_, *builder_, desc))
               .first->second;
 }
 

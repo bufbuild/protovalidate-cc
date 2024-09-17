@@ -32,6 +32,7 @@ absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
 
 Constraints NewMessageConstraints(
     std::unique_ptr<MessageFactory>& messageFactory,
+    bool allowUnknownFields,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
@@ -54,7 +55,8 @@ Constraints NewMessageConstraints(
       continue;
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
-    auto rules_or = NewFieldRules(messageFactory, arena, builder, field, fieldLvl);
+    auto rules_or =
+        NewFieldRules(messageFactory, allowUnknownFields, arena, builder, field, fieldLvl);
     if (!rules_or.ok()) {
       return rules_or.status();
     }
