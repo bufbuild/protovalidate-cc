@@ -17,7 +17,7 @@
 #include <memory>
 #include <string_view>
 
-#include "buf/validate/expression.pb.h"
+#include "buf/validate/validate.pb.h"
 #include "buf/validate/internal/constraints.h"
 #include "buf/validate/internal/message_rules.h"
 #include "buf/validate/internal/message_factory.h"

@@ -16,8 +16,6 @@
 
 #include "absl/status/statusor.h"
 #include "buf/validate/internal/extra_func.h"
-#include "buf/validate/priv/private.pb.h"
-#include "buf/validate/validate.pb.h"
 #include "eval/public/builtin_func_registrar.h"
 #include "eval/public/cel_expr_builder_factory.h"
 #include "eval/public/cel_value.h"
@@ -25,8 +23,6 @@
 #include "eval/public/containers/field_backed_list_impl.h"
 #include "eval/public/containers/field_backed_map_impl.h"
 #include "eval/public/structs/cel_proto_wrapper.h"
-#include "google/protobuf/any.pb.h"
-#include "google/protobuf/descriptor.pb.h"
 #include "google/protobuf/dynamic_message.h"
 #include "google/protobuf/util/message_differencer.h"
 

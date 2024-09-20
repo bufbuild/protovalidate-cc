@@ -16,7 +16,7 @@
 
 #include <string_view>
 
-#include "buf/validate/expression.pb.h"
+#include "buf/validate/validate.pb.h"
 #include "buf/validate/internal/constraint_rules.h"
 #include "eval/public/activation.h"
 #include "eval/public/cel_expression.h"

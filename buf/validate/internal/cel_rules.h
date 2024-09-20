@@ -60,10 +60,10 @@ absl::Status BuildCelRules(
     R::GetReflection()->ListFields(rules, &fields);
   }
   for (const auto* field : fields) {
-    if (!field->options().HasExtension(buf::validate::priv::field)) {
+    if (!field->options().HasExtension(buf::validate::predefined)) {
       continue;
     }
-    const auto& fieldLvl = field->options().GetExtension(buf::validate::priv::field);
+    const auto& fieldLvl = field->options().GetExtension(buf::validate::predefined);
     for (const auto& constraint : fieldLvl.cel()) {
       auto status = result.Add(
           builder, constraint.id(), constraint.message(), constraint.expression(), field);
