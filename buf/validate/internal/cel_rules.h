@@ -16,6 +16,7 @@
 
 #include "absl/status/status.h"
 #include "buf/validate/internal/cel_constraint_rules.h"
+#include "buf/validate/internal/message_factory.h"
 #include "buf/validate/validate.pb.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/descriptor.h"
@@ -24,22 +25,48 @@ namespace buf::validate::internal {
 
 template <typename R>
 absl::Status BuildCelRules(
+    std::unique_ptr<MessageFactory>& messageFactory,
+    bool allowUnknownFields,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const R& rules,
     CelConstraintRules& result) {
-  result.setRules(&rules, arena);
   // Look for constraints on the set fields.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
-  R::GetReflection()->ListFields(rules, &fields);
+  google::protobuf::Message* reparsedRules{};
+  if (messageFactory && rules.unknown_fields().field_count() > 0) {
+    reparsedRules = messageFactory->messageFactory()
+                        ->GetPrototype(messageFactory->descriptorPool()->FindMessageTypeByName(
+                            rules.GetTypeName()))
+                        ->New(arena);
+    if (!Reparse(*messageFactory, rules, reparsedRules)) {
+      reparsedRules = nullptr;
+    }
+  }
+  if (reparsedRules) {
+    if (!allowUnknownFields &&
+        !reparsedRules->GetReflection()->GetUnknownFields(*reparsedRules).empty()) {
+      return absl::FailedPreconditionError(
+          absl::StrCat("unknown constraints in ", reparsedRules->GetTypeName()));
+    }
+    result.setRules(reparsedRules, arena);
+    reparsedRules->GetReflection()->ListFields(*reparsedRules, &fields);
+  } else {
+    if (!allowUnknownFields && !R::GetReflection()->GetUnknownFields(rules).empty()) {
+      return absl::FailedPreconditionError(
+          absl::StrCat("unknown constraints in ", rules.GetTypeName()));
+    }
+    result.setRules(&rules, arena);
+    R::GetReflection()->ListFields(rules, &fields);
+  }
   for (const auto* field : fields) {
-    if (!field->options().HasExtension(buf::validate::priv::field)) {
+    if (!field->options().HasExtension(buf::validate::predefined)) {
       continue;
     }
-    const auto& fieldLvl = field->options().GetExtension(buf::validate::priv::field);
+    const auto& fieldLvl = field->options().GetExtension(buf::validate::predefined);
     for (const auto& constraint : fieldLvl.cel()) {
-      auto status =
-          result.Add(builder, constraint.id(), constraint.message(), constraint.expression());
+      auto status = result.Add(
+          builder, constraint.id(), constraint.message(), constraint.expression(), field);
       if (!status.ok()) {
         return status;
       }

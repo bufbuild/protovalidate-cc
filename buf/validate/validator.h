@@ -17,9 +17,10 @@
 #include <memory>
 #include <string_view>
 
-#include "buf/validate/expression.pb.h"
+#include "buf/validate/validate.pb.h"
 #include "buf/validate/internal/constraints.h"
 #include "buf/validate/internal/message_rules.h"
+#include "buf/validate/internal/message_factory.h"
 #include "eval/public/cel_expression.h"
 #include "google/protobuf/message.h"
 
@@ -94,10 +95,24 @@ class ValidatorFactory {
     disableLazyLoading_ = disable;
   }
 
+  /// Set message factory and descriptor pool. This is used for re-parsing unknown fields.
+  /// The provided messageFactory and descriptorPool must outlive the ValidatorFactory.
+  void SetMessageFactory(google::protobuf::MessageFactory *messageFactory,
+                         const google::protobuf::DescriptorPool *descriptorPool) {
+    messageFactory_ = std::make_unique<internal::MessageFactory>(messageFactory, descriptorPool);
+  }
+
+  /// Set whether or not unknown constraint fields will be tolerated. Defaults to false.
+  void SetAllowUnknownFields(bool allowUnknownFields) {
+    allowUnknownFields_ = allowUnknownFields;
+  }
+
  private:
   friend class Validator;
   google::protobuf::Arena arena_;
   absl::Mutex mutex_;
+  std::unique_ptr<internal::MessageFactory> messageFactory_;
+  bool allowUnknownFields_;
   absl::flat_hash_map<const google::protobuf::Descriptor*, internal::Constraints> constraints_
       ABSL_GUARDED_BY(mutex_);
   std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder> builder_

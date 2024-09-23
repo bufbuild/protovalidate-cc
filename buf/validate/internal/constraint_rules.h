@@ -15,7 +15,7 @@
 #pragma once
 
 #include "absl/status/status.h"
-#include "buf/validate/expression.pb.h"
+#include "buf/validate/validate.pb.h"
 #include "eval/public/cel_value.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/message.h"

@@ -22,17 +22,22 @@ namespace buf::validate::conformance {
 
 class TestRunner {
  public:
-  explicit TestRunner() : validatorFactory_(ValidatorFactory::New().value()) {}
+  explicit TestRunner(
+      const google::protobuf::DescriptorPool* descriptorPool =
+          google::protobuf::DescriptorPool::generated_pool())
+      : descriptorPool_(descriptorPool), validatorFactory_(ValidatorFactory::New().value()) {
+    validatorFactory_->SetMessageFactory(&messageFactory_, descriptorPool_);
+    validatorFactory_->SetAllowUnknownFields(false);
+  }
 
-  harness::TestConformanceResponse runTest(
-      const harness::TestConformanceRequest& request,
-      const google::protobuf::DescriptorPool* descriptorPool);
+  harness::TestConformanceResponse runTest(const harness::TestConformanceRequest& request);
   harness::TestResult runTestCase(
       const google::protobuf::Descriptor* desc, const google::protobuf::Any& dyn);
   harness::TestResult runTestCase(const google::protobuf::Message& message);
 
  private:
   google::protobuf::DynamicMessageFactory messageFactory_;
+  const google::protobuf::DescriptorPool* descriptorPool_;
   std::unique_ptr<ValidatorFactory> validatorFactory_;
   google::protobuf::Arena arena_;
 };

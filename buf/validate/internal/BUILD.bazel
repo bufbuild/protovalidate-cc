@@ -23,7 +23,11 @@ cc_library(
         "@com_google_cel_cpp//eval/public:activation",
         "@com_google_cel_cpp//eval/public:cel_expression",
         "@com_google_cel_cpp//eval/public/structs:cel_proto_wrapper",
+        "@com_google_cel_cpp//eval/public/containers:field_access",
+        "@com_google_cel_cpp//eval/public/containers:field_backed_list_impl",
+        "@com_google_cel_cpp//eval/public/containers:field_backed_map_impl",
         "@com_google_cel_cpp//parser",
+        "@com_google_cel_cpp//base:value"
     ],
 )
 
@@ -44,7 +48,17 @@ cc_library(
     deps = [
         "@com_google_absl//absl/status",
         "@com_google_protobuf//:protobuf",
+        ":message_factory",
     ],
+)
+
+cc_library(
+    name = "message_factory",
+    srcs = ["message_factory.cc"],
+    hdrs = ["message_factory.h"],
+    deps = [
+        "@com_google_protobuf//:protobuf",
+    ]
 )
 
 cc_library(
@@ -53,6 +67,7 @@ cc_library(
     hdrs = ["message_rules.h"],
     deps = [
         ":field_rules",
+        ":message_factory",
         "@com_github_bufbuild_protovalidate//proto/protovalidate/buf/validate:validate_proto_cc",
         "@com_google_absl//absl/status",
         "@com_google_cel_cpp//eval/public:cel_expression",

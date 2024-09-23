@@ -16,14 +16,15 @@
 #include "buf/validate/conformance/runner.h"
 
 int main(int argc, char** argv) {
-  google::protobuf::DescriptorPool descriptorPool;
-  buf::validate::conformance::TestRunner runner;
+  google::protobuf::DescriptorPool descriptorPool{
+      google::protobuf::DescriptorPool::generated_pool()};
   buf::validate::conformance::harness::TestConformanceRequest request;
   request.ParseFromIstream(&std::cin);
   for (const auto& file : request.fdset().file()) {
     descriptorPool.BuildFile(file);
   }
-  auto response = runner.runTest(request, &descriptorPool);
+  buf::validate::conformance::TestRunner runner{&descriptorPool};
+  auto response = runner.runTest(request);
   response.SerializeToOstream(&std::cout);
   return 0;
 }
