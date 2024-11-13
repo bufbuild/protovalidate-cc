@@ -16,12 +16,46 @@
 
 #include "absl/status/status.h"
 #include "buf/validate/internal/cel_constraint_rules.h"
+#include "buf/validate/internal/constraints.h"
 #include "buf/validate/internal/message_factory.h"
 #include "buf/validate/validate.pb.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/descriptor.h"
 
 namespace buf::validate::internal {
+
+template <typename T>
+constexpr int ruleFieldNumber() = delete;
+
+#define MAP_RULES_TO_FIELD_NUMBER(R, fieldNumber) \
+  template <>                                     \
+  constexpr int ruleFieldNumber<R>() {            \
+    return fieldNumber;                           \
+  }
+
+MAP_RULES_TO_FIELD_NUMBER(FloatRules, FieldConstraints::kFloatFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(DoubleRules, FieldConstraints::kDoubleFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(Int32Rules, FieldConstraints::kInt32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(Int64Rules, FieldConstraints::kInt64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(UInt32Rules, FieldConstraints::kUint32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(UInt64Rules, FieldConstraints::kUint64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(SInt32Rules, FieldConstraints::kSint32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(SInt64Rules, FieldConstraints::kSint64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(Fixed32Rules, FieldConstraints::kFixed32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(Fixed64Rules, FieldConstraints::kFixed64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(SFixed32Rules, FieldConstraints::kSfixed32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(SFixed64Rules, FieldConstraints::kSfixed64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(BoolRules, FieldConstraints::kBoolFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(StringRules, FieldConstraints::kStringFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(BytesRules, FieldConstraints::kBytesFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(EnumRules, FieldConstraints::kEnumFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(RepeatedRules, FieldConstraints::kRepeatedFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(MapRules, FieldConstraints::kMapFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(AnyRules, FieldConstraints::kAnyFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(DurationRules, FieldConstraints::kDurationFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(TimestampRules, FieldConstraints::kTimestampFieldNumber)
+
+#undef MAP_RULES_TO_FIELD_NUMBER
 
 template <typename R>
 absl::Status BuildCelRules(
@@ -60,13 +94,17 @@ absl::Status BuildCelRules(
     R::GetReflection()->ListFields(rules, &fields);
   }
   for (const auto* field : fields) {
+    FieldPath rulePath;
+    *rulePath.mutable_elements()->Add() = fieldPathElement(field);
+    *rulePath.mutable_elements()->Add() =
+        staticFieldPathElement<FieldConstraints, ruleFieldNumber<R>()>();
     if (!field->options().HasExtension(buf::validate::predefined)) {
       continue;
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::predefined);
     for (const auto& constraint : fieldLvl.cel()) {
       auto status = result.Add(
-          builder, constraint.id(), constraint.message(), constraint.expression(), field);
+          builder, constraint.id(), constraint.message(), constraint.expression(), rulePath, field);
       if (!status.ok()) {
         return status;
       }

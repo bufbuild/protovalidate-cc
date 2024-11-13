@@ -342,7 +342,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
   }
   if (rules_or.ok()) {
     for (const auto& constraint : fieldLvl.cel()) {
-      auto status = rules_or.value()->Add(builder, constraint, nullptr);
+      auto status = rules_or.value()->Add(builder, constraint, absl::nullopt, nullptr);
       if (!status.ok()) {
         return status;
       }

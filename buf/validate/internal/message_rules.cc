@@ -23,7 +23,7 @@ absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
     const MessageConstraints& constraints) {
   auto result = std::make_unique<MessageConstraintRules>();
   for (const auto& constraint : constraints.cel()) {
-    if (auto status = result->Add(builder, constraint, nullptr); !status.ok()) {
+    if (auto status = result->Add(builder, constraint, absl::nullopt, nullptr); !status.ok()) {
       return status;
     }
   }

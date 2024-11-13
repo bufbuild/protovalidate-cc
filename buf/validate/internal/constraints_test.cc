@@ -48,16 +48,15 @@ class ExpressionTest : public testing::Test {
     constraint.set_expression(std::move(expr));
     constraint.set_message(std::move(message));
     constraint.set_id(std::move(id));
-    return constraints_->Add(*builder_, constraint, nullptr);
+    return constraints_->Add(*builder_, constraint, absl::nullopt, nullptr);
   }
 
   absl::Status Validate(
-      const std::string& fieldPath,
       google::api::expr::runtime::Activation& activation,
       std::vector<Violation>& violations) {
     ConstraintContext ctx;
     ctx.arena = &arena_;
-    auto status = constraints_->ValidateCel(ctx, fieldPath, activation);
+    auto status = constraints_->ValidateCel(ctx, activation);
     if (!status.ok()) {
       return status;
     }
@@ -74,10 +73,9 @@ TEST_F(ExpressionTest, BoolResult) {
 
   cel::runtime::Activation ctx;
   std::vector<Violation> violations;
-  auto status = Validate("a.b", ctx, violations);
+  auto status = Validate(ctx, violations);
   ASSERT_TRUE(status.ok()) << status;
   ASSERT_EQ(violations.size(), 1);
-  EXPECT_EQ(violations[0].field_path(), "a.b");
   EXPECT_EQ(violations[0].message(), "always fails");
   EXPECT_EQ(violations[0].constraint_id(), "always-fails");
 }
@@ -88,10 +86,9 @@ TEST_F(ExpressionTest, StringResult) {
 
   cel::runtime::Activation ctx;
   std::vector<Violation> violations;
-  auto status = Validate("a.b", ctx, violations);
+  auto status = Validate(ctx, violations);
   ASSERT_TRUE(status.ok()) << status;
   ASSERT_EQ(violations.size(), 1);
-  EXPECT_EQ(violations[0].field_path(), "a.b");
   EXPECT_EQ(violations[0].message(), "error");
   EXPECT_EQ(violations[0].constraint_id(), "always-fails");
 }
@@ -100,7 +97,7 @@ TEST_F(ExpressionTest, Error) {
   ASSERT_TRUE(AddConstraint("1/0", "always fails", "always-fails").ok());
   cel::runtime::Activation ctx;
   std::vector<Violation> violations;
-  auto status = Validate("a.b", ctx, violations);
+  auto status = Validate(ctx, violations);
   ASSERT_FALSE(status.ok()) << status;
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_EQ(status.message(), "divide by zero");
@@ -110,7 +107,7 @@ TEST_F(ExpressionTest, BadType) {
   ASSERT_TRUE(AddConstraint("1", "always fails", "always-fails").ok());
   cel::runtime::Activation ctx;
   std::vector<Violation> violations;
-  auto status = Validate("a.b", ctx, violations);
+  auto status = Validate(ctx, violations);
   ASSERT_FALSE(status.ok()) << status;
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
   EXPECT_EQ(status.message(), "invalid result type");
