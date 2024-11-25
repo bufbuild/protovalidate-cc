@@ -176,24 +176,25 @@ inline auto oneofPathElement(const google::protobuf::OneofDescriptor& oneofDescr
 inline absl::Status setPathElementMapKey(
     FieldPathElement* element,
     const google::protobuf::Message& message,
-    const google::protobuf::FieldDescriptor* keyField) {
+    const google::protobuf::FieldDescriptor* keyField,
+    const google::protobuf::FieldDescriptor* valueField) {
   using Type = google::protobuf::FieldDescriptor::Type;
+  element->set_key_type(
+      static_cast<::google::protobuf::FieldDescriptorProto_Type>(keyField->type()));
+  element->set_value_type(
+      static_cast<::google::protobuf::FieldDescriptorProto_Type>(valueField->type()));
   switch (keyField->type()) {
     case Type::TYPE_BOOL:
       element->set_bool_key(message.GetReflection()->GetBool(message, keyField));
       break;
-    case Type::TYPE_SINT32:
-      element->set_sint_key(message.GetReflection()->GetInt32(message, keyField));
-      break;
-    case Type::TYPE_SINT64:
-      element->set_sint_key(message.GetReflection()->GetInt64(message, keyField));
-      break;
     case Type::TYPE_INT32:
     case Type::TYPE_SFIXED32:
+    case Type::TYPE_SINT32:
       element->set_int_key(message.GetReflection()->GetInt32(message, keyField));
       break;
     case Type::TYPE_INT64:
     case Type::TYPE_SFIXED64:
+    case Type::TYPE_SINT64:
       element->set_int_key(message.GetReflection()->GetInt64(message, keyField));
       break;
     case Type::TYPE_UINT32:
@@ -228,9 +229,6 @@ inline std::string fieldPathString(const FieldPath &path) {
         break;
       case FieldPathElement::kIntKey:
         absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.int_key()), "]");
-        break;
-      case FieldPathElement::kSintKey:
-        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.sint_key()), "]");
         break;
       case FieldPathElement::kUintKey:
         absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.uint_key()), "]");

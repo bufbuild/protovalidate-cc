@@ -12,7 +12,7 @@ LICENSE_IGNORE := -e internal/testdata/
 LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
 # NOTE: Keep this version in sync with the version in `/bazel/deps.bzl`.
 # DO NOT MERGE
-PROTOVALIDATE_VERSION ?= 9fbcb20937fb97609f5711d25474213241694294
+PROTOVALIDATE_VERSION ?= a4d7e113cc9e8944fb22098123eddc5413500381
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go

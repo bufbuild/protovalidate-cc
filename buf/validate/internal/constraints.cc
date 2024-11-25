@@ -271,6 +271,7 @@ absl::Status MapConstraintRules::Validate(
   cel::runtime::FieldBackedMapImpl mapVal(&message, field_, ctx.arena);
   cel::runtime::Activation activation;
   const auto* keyField = field_->message_type()->FindFieldByName("key");
+  const auto* valueField = field_->message_type()->FindFieldByName("value");
   auto keys_or = mapVal.ListKeys();
   if (!keys_or.ok()) {
     return keys_or.status();
@@ -319,7 +320,8 @@ absl::Status MapConstraintRules::Validate(
     }
     if (ctx.violations.violations_size() > pos) {
       FieldPathElement element = fieldPathElement(field_);
-      if (auto status = setPathElementMapKey(&element, elemMsg, keyField); !status.ok()) {
+      if (auto status = setPathElementMapKey(&element, elemMsg, keyField, valueField);
+          !status.ok()) {
         return status;
       }
       ctx.appendFieldPathElement(element, pos);

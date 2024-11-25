@@ -74,7 +74,7 @@ absl::Status Validator::ValidateFields(
         auto status = ValidateMessage(ctx, valueMsg);
         if (pos < ctx.violations.violations_size()) {
           FieldPathElement element = internal::fieldPathElement(field);
-          if (auto status = internal::setPathElementMapKey(&element, elemMsg, keyField);
+          if (auto status = internal::setPathElementMapKey(&element, elemMsg, keyField, valueField);
               !status.ok()) {
             return status;
           }

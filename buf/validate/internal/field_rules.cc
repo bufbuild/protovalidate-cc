@@ -341,8 +341,14 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
           absl::StrFormat("unknown field validator type %d", fieldLvl.type_case()));
   }
   if (rules_or.ok()) {
-    for (const auto& constraint : fieldLvl.cel()) {
-      auto status = rules_or.value()->Add(builder, constraint, absl::nullopt, nullptr);
+    for (int i = 0; i < fieldLvl.cel_size(); i++) {
+      const auto& constraint = fieldLvl.cel(i);
+      FieldPathElement celElement =
+          staticFieldPathElement<FieldConstraints, FieldConstraints::kCelFieldNumber>();
+      celElement.set_index(i);
+      FieldPath rulePath;
+      *rulePath.mutable_elements()->Add() = celElement;
+      auto status = rules_or.value()->Add(builder, constraint, rulePath, nullptr);
       if (!status.ok()) {
         return status;
       }
