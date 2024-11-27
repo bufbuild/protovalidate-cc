@@ -28,6 +28,7 @@ namespace buf::validate::internal {
 struct CompiledConstraint {
   buf::validate::Constraint constraint;
   std::unique_ptr<google::api::expr::runtime::CelExpression> expr;
+  const absl::optional<FieldPath> rulePath;
   const google::protobuf::FieldDescriptor* rule;
 };
 
@@ -41,25 +42,23 @@ class CelConstraintRules : public ConstraintRules {
   absl::Status Add(
       google::api::expr::runtime::CelExpressionBuilder& builder,
       Constraint constraint,
+      absl::optional<FieldPath> rulePath,
       const google::protobuf::FieldDescriptor* rule);
   absl::Status Add(
       google::api::expr::runtime::CelExpressionBuilder& builder,
       std::string_view id,
       std::string_view message,
       std::string_view expression,
+      absl::optional<FieldPath> rulePath,
       const google::protobuf::FieldDescriptor* rule);
-  [[nodiscard]] const std::vector<CompiledConstraint>& getExprs() const { return exprs_; }
 
   // Validate all the cel rules given the activation that already has 'this' bound.
   absl::Status ValidateCel(
       ConstraintContext& ctx,
-      std::string_view fieldName,
       google::api::expr::runtime::Activation& activation) const;
 
   void setRules(google::api::expr::runtime::CelValue rules) { rules_ = rules; }
   void setRules(const google::protobuf::Message* rules, google::protobuf::Arena* arena);
-  [[nodiscard]] const google::api::expr::runtime::CelValue& getRules() const { return rules_; }
-  [[nodiscard]] google::api::expr::runtime::CelValue& getRules() { return rules_; }
 
  protected:
   google::api::expr::runtime::CelValue rules_;

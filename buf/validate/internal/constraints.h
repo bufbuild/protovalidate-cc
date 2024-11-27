@@ -16,6 +16,7 @@
 
 #include <string>
 #include <string_view>
+#include <utility>
 
 #include "buf/validate/internal/cel_constraint_rules.h"
 #include "buf/validate/validate.pb.h"
@@ -50,14 +51,12 @@ class FieldConstraintRules : public CelConstraintRules {
         required_(field.required()),
         anyRules_(anyRules) {}
 
-  [[nodiscard]] const google::protobuf::FieldDescriptor* getField() const { return field_; }
-
   absl::Status Validate(
       ConstraintContext& ctx, const google::protobuf::Message& message) const override;
 
   absl::Status ValidateAny(
       ConstraintContext& ctx,
-      std::string_view fieldName,
+      const google::protobuf::FieldDescriptor* field,
       const google::protobuf::Message& anyMsg) const;
 
   [[nodiscard]] const AnyRules* getAnyRules() const { return anyRules_; }
@@ -145,32 +144,103 @@ class OneofConstraintRules : public ConstraintRules {
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
 NewConstraintBuilder(google::protobuf::Arena* arena);
 
-inline std::string makeMapKeyString(
-    const google::protobuf::Message& message, const google::protobuf::FieldDescriptor* keyField) {
-  switch (keyField->cpp_type()) {
-    case google::protobuf::FieldDescriptor::CPPTYPE_INT32:
-      return std::to_string(message.GetReflection()->GetInt32(message, keyField));
-    case google::protobuf::FieldDescriptor::CPPTYPE_INT64:
-      return std::to_string(message.GetReflection()->GetInt64(message, keyField));
-    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32:
-      return std::to_string(message.GetReflection()->GetUInt32(message, keyField));
-    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64:
-      return std::to_string(message.GetReflection()->GetUInt64(message, keyField));
-    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE:
-      return std::to_string(message.GetReflection()->GetDouble(message, keyField));
-    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT:
-      return std::to_string(message.GetReflection()->GetFloat(message, keyField));
-    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL:
-      return message.GetReflection()->GetBool(message, keyField) ? "true" : "false";
-    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM:
-      return message.GetReflection()->GetEnum(message, keyField)->name();
-    case google::protobuf::FieldDescriptor::CPPTYPE_STRING:
-      // Quote and escape the string.
-      return absl::StrCat(
-          "\"", absl::CEscape(message.GetReflection()->GetString(message, keyField)), "\"");
-    default:
-      return "?";
+inline auto fieldPathElement(const google::protobuf::FieldDescriptor* fieldDescriptor) -> FieldPathElement {
+  FieldPathElement element;
+  element.set_field_number(fieldDescriptor->number());
+  element.set_field_type(
+      static_cast<::google::protobuf::FieldDescriptorProto_Type>(fieldDescriptor->type()));
+  if (fieldDescriptor->is_extension()) {
+    *element.mutable_field_name() = absl::StrCat("[", fieldDescriptor->full_name(), "]");
+  } else {
+    *element.mutable_field_name() = fieldDescriptor->name();
   }
+  return element;
+}
+
+template<typename ProtoMessage, int number>
+auto staticFieldPathElement() -> FieldPathElement {
+  // This is thread-safe: C++11 guarantees static local initialization to be done only once and is
+  // synchronized automatically.
+  static const FieldPathElement element =
+      fieldPathElement(ProtoMessage::descriptor()->FindFieldByNumber(number));
+  return element;
+}
+
+inline auto oneofPathElement(const google::protobuf::OneofDescriptor& oneofDescriptor)
+    -> FieldPathElement {
+  FieldPathElement element;
+  *element.mutable_field_name() = oneofDescriptor.name();
+  return element;
+}
+
+inline absl::Status setPathElementMapKey(
+    FieldPathElement* element,
+    const google::protobuf::Message& message,
+    const google::protobuf::FieldDescriptor* keyField,
+    const google::protobuf::FieldDescriptor* valueField) {
+  using Type = google::protobuf::FieldDescriptor::Type;
+  element->set_key_type(
+      static_cast<::google::protobuf::FieldDescriptorProto_Type>(keyField->type()));
+  element->set_value_type(
+      static_cast<::google::protobuf::FieldDescriptorProto_Type>(valueField->type()));
+  switch (keyField->type()) {
+    case Type::TYPE_BOOL:
+      element->set_bool_key(message.GetReflection()->GetBool(message, keyField));
+      break;
+    case Type::TYPE_INT32:
+    case Type::TYPE_SFIXED32:
+    case Type::TYPE_SINT32:
+      element->set_int_key(message.GetReflection()->GetInt32(message, keyField));
+      break;
+    case Type::TYPE_INT64:
+    case Type::TYPE_SFIXED64:
+    case Type::TYPE_SINT64:
+      element->set_int_key(message.GetReflection()->GetInt64(message, keyField));
+      break;
+    case Type::TYPE_UINT32:
+    case Type::TYPE_FIXED32:
+      element->set_uint_key(message.GetReflection()->GetUInt32(message, keyField));
+      break;
+    case Type::TYPE_UINT64:
+    case Type::TYPE_FIXED64:
+      element->set_uint_key(message.GetReflection()->GetUInt64(message, keyField));
+      break;
+    case Type::TYPE_STRING:
+      *element->mutable_string_key() = message.GetReflection()->GetString(message, keyField);
+      break;
+    default:
+      return absl::InternalError(absl::StrCat("unexpected map key type ", keyField->type_name()));
+  }
+  return {};
+}
+
+inline std::string fieldPathString(const FieldPath &path) {
+  std::string result;
+  for (const FieldPathElement& element : path.elements()) {
+    if (!result.empty()) {
+      result += '.';
+    }
+    switch (element.subscript_case()) {
+      case FieldPathElement::kIndex:
+        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.index()), "]");
+        break;
+      case FieldPathElement::kBoolKey:
+        absl::StrAppend(&result, element.field_name(), element.bool_key() ? "[true]" : "[false]");
+        break;
+      case FieldPathElement::kIntKey:
+        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.int_key()), "]");
+        break;
+      case FieldPathElement::kUintKey:
+        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.uint_key()), "]");
+        break;
+      case FieldPathElement::kStringKey:
+        absl::StrAppend(&result, element.field_name(), "[\"", absl::CEscape(element.string_key()), "\"]");
+        break;
+      case FieldPathElement::SUBSCRIPT_NOT_SET:
+        absl::StrAppend(&result, element.field_name());
+    }
+  }
+  return result;
 }
 
 } // namespace buf::validate::internal

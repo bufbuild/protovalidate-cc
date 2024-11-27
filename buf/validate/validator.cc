@@ -73,9 +73,12 @@ absl::Status Validator::ValidateFields(
         int pos = ctx.violations.violations_size();
         auto status = ValidateMessage(ctx, valueMsg);
         if (pos < ctx.violations.violations_size()) {
-          ctx.prefixFieldPath(
-              absl::StrCat(field->name(), "[", internal::makeMapKeyString(elemMsg, keyField), "]"),
-              pos);
+          FieldPathElement element = internal::fieldPathElement(field);
+          if (auto status = internal::setPathElementMapKey(&element, elemMsg, keyField, valueField);
+              !status.ok()) {
+            return status;
+          }
+          ctx.appendFieldPathElement(element, pos);
         }
         if (ctx.shouldReturn(status)) {
           return status;
@@ -88,7 +91,9 @@ absl::Status Validator::ValidateFields(
         const auto& subMsg = message.GetReflection()->GetRepeatedMessage(message, field, i);
         auto status = ValidateMessage(ctx, subMsg);
         if (pos < ctx.violations.violations_size()) {
-          ctx.prefixFieldPath(absl::StrCat(field->name(), "[", i, "]"), pos);
+          FieldPathElement element = internal::fieldPathElement(field);
+          element.set_index(i);
+          ctx.appendFieldPathElement(element, pos);
         }
         if (ctx.shouldReturn(status)) {
           return status;
@@ -99,7 +104,7 @@ absl::Status Validator::ValidateFields(
       int pos = ctx.violations.violations_size();
       auto status = ValidateMessage(ctx, subMsg);
       if (pos < ctx.violations.violations_size()) {
-        ctx.prefixFieldPath(field->name(), pos);
+        ctx.appendFieldPathElement(internal::fieldPathElement(field), pos);
       }
       if (ctx.shouldReturn(status)) {
         return status;
@@ -116,6 +121,19 @@ absl::StatusOr<Violations> Validator::Validate(const google::protobuf::Message& 
   auto status = ValidateMessage(ctx, message);
   if (!status.ok()) {
     return status;
+  }
+  for (Violation& violation : *ctx.violations.mutable_violations()) {
+    if (violation.has_field()) {
+      std::reverse(
+          violation.mutable_field()->mutable_elements()->begin(),
+          violation.mutable_field()->mutable_elements()->end());
+      *violation.mutable_field_path() = internal::fieldPathString(violation.field());
+    }
+    if (violation.has_rule()) {
+      std::reverse(
+          violation.mutable_rule()->mutable_elements()->begin(),
+          violation.mutable_rule()->mutable_elements()->end());
+    }
   }
   return std::move(ctx.violations);
 }

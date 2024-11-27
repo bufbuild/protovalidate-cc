@@ -34,14 +34,18 @@ struct ConstraintContext {
     return !status.ok() || (failFast && violations.violations_size() > 0);
   }
 
-  void prefixFieldPath(std::string_view prefix, int start) {
+  void appendFieldPathElement(const FieldPathElement &element, int start) {
     for (int i = start; i < violations.violations_size(); i++) {
       auto* violation = violations.mutable_violations(i);
-      if (violation->field_path().empty()) {
-        *violation->mutable_field_path() = prefix;
-      } else {
-        violation->set_field_path(absl::StrCat(prefix, ".", violation->field_path()));
-      }
+      *violation->mutable_field()->mutable_elements()->Add() = element;
+    }
+  }
+
+  void appendRulePathElement(std::initializer_list<FieldPathElement> suffix, int start) {
+    for (int i = start; i < violations.violations_size(); i++) {
+      auto* violation = violations.mutable_violations(i);
+      auto* elements = violation->mutable_rule()->mutable_elements();
+      std::copy(suffix.begin(), suffix.end(), RepeatedPtrFieldBackInserter(elements));
     }
   }
 };
