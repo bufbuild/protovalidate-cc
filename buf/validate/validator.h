@@ -16,6 +16,7 @@
 
 #include <memory>
 #include <string_view>
+#include <utility>
 
 #include "buf/validate/validate.pb.h"
 #include "buf/validate/internal/constraints.h"
@@ -26,7 +27,38 @@
 
 namespace buf::validate {
 
+using internal::ConstraintViolation;
+using internal::ProtoField;
+
 class ValidatorFactory;
+
+/// The ValidationResult class contains information about the validation.
+class ValidationResult {
+ public:
+  ValidationResult(std::vector<ConstraintViolation> violations)
+      : violations_{std::move(violations)} {}
+
+  [[nodiscard]] Violations proto() {
+    Violations proto{};
+    std::transform(
+        violations_.begin(),
+        violations_.end(),
+        RepeatedPtrFieldBackInserter(proto.mutable_violations()),
+        [](ConstraintViolation& violation) { return violation.proto(); });
+    return proto;
+  }
+
+  [[nodiscard]] bool success() const { return violations_.empty(); }
+
+  [[nodiscard]] const std::vector<ConstraintViolation>& violations() const { return violations_; }
+
+  [[nodiscard]] ConstraintViolation violations(int i) const { return violations_.at(i); }
+
+  [[nodiscard]] int violations_size() const { return violations_.size(); }
+
+ private:
+  std::vector<ConstraintViolation> violations_;
+};
 
 /// A validator is a non-thread safe object that can be used to validate
 /// google.protobuf.Message objects.
@@ -37,10 +69,10 @@ class Validator {
  public:
   /// Validate a message.
   ///
-  /// An empty Violations object is returned, if the message passes validation.
-  /// If the message fails validation, a Violations object with the violations is returned.
+  /// A ValidationResult with no violations is returned, if the message passes validation.
+  /// If the message fails validation, a ViolationResult with the violations is returned.
   /// If there is an error while validating, a Status with the error is returned.
-  absl::StatusOr<Violations> Validate(const google::protobuf::Message& message);
+  absl::StatusOr<ValidationResult> Validate(const google::protobuf::Message& message);
 
   // Move only.
   Validator(const Validator&) = delete;
@@ -122,7 +154,6 @@ class ValidatorFactory {
   ValidatorFactory() = default;
 
   const internal::Constraints* GetMessageConstraints(const google::protobuf::Descriptor* desc);
-  const internal::Constraints& AddConstraints(const google::protobuf::Descriptor* desc);
 };
 
 } // namespace buf::validate

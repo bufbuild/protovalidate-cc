@@ -15,12 +15,38 @@
 #pragma once
 
 #include "absl/status/status.h"
+#include "absl/strings/escaping.h"
 #include "buf/validate/validate.pb.h"
+#include "buf/validate/internal/proto_field.h"
 #include "eval/public/cel_value.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/message.h"
 
 namespace buf::validate::internal {
+inline std::string fieldPathString(const FieldPath &path);
+
+/// ConstraintViolation is a wrapper for the protobuf Violation that provides additional in-memory
+/// information, specifically, references to the in-memory values for the field and rule.
+class ConstraintViolation {
+  friend struct ConstraintContext;
+
+ public:
+  ConstraintViolation(
+      Violation proto,
+      const absl::optional<ProtoField>& fieldValue,
+      const absl::optional<ProtoField>& ruleValue)
+      : proto_{std::move(proto)}, fieldValue_{fieldValue}, ruleValue_{ruleValue} {}
+
+  [[nodiscard]] const Violation& proto() const { return proto_; }
+  [[nodiscard]] absl::optional<ProtoField> field_value() const { return fieldValue_; }
+  [[nodiscard]] absl::optional<ProtoField> rule_value() const { return ruleValue_; }
+
+ private:
+  Violation proto_;
+  absl::optional<ProtoField> fieldValue_;
+  absl::optional<ProtoField> ruleValue_;
+};
+
 struct ConstraintContext {
   ConstraintContext() : failFast(false), arena(nullptr) {}
   ConstraintContext(const ConstraintContext&) = delete;
@@ -28,24 +54,56 @@ struct ConstraintContext {
 
   bool failFast;
   google::protobuf::Arena* arena;
-  Violations violations;
+  std::vector<ConstraintViolation> violations;
 
   [[nodiscard]] bool shouldReturn(const absl::Status status) {
-    return !status.ok() || (failFast && violations.violations_size() > 0);
+    return !status.ok() || (failFast && !violations.empty());
   }
 
   void appendFieldPathElement(const FieldPathElement &element, int start) {
-    for (int i = start; i < violations.violations_size(); i++) {
-      auto* violation = violations.mutable_violations(i);
-      *violation->mutable_field()->mutable_elements()->Add() = element;
+    for (int i = start; i < violations.size(); i++) {
+      *violations[i].proto_.mutable_field()->mutable_elements()->Add() = element;
     }
   }
 
   void appendRulePathElement(std::initializer_list<FieldPathElement> suffix, int start) {
-    for (int i = start; i < violations.violations_size(); i++) {
-      auto* violation = violations.mutable_violations(i);
-      auto* elements = violation->mutable_rule()->mutable_elements();
+    for (int i = start; i < violations.size(); i++) {
+      auto* elements = violations[i].proto_.mutable_rule()->mutable_elements();
       std::copy(suffix.begin(), suffix.end(), RepeatedPtrFieldBackInserter(elements));
+    }
+  }
+
+  void setFieldValue(ProtoField field, int start) {
+    for (int i = start; i < violations.size(); i++) {
+      violations[i].fieldValue_ = field;
+    }
+  }
+
+  void setRuleValue(ProtoField rule, int start) {
+    for (int i = start; i < violations.size(); i++) {
+      violations[i].ruleValue_ = rule;
+    }
+  }
+
+  void setForKey(int start) {
+    for (int i = start; i < violations.size(); i++) {
+      violations[i].proto_.set_for_key(true);
+    }
+  }
+
+  void finalize() {
+    for (ConstraintViolation& violation : violations) {
+      if (violation.proto().has_field()) {
+        std::reverse(
+            violation.proto_.mutable_field()->mutable_elements()->begin(),
+            violation.proto_.mutable_field()->mutable_elements()->end());
+        *violation.proto_.mutable_field_path() = internal::fieldPathString(violation.proto().field());
+      }
+      if (violation.proto().has_rule()) {
+        std::reverse(
+            violation.proto_.mutable_rule()->mutable_elements()->begin(),
+            violation.proto_.mutable_rule()->mutable_elements()->end());
+      }
     }
   }
 };
@@ -61,5 +119,34 @@ class ConstraintRules {
   virtual absl::Status Validate(
       ConstraintContext& ctx, const google::protobuf::Message& message) const = 0;
 };
+
+inline std::string fieldPathString(const FieldPath &path) {
+  std::string result;
+  for (const FieldPathElement& element : path.elements()) {
+    if (!result.empty()) {
+      result += '.';
+    }
+    switch (element.subscript_case()) {
+      case FieldPathElement::kIndex:
+        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.index()), "]");
+        break;
+      case FieldPathElement::kBoolKey:
+        absl::StrAppend(&result, element.field_name(), element.bool_key() ? "[true]" : "[false]");
+        break;
+      case FieldPathElement::kIntKey:
+        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.int_key()), "]");
+        break;
+      case FieldPathElement::kUintKey:
+        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.uint_key()), "]");
+        break;
+      case FieldPathElement::kStringKey:
+        absl::StrAppend(&result, element.field_name(), "[\"", absl::CEscape(element.string_key()), "\"]");
+        break;
+      case FieldPathElement::SUBSCRIPT_NOT_SET:
+        absl::StrAppend(&result, element.field_name());
+    }
+  }
+  return result;
+}
 
 } // namespace buf::validate::internal

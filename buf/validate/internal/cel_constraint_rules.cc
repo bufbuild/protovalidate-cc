@@ -30,7 +30,7 @@ absl::Status ProcessConstraint(
     ConstraintContext& ctx,
     const google::api::expr::runtime::BaseActivation& activation,
     const CompiledConstraint& expr) {
-  auto result_or = expr.expr->Evaluate(activation, ctx.arena);
+  auto result_or= expr.expr->Evaluate(activation, ctx.arena);
   if (!result_or.ok()) {
     return result_or.status();
   }
@@ -38,22 +38,24 @@ absl::Status ProcessConstraint(
   if (result.IsBool()) {
     if (!result.BoolOrDie()) {
       // Add violation with the constraint message.
-      Violation& violation = *ctx.violations.add_violations();
+      Violation violation;
       violation.set_message(expr.constraint.message());
       violation.set_constraint_id(expr.constraint.id());
       if (expr.rulePath.has_value()) {
         *violation.mutable_rule() = *expr.rulePath;
       }
+      ctx.violations.emplace_back(violation, absl::nullopt, absl::nullopt);
     }
   } else if (result.IsString()) {
     if (!result.StringOrDie().value().empty()) {
       // Add violation with custom message.
-      Violation& violation = *ctx.violations.add_violations();
+      Violation violation;
       violation.set_message(std::string(result.StringOrDie().value()));
       violation.set_constraint_id(expr.constraint.id());
       if (expr.rulePath.has_value()) {
         *violation.mutable_rule() = *expr.rulePath;
       }
+      ctx.violations.emplace_back(violation, absl::nullopt, absl::nullopt);
     }
   } else if (result.IsError()) {
     const cel::runtime::CelError& error = *result.ErrorOrDie();
@@ -126,11 +128,15 @@ absl::Status CelConstraintRules::ValidateCel(
   absl::Status status = absl::OkStatus();
 
   for (const auto& expr : exprs_) {
-    if (rules_.IsMessage() && expr.rule) {
+    if (rules_.IsMessage() && expr.rule != nullptr) {
       activation.InsertValue(
           "rule", ProtoFieldToCelValue(rules_.MessageOrDie(), expr.rule, ctx.arena));
     }
+    int pos = ctx.violations.size();
     status = ProcessConstraint(ctx, activation, expr);
+    if (rules_.IsMessage() && expr.rule != nullptr && ctx.violations.size() > pos) {
+      ctx.setRuleValue(ProtoField{rules_.MessageOrDie(), expr.rule}, pos);
+    }
     if (ctx.shouldReturn(status)) {
       break;
     }

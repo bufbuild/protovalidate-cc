@@ -69,7 +69,7 @@ harness::TestResult TestRunner::runTestCase(const google::protobuf::Message& mes
         break;
     }
   } else if (violations_or.value().violations_size() > 0) {
-    *result.mutable_validation_error() = std::move(violations_or).value();
+    *result.mutable_validation_error() = violations_or->proto();
   } else {
     result.set_success(true);
   }

@@ -121,6 +121,9 @@ absl::Status MessageConstraintRules::Validate(
 
 absl::Status FieldConstraintRules::Validate(
     ConstraintContext& ctx, const google::protobuf::Message& message) const {
+  static const google::protobuf::FieldDescriptor* requiredField =
+      FieldConstraints::descriptor()->FindFieldByNumber(
+          FieldConstraints::kRequiredFieldNumber);
   google::api::expr::runtime::Activation activation;
   cel::runtime::CelValue result;
   std::string subPath;
@@ -132,12 +135,16 @@ absl::Status FieldConstraintRules::Validate(
       if (ignoreEmpty_) {
         return absl::OkStatus();
       } else if (required_) {
-        auto& violation = *ctx.violations.add_violations();
+        Violation violation;
         *violation.mutable_constraint_id() = "required";
         *violation.mutable_message() = "value is required";
         *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field_);
         *violation.mutable_rule()->mutable_elements()->Add() =
             staticFieldPathElement<FieldConstraints, FieldConstraints::kRequiredFieldNumber>();
+        ctx.violations.emplace_back(
+            std::move(violation),
+            ProtoField{&message, field_},
+            ProtoField{&fieldConstraints_, requiredField});
       }
     }
   } else if (field_->is_repeated()) {
@@ -148,23 +155,31 @@ absl::Status FieldConstraintRules::Validate(
       if (ignoreEmpty_) {
         return absl::OkStatus();
       } else if (required_) {
-        auto& violation = *ctx.violations.add_violations();
+        Violation violation;
         *violation.mutable_constraint_id() = "required";
         *violation.mutable_message() = "value is required";
         *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field_);
         *violation.mutable_rule()->mutable_elements()->Add() =
             staticFieldPathElement<FieldConstraints, FieldConstraints::kRequiredFieldNumber>();
+        ctx.violations.emplace_back(
+            std::move(violation),
+            ProtoField{&message, field_},
+            ProtoField{&fieldConstraints_, requiredField});
       }
     }
   } else {
     if (!message.GetReflection()->HasField(message, field_)) {
       if (required_) {
-        auto& violation = *ctx.violations.add_violations();
+        Violation violation;
         *violation.mutable_constraint_id() = "required";
         *violation.mutable_message() = "value is required";
         *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field_);
         *violation.mutable_rule()->mutable_elements()->Add() =
             staticFieldPathElement<FieldConstraints, FieldConstraints::kRequiredFieldNumber>();
+        ctx.violations.emplace_back(
+            std::move(violation),
+            ProtoField{&message, field_},
+            ProtoField{&fieldConstraints_, requiredField});
         return absl::OkStatus();
       } else if (ignoreEmpty_) {
         return absl::OkStatus();
@@ -174,7 +189,7 @@ absl::Status FieldConstraintRules::Validate(
     if (anyRules_ != nullptr &&
         field_->cpp_type() == google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE) {
       const auto& anyMsg = message.GetReflection()->GetMessage(message, field_);
-      auto status = ValidateAny(ctx, field_, anyMsg);
+      auto status = ValidateAny(ctx, ProtoField{&message, field_}, anyMsg);
       if (!status.ok()) {
         return status;
       }
@@ -190,32 +205,40 @@ absl::Status FieldConstraintRules::Validate(
     }
   }
   activation.InsertValue("this", result);
-  int pos = ctx.violations.violations_size();
+  int pos = ctx.violations.size();
   auto status = ValidateCel(ctx, activation);
   if (!status.ok()) {
     return status;
   }
-  if (ctx.violations.violations_size() > pos) {
+  if (ctx.violations.size() > pos) {
     auto element = fieldPathElement(field_);
     ctx.appendFieldPathElement(element, pos);
+    ctx.setFieldValue(ProtoField{&message, field_}, pos);
   }
   return status;
 }
 
 absl::Status EnumConstraintRules::Validate(
     ConstraintContext& ctx, const google::protobuf::Message& message) const {
+  static const google::protobuf::FieldDescriptor* definedOnlyField =
+      EnumRules::descriptor()->FindFieldByNumber(
+          EnumRules::kDefinedOnlyFieldNumber);
   if (auto status = Base::Validate(ctx, message); ctx.shouldReturn(status)) {
     return status;
   }
   if (definedOnly_) {
     auto value = message.GetReflection()->GetEnumValue(message, field_);
     if (field_->enum_type()->FindValueByNumber(value) == nullptr) {
-      auto& violation = *ctx.violations.add_violations();
+      Violation violation;
       *violation.mutable_constraint_id() = "enum.defined_only";
       *violation.mutable_message() = "enum value must be defined";
       *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field_);
       *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(EnumRules::descriptor()->FindFieldByNumber(EnumRules::kDefinedOnlyFieldNumber));
       *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kEnumFieldNumber));
+      ctx.violations.emplace_back(
+          std::move(violation),
+          ProtoField{&message, field_},
+          ProtoField{&fieldConstraints_.enum_(), definedOnlyField});
     }
   }
   return absl::OkStatus();
@@ -240,13 +263,13 @@ absl::Status RepeatedConstraintRules::Validate(
     }
     cel::runtime::Activation activation;
     activation.InsertValue("this", item);
-    int pos = ctx.violations.violations_size();
+    int pos = ctx.violations.size();
     status = itemRules_->ValidateCel(ctx, activation);
     if (itemRules_->getAnyRules() != nullptr) {
       const auto& anyMsg = message.GetReflection()->GetRepeatedMessage(message, field_, i);
-      status = itemRules_->ValidateAny(ctx, nullptr, anyMsg);
+      status = itemRules_->ValidateAny(ctx, ProtoField{&message, field_, i}, anyMsg);
     }
-    if (ctx.violations.violations_size() > pos) {
+    if (ctx.violations.size() > pos) {
       FieldPathElement element = fieldPathElement(field_);
       element.set_index(i);
       ctx.appendFieldPathElement(element, pos);
@@ -254,6 +277,7 @@ absl::Status RepeatedConstraintRules::Validate(
         fieldPathElement(RepeatedRules::descriptor()->FindFieldByNumber(RepeatedRules::kItemsFieldNumber)),
         fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kRepeatedFieldNumber)),
       }, pos);
+      ctx.setFieldValue(ProtoField{&message, field_, i}, pos);
     }
     if (ctx.shouldReturn(status)) {
       return status;
@@ -279,7 +303,7 @@ absl::Status MapConstraintRules::Validate(
   const auto& keys = *std::move(keys_or).value();
   for (int i = 0; i < mapVal.size(); i++) {
     const auto& elemMsg = message.GetReflection()->GetRepeatedMessage(message, field_, i);
-    int pos = ctx.violations.violations_size();
+    int pos = ctx.violations.size();
     auto key = keys[i];
     if (keyRules_ != nullptr) {
       if (!keyRules_->getIgnoreEmpty() || !isEmptyItem(key)) {
@@ -288,14 +312,13 @@ absl::Status MapConstraintRules::Validate(
         if (!status.ok()) {
           return status;
         }
-        if (ctx.violations.violations_size() > pos) {
+        if (ctx.violations.size() > pos) {
           ctx.appendRulePathElement({
             fieldPathElement(MapRules::descriptor()->FindFieldByNumber(MapRules::kKeysFieldNumber)),
             fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kMapFieldNumber)),
           }, pos);
-          for (int j = pos; j < ctx.violations.violations_size(); j++) {
-            ctx.violations.mutable_violations(j)->set_for_key(true);
-          }
+          ctx.setFieldValue(ProtoField{&elemMsg, keyField}, pos);
+          ctx.setForKey(pos);
         }
         activation.RemoveValueEntry("this");
       }
@@ -304,21 +327,22 @@ absl::Status MapConstraintRules::Validate(
       auto value = *mapVal[key];
       if (!valueRules_->getIgnoreEmpty() || !isEmptyItem(value)) {
         activation.InsertValue("this", value);
-        int valuePos = ctx.violations.violations_size();
+        int valuePos = ctx.violations.size();
         status = valueRules_->ValidateCel(ctx, activation);
         if (!status.ok()) {
           return status;
         }
-        if (ctx.violations.violations_size() > valuePos) {
+        if (ctx.violations.size() > valuePos) {
           ctx.appendRulePathElement({
             fieldPathElement(MapRules::descriptor()->FindFieldByNumber(MapRules::kValuesFieldNumber)),
             fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kMapFieldNumber)),
           }, valuePos);
+          ctx.setFieldValue(ProtoField{&elemMsg, valueField}, pos);
         }
         activation.RemoveValueEntry("this");
       }
     }
-    if (ctx.violations.violations_size() > pos) {
+    if (ctx.violations.size() > pos) {
       FieldPathElement element = fieldPathElement(field_);
       if (auto status = setPathElementMapKey(&element, elemMsg, keyField, valueField);
           !status.ok()) {
@@ -335,8 +359,14 @@ absl::Status MapConstraintRules::Validate(
 
 absl::Status FieldConstraintRules::ValidateAny(
     ConstraintContext& ctx,
-    const google::protobuf::FieldDescriptor* field,
+    const ProtoField& field,
     const google::protobuf::Message& anyMsg) const {
+  static const google::protobuf::FieldDescriptor* anyInField =
+      AnyRules::descriptor()->FindFieldByNumber(
+          AnyRules::kInFieldNumber);
+  static const google::protobuf::FieldDescriptor* anyNotInField =
+      AnyRules::descriptor()->FindFieldByNumber(
+          AnyRules::kNotInFieldNumber);
   const auto* typeUriField = anyMsg.GetDescriptor()->FindFieldByName("type_url");
   if (typeUriField == nullptr ||
       typeUriField->type() != google::protobuf::FieldDescriptor::TYPE_STRING) {
@@ -353,26 +383,38 @@ absl::Status FieldConstraintRules::ValidateAny(
       }
     }
     if (!found) {
-      auto& violation = *ctx.violations.add_violations();
+      Violation violation;
       *violation.mutable_constraint_id() = "any.in";
       *violation.mutable_message() = "type URL must be in the allow list";
-      if (field != nullptr) {
-        *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field);
+      if (field.index() == -1) {
+        *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field.descriptor());
       }
-      *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(AnyRules::descriptor()->FindFieldByNumber(AnyRules::kInFieldNumber));
-      *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kAnyFieldNumber));
+      *violation.mutable_rule()->mutable_elements()->Add() =
+          staticFieldPathElement<AnyRules, AnyRules::kInFieldNumber>();
+      *violation.mutable_rule()->mutable_elements()->Add() =
+          staticFieldPathElement<FieldConstraints, FieldConstraints::kAnyFieldNumber>();
+      ctx.violations.emplace_back(
+          std::move(violation),
+          field,
+          ProtoField{&fieldConstraints_.any(), anyInField});
     }
   }
   for (const auto& block : anyRules_->not_in()) {
     if (block == typeUri) {
-      auto& violation = *ctx.violations.add_violations();
+      Violation violation;
       *violation.mutable_constraint_id() = "any.not_in";
       *violation.mutable_message() = "type URL must not be in the block list";
-      if (field != nullptr) {
-        *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field);
+      if (field.index() == -1) {
+        *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field.descriptor());
       }
-      *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(AnyRules::descriptor()->FindFieldByNumber(AnyRules::kNotInFieldNumber));
-      *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kAnyFieldNumber));
+      *violation.mutable_rule()->mutable_elements()->Add() =
+          staticFieldPathElement<AnyRules, AnyRules::kNotInFieldNumber>();
+      *violation.mutable_rule()->mutable_elements()->Add() =
+          staticFieldPathElement<FieldConstraints, FieldConstraints::kAnyFieldNumber>();
+      ctx.violations.emplace_back(
+          std::move(violation),
+          field,
+          ProtoField{&fieldConstraints_.any(), anyNotInField});
       break;
     }
   }
@@ -384,10 +426,11 @@ absl::Status OneofConstraintRules::Validate(
     const google::protobuf::Message& message) const {
   if (required_) {
     if (!message.GetReflection()->HasOneof(message, oneof_)) {
-      auto& violation = *ctx.violations.add_violations();
+      Violation violation;
       *violation.mutable_constraint_id() = "required";
       *violation.mutable_message() = "exactly one field is required in oneof";
       *violation.mutable_field()->mutable_elements()->Add() = oneofPathElement(*oneof_);
+      ctx.violations.emplace_back(std::move(violation), absl::nullopt, absl::nullopt);
     }
   }
   return absl::OkStatus();
