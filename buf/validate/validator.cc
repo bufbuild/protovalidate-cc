@@ -70,9 +70,9 @@ absl::Status Validator::ValidateFields(
       for (int i = 0; i < size; i++) {
         const auto& elemMsg = message.GetReflection()->GetRepeatedMessage(message, field, i);
         const auto& valueMsg = elemMsg.GetReflection()->GetMessage(elemMsg, valueField);
-        int pos = ctx.violations.violations_size();
+        int pos = ctx.violations.size();
         auto status = ValidateMessage(ctx, valueMsg);
-        if (pos < ctx.violations.violations_size()) {
+        if (pos < ctx.violations.size()) {
           FieldPathElement element = internal::fieldPathElement(field);
           if (auto status = internal::setPathElementMapKey(&element, elemMsg, keyField, valueField);
               !status.ok()) {
@@ -87,10 +87,10 @@ absl::Status Validator::ValidateFields(
     } else if (field->is_repeated()) {
       int size = message.GetReflection()->FieldSize(message, field);
       for (int i = 0; i < size; i++) {
-        int pos = ctx.violations.violations_size();
+        int pos = ctx.violations.size();
         const auto& subMsg = message.GetReflection()->GetRepeatedMessage(message, field, i);
         auto status = ValidateMessage(ctx, subMsg);
-        if (pos < ctx.violations.violations_size()) {
+        if (pos < ctx.violations.size()) {
           FieldPathElement element = internal::fieldPathElement(field);
           element.set_index(i);
           ctx.appendFieldPathElement(element, pos);
@@ -101,9 +101,9 @@ absl::Status Validator::ValidateFields(
       }
     } else {
       const auto& subMsg = message.GetReflection()->GetMessage(message, field);
-      int pos = ctx.violations.violations_size();
+      int pos = ctx.violations.size();
       auto status = ValidateMessage(ctx, subMsg);
-      if (pos < ctx.violations.violations_size()) {
+      if (pos < ctx.violations.size()) {
         ctx.appendFieldPathElement(internal::fieldPathElement(field), pos);
       }
       if (ctx.shouldReturn(status)) {
@@ -114,7 +114,7 @@ absl::Status Validator::ValidateFields(
   return absl::OkStatus();
 }
 
-absl::StatusOr<Violations> Validator::Validate(const google::protobuf::Message& message) {
+absl::StatusOr<ValidationResult> Validator::Validate(const google::protobuf::Message& message) {
   internal::ConstraintContext ctx;
   ctx.failFast = failFast_;
   ctx.arena = arena_;
@@ -122,20 +122,8 @@ absl::StatusOr<Violations> Validator::Validate(const google::protobuf::Message& 
   if (!status.ok()) {
     return status;
   }
-  for (Violation& violation : *ctx.violations.mutable_violations()) {
-    if (violation.has_field()) {
-      std::reverse(
-          violation.mutable_field()->mutable_elements()->begin(),
-          violation.mutable_field()->mutable_elements()->end());
-      *violation.mutable_field_path() = internal::fieldPathString(violation.field());
-    }
-    if (violation.has_rule()) {
-      std::reverse(
-          violation.mutable_rule()->mutable_elements()->begin(),
-          violation.mutable_rule()->mutable_elements()->end());
-    }
-  }
-  return std::move(ctx.violations);
+  ctx.finalize();
+  return ValidationResult{std::move(ctx.violations)};
 }
 
 absl::StatusOr<std::unique_ptr<ValidatorFactory>> ValidatorFactory::New() {

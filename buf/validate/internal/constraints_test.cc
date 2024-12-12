@@ -53,14 +53,14 @@ class ExpressionTest : public testing::Test {
 
   absl::Status Validate(
       google::api::expr::runtime::Activation& activation,
-      std::vector<Violation>& violations) {
+      std::vector<ConstraintViolation>& violations) {
     ConstraintContext ctx;
     ctx.arena = &arena_;
     auto status = constraints_->ValidateCel(ctx, activation);
     if (!status.ok()) {
       return status;
     }
-    for (const auto& violation : ctx.violations.violations()) {
+    for (auto& violation : ctx.violations) {
       violations.push_back(violation);
     }
     return absl::OkStatus();
@@ -72,12 +72,12 @@ TEST_F(ExpressionTest, BoolResult) {
   ASSERT_TRUE(AddConstraint("false", "always fails", "always-fails").ok());
 
   cel::runtime::Activation ctx;
-  std::vector<Violation> violations;
+  std::vector<ConstraintViolation> violations;
   auto status = Validate(ctx, violations);
   ASSERT_TRUE(status.ok()) << status;
   ASSERT_EQ(violations.size(), 1);
-  EXPECT_EQ(violations[0].message(), "always fails");
-  EXPECT_EQ(violations[0].constraint_id(), "always-fails");
+  EXPECT_EQ(violations[0].proto().message(), "always fails");
+  EXPECT_EQ(violations[0].proto().constraint_id(), "always-fails");
 }
 
 TEST_F(ExpressionTest, StringResult) {
@@ -85,18 +85,18 @@ TEST_F(ExpressionTest, StringResult) {
   ASSERT_TRUE(AddConstraint("'error'", "always fails", "always-fails").ok());
 
   cel::runtime::Activation ctx;
-  std::vector<Violation> violations;
+  std::vector<ConstraintViolation> violations;
   auto status = Validate(ctx, violations);
   ASSERT_TRUE(status.ok()) << status;
   ASSERT_EQ(violations.size(), 1);
-  EXPECT_EQ(violations[0].message(), "error");
-  EXPECT_EQ(violations[0].constraint_id(), "always-fails");
+  EXPECT_EQ(violations[0].proto().message(), "error");
+  EXPECT_EQ(violations[0].proto().constraint_id(), "always-fails");
 }
 
 TEST_F(ExpressionTest, Error) {
   ASSERT_TRUE(AddConstraint("1/0", "always fails", "always-fails").ok());
   cel::runtime::Activation ctx;
-  std::vector<Violation> violations;
+  std::vector<ConstraintViolation> violations;
   auto status = Validate(ctx, violations);
   ASSERT_FALSE(status.ok()) << status;
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
@@ -106,7 +106,7 @@ TEST_F(ExpressionTest, Error) {
 TEST_F(ExpressionTest, BadType) {
   ASSERT_TRUE(AddConstraint("1", "always fails", "always-fails").ok());
   cel::runtime::Activation ctx;
-  std::vector<Violation> violations;
+  std::vector<ConstraintViolation> violations;
   auto status = Validate(ctx, violations);
   ASSERT_FALSE(status.ok()) << status;
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);

@@ -40,7 +40,8 @@ class FieldConstraintRules : public CelConstraintRules {
       const google::protobuf::FieldDescriptor* desc,
       const FieldConstraints& field,
       const AnyRules* anyRules = nullptr)
-      : field_(desc),
+      : fieldConstraints_(field),
+        field_(desc),
         mapEntryField_(desc->containing_type()->options().map_entry()),
         ignoreEmpty_(field.ignore() == IGNORE_IF_DEFAULT_VALUE ||
                      field.ignore() == IGNORE_IF_UNPOPULATED ||
@@ -56,7 +57,7 @@ class FieldConstraintRules : public CelConstraintRules {
 
   absl::Status ValidateAny(
       ConstraintContext& ctx,
-      const google::protobuf::FieldDescriptor* field,
+      const ProtoField& field,
       const google::protobuf::Message& anyMsg) const;
 
   [[nodiscard]] const AnyRules* getAnyRules() const { return anyRules_; }
@@ -66,6 +67,7 @@ class FieldConstraintRules : public CelConstraintRules {
   [[nodiscard]] bool getIgnoreDefault() const { return ignoreDefault_; }
 
  protected:
+  const FieldConstraints& fieldConstraints_;
   const google::protobuf::FieldDescriptor* field_ = nullptr;
   bool mapEntryField_ = false;
   bool ignoreEmpty_ = false;
@@ -212,35 +214,6 @@ inline absl::Status setPathElementMapKey(
       return absl::InternalError(absl::StrCat("unexpected map key type ", keyField->type_name()));
   }
   return {};
-}
-
-inline std::string fieldPathString(const FieldPath &path) {
-  std::string result;
-  for (const FieldPathElement& element : path.elements()) {
-    if (!result.empty()) {
-      result += '.';
-    }
-    switch (element.subscript_case()) {
-      case FieldPathElement::kIndex:
-        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.index()), "]");
-        break;
-      case FieldPathElement::kBoolKey:
-        absl::StrAppend(&result, element.field_name(), element.bool_key() ? "[true]" : "[false]");
-        break;
-      case FieldPathElement::kIntKey:
-        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.int_key()), "]");
-        break;
-      case FieldPathElement::kUintKey:
-        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.uint_key()), "]");
-        break;
-      case FieldPathElement::kStringKey:
-        absl::StrAppend(&result, element.field_name(), "[\"", absl::CEscape(element.string_key()), "\"]");
-        break;
-      case FieldPathElement::SUBSCRIPT_NOT_SET:
-        absl::StrAppend(&result, element.field_name());
-    }
-  }
-  return result;
 }
 
 } // namespace buf::validate::internal
