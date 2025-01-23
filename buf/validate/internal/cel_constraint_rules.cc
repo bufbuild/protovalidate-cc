@@ -14,7 +14,7 @@
 
 #include "buf/validate/internal/cel_constraint_rules.h"
 
-#include "base/values/struct_value.h"
+#include "common/values/struct_value.h"
 #include "eval/public/containers/field_access.h"
 #include "eval/public/containers/field_backed_list_impl.h"
 #include "eval/public/containers/field_backed_map_impl.h"

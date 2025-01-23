@@ -16,28 +16,44 @@ load("@bazel_tools//tools/build_defs/repo:utils.bzl", "maybe")
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 _dependencies = {
-    # This is needed due to an unresolved issue with protobuf v27+.
-    # https://github.com/protocolbuffers/protobuf/issues/17200
-    "rules_python": {
-        "sha256": "0a8003b044294d7840ac7d9d73eef05d6ceb682d7516781a4ec62eeb34702578",
-        "strip_prefix": "rules_python-0.24.0",
+    # cel-cpp needs a newer version of absl, otherwise it will fail to build in
+    # a very strange manner.
+    "com_google_absl": {
+        "sha256": "f50e5ac311a81382da7fa75b97310e4b9006474f9560ac46f54a9967f07d4ae3",
+        "strip_prefix": "abseil-cpp-20240722.0",
         "urls": [
-            "https://github.com/bazelbuild/rules_python/releases/download/0.24.0/rules_python-0.24.0.tar.gz",
+            "https://github.com/abseil/abseil-cpp/archive/20240722.0.tar.gz",
         ],
     },
-    "bazel_skylib": {
-        "sha256": "74d544d96f4a5bb630d465ca8bbcfe231e3594e5aae57e1edbf17a6eb3ca2506",
+    # These extra dependencies are needed by protobuf.
+    # This may be alleviated somewhat by protobuf v30.
+    # https://github.com/protocolbuffers/protobuf/issues/17200
+    "rules_cc": {
+        "sha256": "abc605dd850f813bb37004b77db20106a19311a96b2da1c92b789da529d28fe1",
+        "strip_prefix": "rules_cc-0.0.17",
         "urls": [
-            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
-            "https://mirror.bazel.build/github.com/bazelbuild/bazel-skylib/releases/download/1.3.0/bazel-skylib-1.3.0.tar.gz",
+            "https://github.com/bazelbuild/rules_cc/releases/download/0.0.17/rules_cc-0.0.17.tar.gz"
+        ],
+    },
+    "rules_java": {
+        "sha256": "c0ee60f8757f140c157fc2c7af703d819514de6e025ebf70386d38bdd85fce83",
+        "urls": [
+            "https://github.com/bazelbuild/rules_java/releases/download/7.12.3/rules_java-7.12.3.tar.gz"
+        ],
+    },
+    "rules_python": {
+        "sha256": "9c6e26911a79fbf510a8f06d8eedb40f412023cf7fa6d1461def27116bff022c",
+        "strip_prefix": "rules_python-1.1.0",
+        "urls": [
+            "https://github.com/bazelbuild/rules_python/releases/download/1.1.0/rules_python-1.1.0.tar.gz",
         ],
     },
     "com_google_protobuf": {
-        "sha256": "e4ff2aeb767da6f4f52485c2e72468960ddfe5262483879ef6ad552e52757a77",
-        "strip_prefix": "protobuf-27.2",
+        "sha256": "63150aba23f7a90fd7d87bdf514e459dd5fe7023fdde01b56ac53335df64d4bd",
+        "strip_prefix": "protobuf-29.2",
         "urls": [
-            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v27.2.tar.gz",
-            "https://github.com/protocolbuffers/protobuf/archive/v27.2.tar.gz",
+            "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v29.2.tar.gz",
+            "https://github.com/protocolbuffers/protobuf/archive/v29.2.tar.gz",
         ],
     },
     "rules_proto": {
@@ -55,13 +71,11 @@ _dependencies = {
         ],
     },
     "com_google_cel_cpp": {
-        "sha256": "d62b93fd07c6151749e83855157f3f2778d62c168318f9c40dfcfe1c336c496f",
-        "strip_prefix": "cel-cpp-da0aba702f44a41ec6d2eb4bbf6a9f01efc2746d",
+        "sha256": "dd06b708a9f4c3728e76037ec9fb14fc9f6d9c9980e5d5f3a1d047f3855a8b98",
+        "strip_prefix": "cel-cpp-0.10.0",
         "urls": [
-            "https://github.com/google/cel-cpp/archive/da0aba702f44a41ec6d2eb4bbf6a9f01efc2746d.tar.gz",
+            "https://github.com/google/cel-cpp/archive/v0.10.0.tar.gz",
         ],
-        "patches": ["@com_github_bufbuild_protovalidate_cc//bazel:cel_cpp.patch"],
-        "patch_args": ["-p1"],
     },
     # NOTE: Keep Version in sync with `/Makefile`.
     "com_github_bufbuild_protovalidate": {

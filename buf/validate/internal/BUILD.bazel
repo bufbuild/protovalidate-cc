@@ -22,12 +22,12 @@ cc_library(
         ":constraint_rules",
         "@com_google_cel_cpp//eval/public:activation",
         "@com_google_cel_cpp//eval/public:cel_expression",
+        "@com_google_cel_cpp//eval/public:cel_value",
         "@com_google_cel_cpp//eval/public/structs:cel_proto_wrapper",
         "@com_google_cel_cpp//eval/public/containers:field_access",
         "@com_google_cel_cpp//eval/public/containers:field_backed_list_impl",
         "@com_google_cel_cpp//eval/public/containers:field_backed_map_impl",
         "@com_google_cel_cpp//parser",
-        "@com_google_cel_cpp//base:value"
     ],
 )
 
