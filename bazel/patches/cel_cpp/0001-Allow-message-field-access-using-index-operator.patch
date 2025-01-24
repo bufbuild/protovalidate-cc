@@ -1,0 +1,84 @@
+From b8881a537441bfc4995f38a1e8d80f9b22f5f095 Mon Sep 17 00:00:00 2001
+From: John Chadwick <jchadwick@buf.build>
+Date: Fri, 24 Jan 2025 18:19:56 -0500
+Subject: [PATCH] Allow message field access using index operator
+
+CEL doesn't yet have a standard way to access field names that conflict
+with identifiers. This temporary workaround enables the index operator
+to access fields from a message. It can be used as follows:
+
+    dyn(message)["field_name"]
+---
+ eval/eval/container_access_step.cc | 35 ++++++++++++++++++++++++++++++
+ 1 file changed, 35 insertions(+)
+
+diff --git a/eval/eval/container_access_step.cc b/eval/eval/container_access_step.cc
+index 67a783ad..ddb49375 100644
+--- a/eval/eval/container_access_step.cc
++++ b/eval/eval/container_access_step.cc
+@@ -3,6 +3,7 @@
+ #include <cstdint>
+ #include <memory>
+ #include <utility>
++#include <csignal>
+ 
+ #include "absl/status/status.h"
+ #include "absl/status/statusor.h"
+@@ -22,6 +23,8 @@
+ #include "eval/eval/evaluator_core.h"
+ #include "eval/eval/expression_step_base.h"
+ #include "eval/internal/errors.h"
++#include "eval/public/structs/legacy_type_adapter.h"
++#include "eval/public/structs/legacy_type_info_apis.h"
+ #include "internal/casts.h"
+ #include "internal/number.h"
+ #include "internal/status_macros.h"
+@@ -196,6 +199,34 @@ void LookupInList(const ListValue& cel_list, const Value& key,
+   }
+ }
+ 
++void LookupInMessage(const cel::StructValue& struct_value, const Value& key, ExecutionFrameBase& frame, Value& result) {
++  if (!key.IsString()) {
++    result = frame.value_manager().CreateErrorValue(
++        absl::UnknownError(
++            absl::StrCat(
++                "Index error: expected string type, got '", ValueKindToString(key->kind()), "'")));
++    return;
++  }
++  auto found = struct_value.HasFieldByName(key.GetString().ToString());
++  if (!found.ok()) {
++    result = frame.value_manager().CreateErrorValue(found.status());
++    return;
++  }
++  if (!*found) {
++    result = cel::NoSuchFieldError(key.AsString()->ToString());
++    return;
++  }
++  auto status = struct_value.GetFieldByName(
++      frame.value_manager(),
++      key.GetString().ToString(),
++      result,
++      ProtoWrapperTypeOptions::kUnsetProtoDefault);
++  if (!status.ok()) {
++    result = frame.value_manager().CreateErrorValue(status);
++  }
++  return;
++}
++
+ void LookupInContainer(const Value& container, const Value& key,
+                        ExecutionFrameBase& frame, Value& result) {
+   // Select steps can be applied to either maps or messages
+@@ -208,6 +239,10 @@ void LookupInContainer(const Value& container, const Value& key,
+       LookupInList(Cast<ListValue>(container), key, frame, result);
+       return;
+     }
++    case ValueKind::kStruct: {
++      LookupInMessage(*container.AsStruct(), key, frame, result);
++      return;
++    }
+     default:
+       result =
+           frame.value_manager().CreateErrorValue(absl::InvalidArgumentError(
+-- 
+2.47.0
+
