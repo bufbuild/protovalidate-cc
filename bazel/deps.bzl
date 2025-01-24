@@ -76,6 +76,10 @@ _dependencies = {
         "urls": [
             "https://github.com/google/cel-cpp/archive/v0.10.0.tar.gz",
         ],
+        "patches": [
+            "@com_github_bufbuild_protovalidate_cc//bazel:patches/cel_cpp/0001-Allow-message-field-access-using-index-operator.patch"
+        ],
+        "patch_args": ["-p1"],
     },
     # NOTE: Keep Version in sync with `/Makefile`.
     "com_github_bufbuild_protovalidate": {
