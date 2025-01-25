@@ -36,9 +36,9 @@ _dependencies = {
         ],
     },
     "rules_java": {
-        "sha256": "c0ee60f8757f140c157fc2c7af703d819514de6e025ebf70386d38bdd85fce83",
+        "sha256": "b0b8b7b2cfbf575112acf716ec788847929f322efa5c34195eb12a43d1df7e5c",
         "urls": [
-            "https://github.com/bazelbuild/rules_java/releases/download/7.12.3/rules_java-7.12.3.tar.gz"
+            "https://github.com/bazelbuild/rules_java/releases/download/8.7.2/rules_java-8.7.2.tar.gz"
         ],
     },
     "rules_python": {
