@@ -97,7 +97,6 @@ struct ConstraintContext {
         std::reverse(
             violation.proto_.mutable_field()->mutable_elements()->begin(),
             violation.proto_.mutable_field()->mutable_elements()->end());
-        *violation.proto_.mutable_field_path() = internal::fieldPathString(violation.proto().field());
       }
       if (violation.proto().has_rule()) {
         std::reverse(

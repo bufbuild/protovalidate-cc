@@ -79,7 +79,6 @@ TEST(ValidatorTest, ValidateBool) {
   auto violations_or = validator.Validate(bool_const_false);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   ASSERT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "bool.const");
   EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value must equal false");
 }
@@ -141,7 +140,6 @@ TEST(ValidatorTest, ValidateRelativeURIFailure) {
   auto violations_or = validator.Validate(str_uri);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.uri");
   EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value must be a valid URI");
   EXPECT_THAT(
@@ -202,7 +200,6 @@ TEST(ValidatorTest, ValidateBadURIRefFailure) {
   auto violations_or = validator.Validate(str_uri_ref);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.uri_ref");
   EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value must be a valid URI");
   EXPECT_THAT(
@@ -225,7 +222,6 @@ TEST(ValidatorTest, ValidateStrRepeatedUniqueFailure) {
   auto violations_or = validator.Validate(str_repeated);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "repeated.unique");
   EXPECT_EQ(
       violations_or.value().violations(0).proto().message(),
@@ -251,7 +247,6 @@ TEST(ValidatorTest, ValidateStringContainsFailure) {
   auto violations_or = validator.Validate(str_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.contains");
   EXPECT_EQ(
       violations_or.value().violations(0).proto().message(), "value does not contain substring `bar`");
@@ -281,7 +276,6 @@ TEST(ValidatorTest, ValidateBytesContainsFailure) {
   auto violations_or = validator.Validate(bytes_contains);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "bytes.contains");
   EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value does not contain 626172");
 }
@@ -310,7 +304,6 @@ TEST(ValidatorTest, ValidateStartsWithFailure) {
   auto violations_or = validator.Validate(str_starts_with);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.prefix");
   EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value does not have prefix `foo`");
 }
@@ -339,7 +332,6 @@ TEST(ValidatorTest, ValidateEndsWithFailure) {
   auto violations_or = validator.Validate(str_ends_with);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.suffix");
   EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value does not have suffix `baz`");
 }
@@ -368,7 +360,6 @@ TEST(ValidatorTest, ValidateGarbageHostnameFailure) {
   auto violations_or = validator.Validate(str_hostname);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.hostname");
 }
 
@@ -383,7 +374,6 @@ TEST(ValidatorTest, ValidateHostnameFailure) {
   auto violations_or = validator.Validate(str_hostname);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.hostname");
 }
 
@@ -398,7 +388,6 @@ TEST(ValidatorTest, ValidateHostnameDoubleDotFailure) {
   auto violations_or = validator.Validate(str_hostname);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "val");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.hostname");
 }
 
@@ -426,13 +415,10 @@ TEST(ValidatorTest, MessageConstraint) {
   auto violations_or = validator.Validate(message_expressions);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   ASSERT_EQ(violations_or.value().violations_size(), 3);
-  EXPECT_EQ(violations_or.value().violations(0).proto().field_path(), "");
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "message_expression_scalar");
   EXPECT_EQ(violations_or.value().violations(0).proto().message(), "a must be less than b");
-  EXPECT_EQ(violations_or.value().violations(1).proto().field_path(), "");
   EXPECT_EQ(violations_or.value().violations(1).proto().constraint_id(), "message_expression_enum");
   EXPECT_EQ(violations_or.value().violations(1).proto().message(), "c must not equal d");
-  EXPECT_EQ(violations_or.value().violations(2).proto().field_path(), "e");
   EXPECT_EQ(violations_or.value().violations(2).proto().constraint_id(), "message_expression_nested");
   EXPECT_EQ(violations_or.value().violations(2).proto().message(), "a must be greater than b");
 }
