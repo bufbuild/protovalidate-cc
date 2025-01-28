@@ -45,7 +45,6 @@ class FieldConstraintRules : public CelConstraintRules {
         mapEntryField_(desc->containing_type()->options().map_entry()),
         ignoreEmpty_(field.ignore() == IGNORE_IF_DEFAULT_VALUE ||
                      field.ignore() == IGNORE_IF_UNPOPULATED ||
-                     field.ignore_empty() ||
                      (desc->has_presence() && !mapEntryField_)),
         ignoreDefault_(field.ignore() == IGNORE_IF_DEFAULT_VALUE &&
                        (desc->has_presence() && !mapEntryField_)),
