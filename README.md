@@ -1,4 +1,6 @@
-# [![The Buf logo](.github/buf-logo.svg)][buf] protovalidate-cc
+[![The Buf logo](.github/buf-logo.svg)][buf] 
+
+# protovalidate-cc
 
 [![CI](https://github.com/bufbuild/protovalidate-cc/actions/workflows/ci.yaml/badge.svg)](https://github.com/bufbuild/protovalidate-cc/actions/workflows/ci.yaml)
 [![Conformance](https://github.com/bufbuild/protovalidate-cc/actions/workflows/conformance.yaml/badge.svg)](https://github.com/bufbuild/protovalidate-cc/actions/workflows/conformance.yaml)
