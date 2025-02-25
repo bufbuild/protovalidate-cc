@@ -1,5 +1,13 @@
 workspace(name = "com_github_bufbuild_protovalidate_cc")
 
+load("//bazel:json.bzl", "json_file")
+
+json_file(
+    name = "protovalidate_cc_dependencies",
+    src = "//bazel:shared_deps.json",
+    variable = "shared_deps",
+)
+
 load("//bazel:deps.bzl", "protovalidate_cc_dependencies")
 
 protovalidate_cc_dependencies()
