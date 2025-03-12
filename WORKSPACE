@@ -4,7 +4,7 @@ load("//bazel:json.bzl", "json_file")
 
 json_file(
     name = "protovalidate_cc_dependencies",
-    src = "//bazel:shared_deps.json",
+    src = "//deps:shared_deps.json",
     variable = "shared_deps",
 )
 
