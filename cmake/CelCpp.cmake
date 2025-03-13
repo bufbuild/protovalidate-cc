@@ -9,7 +9,6 @@ set(CEL_CPP_PATCHES
     ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0003-Remove-unnecessary-dependency-on-cel_proto_wrap_util.patch
 )
 MakePatchCommand(CEL_CPP_PATCH_COMMAND "${CEL_CPP_PATCHES}")
-message(STATUS "CEL_CPP_PATCH_COMMAND: ${CEL_CPP_PATCH_COMMAND}")
 message(STATUS "protovalidate-cc: Fetching cel-cpp")
 
 FetchContent_Declare(cel_cpp
