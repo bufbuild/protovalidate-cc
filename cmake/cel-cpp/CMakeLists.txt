@@ -1,8 +1,5 @@
 find_package(Threads REQUIRED)
 
-include(Antlr4)
-include(Googleapis)
-
 option(CEL_CPP_ENABLE_TESTS "Enable cel-cpp unit tests" OFF)
 
 # Generate ANTLR4 parser for CEL
@@ -35,7 +32,7 @@ add_executable(cel_cpp::embed ALIAS cel_cc_embed)
 
 # Generate code for googleapis protos
 set(CEL_CPP_GOOGLEAPIS_PROTO_DIR ${googleapis_SOURCE_DIR})
-set(CEL_CPP_GOOGLEAPIS_PROTO_FILES
+set(CEL_CPP_GOOGLEAPIS_PROTO
     google/api/expr/v1alpha1/syntax.proto
     google/api/expr/v1alpha1/checked.proto
     google/api/expr/v1alpha1/value.proto
@@ -49,11 +46,10 @@ set(CEL_CPP_GOOGLEAPIS_PROTO_FILES
     google/rpc/context/attribute_context.proto
     google/type/timeofday.proto
 )
-set(CEL_CPP_GOOGLEAPIS_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/googleapis)
+list(TRANSFORM CEL_CPP_GOOGLEAPIS_PROTO PREPEND ${CEL_CPP_GOOGLEAPIS_PROTO_DIR}/)
+set(CEL_CPP_GOOGLEAPIS_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/proto_cc_googleapis)
 file(MAKE_DIRECTORY ${CEL_CPP_GOOGLEAPIS_PROTO_GEN_DIR})
-set(CEL_CPP_GOOGLEAPIS_PROTO_DIR ${googleapis_SOURCE_DIR})
-list(TRANSFORM CEL_CPP_GOOGLEAPIS_PROTO_FILES PREPEND ${googleapis_SOURCE_DIR}/)
-add_library(cel_googleapis_proto OBJECT ${CEL_CPP_GOOGLEAPIS_PROTO_FILES})
+add_library(cel_googleapis_proto OBJECT ${CEL_CPP_GOOGLEAPIS_PROTO})
 target_include_directories(cel_googleapis_proto PUBLIC ${CEL_CPP_GOOGLEAPIS_PROTO_GEN_DIR})
 target_link_libraries(cel_googleapis_proto PUBLIC protobuf::libprotobuf)
 protobuf_generate(
@@ -67,21 +63,22 @@ add_library(cel_cpp::googleapis_proto ALIAS cel_googleapis_proto)
 
 # Generate embedded descriptor set
 set(CEL_CPP_MINIMAL_DESCRIPTOR_SET_PATH ${CMAKE_CURRENT_BINARY_DIR}/minimal_descriptor_set.pb)
-set(CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTOS
-    ${PROTOBUF_IMPORT_PATH}/google/protobuf/any.proto
-    ${PROTOBUF_IMPORT_PATH}/google/protobuf/duration.proto
-    ${PROTOBUF_IMPORT_PATH}/google/protobuf/struct.proto
-    ${PROTOBUF_IMPORT_PATH}/google/protobuf/timestamp.proto
-    ${PROTOBUF_IMPORT_PATH}/google/protobuf/wrappers.proto
+set(CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTO
+    google/protobuf/any.proto
+    google/protobuf/duration.proto
+    google/protobuf/struct.proto
+    google/protobuf/timestamp.proto
+    google/protobuf/wrappers.proto
 )
+list(TRANSFORM CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTO PREPEND ${PROTOBUF_IMPORT_PATH}/)
 add_custom_command(
     OUTPUT ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_PATH}
     COMMAND ${PROTOC_EXECUTABLE}
             --include_imports
             --descriptor_set_out=${CEL_CPP_MINIMAL_DESCRIPTOR_SET_PATH}
             -I${PROTOBUF_IMPORT_PATH}
-            ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTOS}
-    DEPENDS ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTOS}
+            ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTO}
+    DEPENDS ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTO}
     COMMENT "Generating minimal descriptor set"
     VERBATIM
 )
@@ -165,18 +162,15 @@ list(REMOVE_ITEM CEL_CPP_TEST_SOURCES
     eval/public/builtin_func_test.cc
     internal/message_equality_test.cc
     internal/strings_test.cc
-
     # Compilation issue:
     #
     #     error: call to 'CheckedAdd' is ambiguous
     internal/overflow_test.cc
-
     # Seems to require an operator<< overload that is not declared anywhere.
     #
     #     error: invalid operands to binary expression ('std::stringstream'
     #     and 'const google::api::expr::v1alpha1::ParsedExpr')
     parser/parser_test.cc
-
     # Seems to rely on ABSL_ATTRIBUTE_VIEW which isn't supported in the absl
     # version that is pinned by the release (?)
     #
@@ -185,7 +179,9 @@ list(REMOVE_ITEM CEL_CPP_TEST_SOURCES
     common/arena_string_test.cc
 
     # Test Failures
-    # These seem to be legitimately broken in v0.10.0.
+
+    # These seem to be legitimately broken in cel-cpp v0.10.0.
+    # They do not work on any platform.
     common/values/message_value_test.cc
     common/values/mutable_list_value_test.cc
     common/values/mutable_map_value_test.cc
@@ -197,7 +193,7 @@ list(REMOVE_ITEM CEL_CPP_TEST_SOURCES
     common/values/parsed_repeated_field_value_test.cc
     # This passes on some platforms and not others.
     common/native_type_test.cc
-    # Requires us to build simple_test_message_proto-descriptor-set.proto.bin
+    # Unsure what is wrong with this one. Broken on all platforms.
     eval/compiler/flat_expr_builder_test.cc
 )
 
@@ -228,30 +224,10 @@ add_library(cel_cpp::cel_cpp ALIAS cel_cpp)
 if(CEL_CPP_ENABLE_TESTS AND BUILD_TESTING)
     enable_testing()
 
-    # Fetch Google Benchmark
-    FetchContent_Declare(
-        benchmark
-        GIT_REPOSITORY https://github.com/google/benchmark.git
-        GIT_TAG v1.8.3
-        GIT_SHALLOW TRUE
-    )
-    set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "Disable benchmark's tests" FORCE)
-    set(BENCHMARK_ENABLE_INSTALL OFF CACHE BOOL "Disable benchmark installation" FORCE)
-    set(BENCHMARK_ENABLE_GTEST_TESTS OFF CACHE BOOL "Disable benchmark's gtest tests" FORCE)
-    FetchContent_MakeAvailable(benchmark)
-
-    # Fetch CEL spec repository (needed for test protos)
-    FetchContent_Declare(
-        cel_spec
-        GIT_REPOSITORY https://github.com/google/cel-spec.git
-        GIT_TAG f027a86d2e5bf18f796be0c4373f637a61041cde
-    )
-    FetchContent_MakeAvailable(cel_spec)
-
-    # Generate C++ code for test protos
-    set(CEL_SPEC_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/cel_spec_proto)
+    # Generate C++ code for cel spec protos
+    set(CEL_SPEC_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/proto_cc_cel_spec)
     file(MAKE_DIRECTORY ${CEL_SPEC_PROTO_GEN_DIR}/proto)
-    set(CEL_SPEC_PROTO_FILES
+    set(CEL_SPEC_PROTO
         test/v1/proto2/test_all_types.proto
         test/v1/proto3/test_all_types.proto
         cel/expr/checked.proto
@@ -261,8 +237,8 @@ if(CEL_CPP_ENABLE_TESTS AND BUILD_TESTING)
         cel/expr/value.proto
     )
     set(CEL_SPEC_PROTO_DIR ${cel_spec_SOURCE_DIR}/proto)
-    list(TRANSFORM CEL_SPEC_PROTO_FILES PREPEND ${CEL_SPEC_PROTO_DIR}/)
-    add_library(cel_cpp_spec_proto OBJECT ${CEL_SPEC_PROTO_FILES})
+    list(TRANSFORM CEL_SPEC_PROTO PREPEND ${CEL_SPEC_PROTO_DIR}/)
+    add_library(cel_cpp_spec_proto OBJECT ${CEL_SPEC_PROTO})
     target_include_directories(cel_cpp_spec_proto
         PUBLIC ${CEL_SPEC_PROTO_GEN_DIR}
         PRIVATE ${CEL_SPEC_PROTO_GEN_DIR}/proto
@@ -279,16 +255,16 @@ if(CEL_CPP_ENABLE_TESTS AND BUILD_TESTING)
     )
     add_library(cel_cpp::spec_proto ALIAS cel_cpp_spec_proto)
 
-    # Create a custom target for the generated protobuf files
-    set(CEL_CPP_TEST_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/cel_cpp_test_proto)
+    # Generate C++ code for cel-cpp test protos
+    set(CEL_CPP_TEST_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/proto_cc_cel_cpp_test)
     file(MAKE_DIRECTORY ${CEL_CPP_TEST_PROTO_GEN_DIR})
-    set(CEL_CPP_TEST_PROTO_FILES
+    set(CEL_CPP_TEST_PROTO
         eval/testutil/test_message.proto
         eval/testutil/simple_test_message.proto
         eval/testutil/test_extensions.proto
         eval/tests/request_context.proto
     )
-    add_library(cel_cpp_test_proto OBJECT ${CEL_CPP_TEST_PROTO_FILES})
+    add_library(cel_cpp_test_proto OBJECT ${CEL_CPP_TEST_PROTO})
     target_include_directories(cel_cpp_test_proto PUBLIC ${CEL_CPP_TEST_PROTO_GEN_DIR})
     target_link_libraries(cel_cpp_test_proto PUBLIC protobuf::libprotobuf)
     protobuf_generate(
@@ -302,10 +278,10 @@ if(CEL_CPP_ENABLE_TESTS AND BUILD_TESTING)
     )
     add_library(cel_cpp::test_proto ALIAS cel_cpp_test_proto)
 
-    # Generate testing descriptor set
+    # Generate embedded descriptor set for testing
     set(CEL_CPP_TESTING_DESCRIPTOR_SET_PATH ${CMAKE_CURRENT_BINARY_DIR}/testing_descriptor_set.pb)
-    set(TESTING_PROTO
-        ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTOS}
+    set(CEL_CPP_TESTING_PROTO
+        ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTO}
         ${CEL_SPEC_PROTO_DIR}/cel/expr/checked.proto
         ${CEL_SPEC_PROTO_DIR}/cel/expr/eval.proto
         ${CEL_SPEC_PROTO_DIR}/cel/expr/explain.proto
@@ -326,8 +302,8 @@ if(CEL_CPP_ENABLE_TESTS AND BUILD_TESTING)
                 -I${PROTOBUF_IMPORT_PATH}
                 -I${CEL_CPP_GOOGLEAPIS_PROTO_DIR}
                 -I${CEL_SPEC_PROTO_DIR}
-                ${TESTING_PROTO}
-        DEPENDS ${TESTING_PROTO}
+                ${CEL_CPP_TESTING_PROTO}
+        DEPENDS ${CEL_CPP_TESTING_PROTO}
         COMMENT "Generating testing descriptor set"
         VERBATIM
     )
@@ -350,6 +326,26 @@ if(CEL_CPP_ENABLE_TESTS AND BUILD_TESTING)
     target_include_directories(cel_cpp_testing_descriptor_set INTERFACE ${CEL_CPP_TESTING_DESCRIPTOR_SET_GEN_DIR})
     add_library(cel_cpp::testing_descriptor_set ALIAS cel_cpp_testing_descriptor_set)
 
+    # Generate descriptor set for flat_expr_builder_test.cc.
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/eval/testutil/)
+    set(CEL_CPP_SIMPLE_TEST_MESSAGE_DESCRIPTOR_SET_PATH ${CMAKE_CURRENT_BINARY_DIR}/eval/testutil/simple_test_message_proto-descriptor-set.proto.bin)
+    set(CEL_CPP_SIMPLE_TEST_MESSAGE_PROTO ${CMAKE_CURRENT_SOURCE_DIR}/eval/testutil/simple_test_message.proto)
+    add_custom_command(
+        OUTPUT ${CEL_CPP_SIMPLE_TEST_MESSAGE_DESCRIPTOR_SET_PATH}
+        COMMAND ${PROTOC_EXECUTABLE}
+                --include_source_info
+                --descriptor_set_out=${CEL_CPP_SIMPLE_TEST_MESSAGE_DESCRIPTOR_SET_PATH}
+                -I${CMAKE_CURRENT_SOURCE_DIR}/eval/testutil
+                ${CEL_CPP_SIMPLE_TEST_MESSAGE_PROTO}
+        DEPENDS ${CEL_CPP_SIMPLE_TEST_MESSAGE_PROTO}
+        COMMENT "Generating simple test message descriptor set"
+        VERBATIM
+    )
+    add_custom_target(cel_cpp_simple_test_message_descriptor_set_gen DEPENDS ${CEL_CPP_SIMPLE_TEST_MESSAGE_DESCRIPTOR_SET_PATH})
+    add_library(cel_cpp_simple_test_message_descriptor_set INTERFACE)
+    add_dependencies(cel_cpp_simple_test_message_descriptor_set cel_cpp_simple_test_message_descriptor_set_gen)
+    add_library(cel_cpp::simple_test_message_descriptor_set ALIAS cel_cpp_simple_test_message_descriptor_set)
+
     # cel-cpp test code
     add_library(cel_cpp_testing OBJECT ${CEL_CPP_TESTING_SOURCES} ${CEL_CPP_TESTING_DESCRIPTOR_SET_EMBED_PATH})
     target_include_directories(cel_cpp_testing PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -360,6 +356,7 @@ if(CEL_CPP_ENABLE_TESTS AND BUILD_TESTING)
         Threads::Threads
         cel_cpp::cel_cpp
         cel_cpp::testing_descriptor_set
+        cel_cpp::simple_test_message_descriptor_set
     )
     add_library(cel_cpp::testing ALIAS cel_cpp_testing)
 

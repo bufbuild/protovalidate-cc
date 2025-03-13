@@ -9,7 +9,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(antlr4)
 
-# ANTLR4 has CMakeLists, but we need some options it doesn't support yet.
+# ANTLR4 has CMakeLists, but we need ANTLR4CPP_USING_ABSEIL which it doesn't support yet.
 file(GLOB_RECURSE ANTLR4_SOURCES ${antlr4_SOURCE_DIR}/runtime/Cpp/runtime/src/*.cpp)
 add_library(antlr4_static STATIC ${ANTLR4_SOURCES})
 target_include_directories(antlr4_static

@@ -44,6 +44,11 @@ jobs:
       - name: Build with CMake
         run: |
             cmake --build .build
+      - name: Install go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
       - name: Test with CMake
         run: |
             ctest --test-dir .build
