@@ -40,6 +40,7 @@ jobs:
               -DBUILD_TESTING=ON \
               -DPROTOVALIDATE_CC_ENABLE_TESTS=ON \
               -DPROTOVALIDATE_CC_ENABLE_VENDORING=ON \
+              -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF \
               -GNinja
       - name: Build with CMake
         run: |
