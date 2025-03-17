@@ -1,0 +1,13 @@
+prefix=@PROTOVALIDATE_CC_PKG_CONFIG_PREFIX@
+exec_prefix=${prefix}
+libdir=@PROTOVALIDATE_CC_PKG_CONFIG_LIBDIR@
+includedir=@PROTOVALIDATE_CC_PKG_CONFIG_INCLUDEDIR@
+
+Name: protovalidate-cc
+Version: @PROTOVALIDATE_CC_PKG_CONFIG_VERSION@
+Description: protovalidate implementation for C++.
+Requires: @PROTOVALIDATE_CC_PKG_CONFIG_REQS_STR@
+URL: https://github.com/bufbuild/protovalidate
+
+Libs: -L${libdir} @PROTOVALIDATE_CC_PKG_CONFIG_LIBS@
+Cflags: -I${includedir}

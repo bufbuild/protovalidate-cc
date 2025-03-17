@@ -9,6 +9,10 @@ endif()
 
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/deps/shared_deps.json SHARED_DEPS)
 
+set(PROTOVALIDATE_CC_EXPORT_TARGETS "")
+set(PROTOVALIDATE_CC_PKG_CONFIG_REQS "")
+set(PROTOVALIDATE_CC_FIND_DEPENDENCIES "")
+
 # Googletest, only needed when tests are enabled.
 if((PROTOVALIDATE_CC_ENABLE_TESTS OR CEL_CPP_ENABLE_TESTS) AND BUILD_TESTING)
     message(STATUS "protovalidate-cc: tests are enabled")
@@ -91,13 +95,17 @@ endif()
 if(TARGET absl::base)
     message(STATUS "protovalidate-cc: Using pre-existing absl targets")
 else()
-    SharedDeps_GetMetaValue(PROTOVALIDATE_CC_MIN_ABSL_VERSION "absl" "cmake_min_version" "${SHARED_DEPS}")
-    find_package(absl ${PROTOVALIDATE_CC_MIN_ABSL_VERSION} CONFIG)
+    find_package(absl CONFIG)
     if(absl_FOUND)
         message(STATUS "protovalidate-cc: Using external absl ${absl_VERSION}")
         set(protobuf_ABSL_PROVIDER "package")
+        list(APPEND PROTOVALIDATE_CC_PKG_CONFIG_REQS "absl_base")
+        list(APPEND PROTOVALIDATE_CC_FIND_DEPENDENCIES "find_dependency(absl CONFIG)")
     else()
         if(PROTOVALIDATE_CC_ENABLE_VENDORING)
+            if(PROTOVALIDATE_CC_ENABLE_INSTALL)
+                message(FATAL_ERROR "protovalidate-cc: Installation can not be enabled when using vendored absl. Install absl system-wide, or disable installation using -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF.")
+            endif()
             SharedDeps_GetSourceValue(PROTOVALIDATE_CC_ABSL_URLS "absl" "urls" "${SHARED_DEPS}")
             SharedDeps_GetSourceValue(PROTOVALIDATE_CC_ABSL_SHA256 "absl" "sha256" "${SHARED_DEPS}")
             message(STATUS "protovalidate-cc: Fetching absl")
@@ -109,6 +117,7 @@ else()
             set(ABSL_PROPAGATE_CXX_STD ON)
             set(ABSL_ENABLE_INSTALL OFF)
             FetchContent_MakeAvailable(absl)
+            list(APPEND PROTOVALIDATE_CC_EXPORT_TARGETS absl_base)
         else()
             message(FATAL_ERROR "protovalidate-cc: Could not find absl package and vendoring is disabled.")
         endif()
@@ -131,6 +140,9 @@ if(TARGET protobuf::libprotobuf)
         set(PROTOBUF_IMPORT_PATH ${Protobuf_INCLUDE_DIRS})
     else()
         if(PROTOVALIDATE_CC_ENABLE_VENDORING)
+            if(PROTOVALIDATE_CC_ENABLE_INSTALL)
+                message(FATAL_ERROR "protovalidate-cc: Installation can not be enabled when using vendored protobuf. Install protobuf system-wide, or disable installation using -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF.")
+            endif()
             SharedDeps_GetSourceValue(PROTOVALIDATE_CC_PROTOBUF_URLS "protobuf" "urls" "${SHARED_DEPS}")
             SharedDeps_GetSourceValue(PROTOVALIDATE_CC_PROTOBUF_SHA256 "protobuf" "sha256" "${SHARED_DEPS}")
             message(STATUS "protovalidate-cc: Fetching protobuf")
@@ -162,6 +174,9 @@ else()
         message(STATUS "protovalidate-cc: Using external re2 ${re2_VERSION}")
     else()
         if(PROTOVALIDATE_CC_ENABLE_VENDORING)
+            if(PROTOVALIDATE_CC_ENABLE_INSTALL)
+                message(FATAL_ERROR "protovalidate-cc: Installation can not be enabled when using vendored re2. Install re2 system-wide, or disable installation using -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF.")
+            endif()
             message(STATUS "protovalidate-cc: Fetching re2")
             set(RE2_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/re2/0001-Add-RE2_INSTALL-option.patch)
             FetchContent_Declare(
@@ -174,7 +189,7 @@ else()
             set(RE2_INSTALL OFF)
             FetchContent_MakeAvailable(re2)
         else()
-            message(FATAL_ERROR "protovalidate-cc: Could not find absl package and vendoring is disabled.")
+            message(FATAL_ERROR "protovalidate-cc: Could not find re2 package and vendoring is disabled.")
         endif()
     endif()
 endif()
@@ -185,6 +200,7 @@ endif()
 # https://cmake.org/cmake/help/latest/module/FetchContent.html#variable:FETCHCONTENT_SOURCE_DIR_%3CuppercaseName%3E
 # ANTLR4 has CMake support, but we need ANTLR4CPP_USING_ABSEIL which it doesn't support yet.
 include(Antlr4)
+list(APPEND PROTOVALIDATE_CC_EXPORT_TARGETS antlr4_static)
 
 # googleapis protos; These don't tend to be packaged everywhere, so it is always
 # vendored. When building in a hermetic environment, use the
@@ -231,6 +247,12 @@ file(COPY_FILE
 )
 message(STATUS "Added ${cel_cpp_SOURCE_DIR}/CMakeLists.txt")
 add_subdirectory(${cel_cpp_SOURCE_DIR} ${cel_cpp_BINARY_DIR})
+list(APPEND PROTOVALIDATE_CC_EXPORT_TARGETS 
+    cel_cpp
+    cel_cpp_parser
+    cel_cpp_minimal_descriptor_set
+    cel_googleapis_proto
+)
 
 # Protovalidate; mainly needed for the proto files. There is no CMake build and
 # it is not packaged anywhere, so it is always vendored. When building in a
@@ -261,11 +283,15 @@ protobuf_generate(
         ${protovalidate_SOURCE_DIR}/proto/protovalidate
         ${PROTOBUF_IMPORT_PATH}
 )
-target_include_directories(protovalidate_proto PUBLIC ${PROTOVALIDATE_PROTO_GEN_DIR})
+target_include_directories(protovalidate_proto PUBLIC
+    $<BUILD_INTERFACE:${PROTOVALIDATE_PROTO_GEN_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
 target_link_libraries(protovalidate_proto PUBLIC protobuf::libprotobuf)
 add_library(protovalidate::proto ALIAS protovalidate_proto)
+list(APPEND PROTOVALIDATE_CC_EXPORT_TARGETS protovalidate_proto)
 
-if(PROTOVALIDATE_CC_ENABLE_TESTS AND BUILD_TESTING)
+if((PROTOVALIDATE_CC_ENABLE_TESTS AND BUILD_TESTING) OR PROTOVALIDATE_CC_ENABLE_CONFORMANCE)
     # protoc-gen-validate; just needed for the proto files. There is no CMake
     # build, so it is always vendored for now. When building in a hermetic
     # environment, use the FETCHCONTENT_SOURCE_DIR_PROTOC_GEN_VALIDATE option to

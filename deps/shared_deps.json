@@ -1,8 +1,7 @@
 {
   "absl": {
     "meta": {
-      "version": "20240722.0",
-      "cmake_min_version": "20240722"
+      "version": "20240722.0"
     },
     "source": {
       "sha256": "f50e5ac311a81382da7fa75b97310e4b9006474f9560ac46f54a9967f07d4ae3",
@@ -15,7 +14,7 @@
   "protobuf": {
     "meta": {
       "version": "29.2",
-      "cmake_version_range": "5.27.0...<6"
+      "cmake_version_range": "5.27.0"
     },
     "source": {
       "sha256": "63150aba23f7a90fd7d87bdf514e459dd5fe7023fdde01b56ac53335df64d4bd",

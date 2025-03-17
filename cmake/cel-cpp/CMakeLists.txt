@@ -7,15 +7,15 @@ set(CEL_CPP_GRAMMAR_FILE ${CMAKE_CURRENT_SOURCE_DIR}/parser/internal/Cel.g4)
 set(CEL_CPP_PARSER_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/cel_cpp_parser)
 set(CEL_CPP_PARSER_OUTPUT_DIR ${CEL_CPP_PARSER_GEN_DIR}/parser/internal)
 Antlr4Generate(CEL_CPP_ANTLR4_GENERATED_SOURCES ${CEL_CPP_GRAMMAR_FILE} "cel_parser_internal" ${CEL_CPP_PARSER_OUTPUT_DIR})
-add_library(cel_cpp_parser ${CEL_CPP_ANTLR4_GENERATED_SOURCES})
+add_library(cel_cpp_parser OBJECT ${CEL_CPP_ANTLR4_GENERATED_SOURCES})
 target_include_directories(cel_cpp_parser PUBLIC
-    ${antlr4_SOURCE_DIR}/runtime/Cpp/runtime/src
-    ${CEL_CPP_PARSER_OUTPUT_DIR}
+    $<BUILD_INTERFACE:${antlr4_SOURCE_DIR}/runtime/Cpp/runtime/src>
+    $<BUILD_INTERFACE:${CEL_CPP_PARSER_OUTPUT_DIR}>
+    $<BUILD_INTERFACE:${CEL_CPP_PARSER_GEN_DIR}>
 )
 target_compile_definitions(cel_cpp_parser PRIVATE ANTLR4CPP_USING_ABSEIL)
 target_compile_options(cel_cpp_parser PUBLIC -fsized-deallocation)
 target_link_libraries(cel_cpp_parser PUBLIC absl::base antlr4_static)
-target_include_directories(cel_cpp_parser PUBLIC ${CEL_CPP_PARSER_GEN_DIR})
 add_library(cel_cpp::parser ALIAS cel_cpp_parser)
 
 # Build cel_cc_embed tool for embedding descriptor sets
@@ -25,8 +25,6 @@ target_link_libraries(cel_cc_embed PRIVATE
     absl::flags_parse
     absl::log
     absl::log_initialize
-    absl::strings
-    absl::span
 )
 add_executable(cel_cpp::embed ALIAS cel_cc_embed)
 
@@ -50,7 +48,10 @@ list(TRANSFORM CEL_CPP_GOOGLEAPIS_PROTO PREPEND ${CEL_CPP_GOOGLEAPIS_PROTO_DIR}/
 set(CEL_CPP_GOOGLEAPIS_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/proto_cc_googleapis)
 file(MAKE_DIRECTORY ${CEL_CPP_GOOGLEAPIS_PROTO_GEN_DIR})
 add_library(cel_googleapis_proto OBJECT ${CEL_CPP_GOOGLEAPIS_PROTO})
-target_include_directories(cel_googleapis_proto PUBLIC ${CEL_CPP_GOOGLEAPIS_PROTO_GEN_DIR})
+target_include_directories(cel_googleapis_proto PUBLIC
+    $<BUILD_INTERFACE:${CEL_CPP_GOOGLEAPIS_PROTO_GEN_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
 target_link_libraries(cel_googleapis_proto PUBLIC protobuf::libprotobuf)
 protobuf_generate(
     TARGET cel_googleapis_proto
@@ -98,7 +99,9 @@ add_custom_command(
 add_custom_target(cel_cpp_minimal_descriptor_set_gen DEPENDS ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_EMBED_PATH})
 add_library(cel_cpp_minimal_descriptor_set INTERFACE)
 add_dependencies(cel_cpp_minimal_descriptor_set cel_cpp_minimal_descriptor_set_gen)
-target_include_directories(cel_cpp_minimal_descriptor_set INTERFACE ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_GEN_DIR})
+target_include_directories(cel_cpp_minimal_descriptor_set INTERFACE
+    $<BUILD_INTERFACE:${CEL_CPP_MINIMAL_DESCRIPTOR_SET_GEN_DIR}>
+)
 add_library(cel_cpp::minimal_descriptor_set ALIAS cel_cpp_minimal_descriptor_set)
 
 # Collect core source files
@@ -197,27 +200,19 @@ list(REMOVE_ITEM CEL_CPP_TEST_SOURCES
     eval/compiler/flat_expr_builder_test.cc
 )
 
-add_library(cel_cpp ${CEL_CPP_CORE_SOURCES} ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_EMBED_PATH})
+add_library(cel_cpp STATIC ${CEL_CPP_CORE_SOURCES} ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_EMBED_PATH})
 target_link_libraries(cel_cpp PUBLIC
     cel_cpp::parser
     cel_cpp::minimal_descriptor_set
     cel_cpp::googleapis_proto
     absl::base
-    absl::strings
-    absl::status
-    absl::statusor
-    absl::time
-    absl::flat_hash_map
-    absl::flat_hash_set
-    absl::btree
-    absl::synchronization
-    absl::optional
-    absl::span
-    absl::variant
     protobuf::libprotobuf
     re2::re2
 )
-target_include_directories(cel_cpp PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(cel_cpp PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+    $<INSTALL_INTERFACE:include>
+)
 target_compile_definitions(cel_cpp PRIVATE ANTLR4CPP_USING_ABSEIL)
 add_library(cel_cpp::cel_cpp ALIAS cel_cpp)
 
