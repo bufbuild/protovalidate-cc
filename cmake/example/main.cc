@@ -15,9 +15,9 @@
 #include "buf/validate/validator.h"
 
 int main(int argc, char** argv) {
-  auto factory = ValidatorFactory::New();
-  auto validator = factory->NewValidator();
+  google::protobuf::Arena arena;
+  auto factory = buf::validate::ValidatorFactory::New().value();
+  auto validator = factory->NewValidator(&arena, false);
   google::protobuf::Any any;
-  validator->validate(any);
-  return 0;
+  return !validator.Validate(any).ok();
 }

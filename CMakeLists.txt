@@ -30,6 +30,7 @@ if(PROTOVALIDATE_CC_ENABLE_INSTALL)
     include(GNUInstallDirs)
 endif()
 
+include(GitVersion)
 include(Deps)
 
 set(PROTOVALIDATE_LIBS
@@ -140,6 +141,7 @@ if(PROTOVALIDATE_CC_ENABLE_INSTALL)
 
     # CMake configuration scripts
     list(JOIN PROTOVALIDATE_CC_FIND_DEPENDENCIES "\n" PROTOVALIDATE_CC_FIND_DEPENDENCIES_STR)
+    string(REGEX MATCH "([0-9]+.[0-9]+.[0-9]+)" PROTOVALIDATE_CC_CMAKE_VERSION "${PROTOVALIDATE_CC_GIT_VERSION}")
     configure_package_config_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/protovalidate_cc-config.cmake.in"
         "${CMAKE_CURRENT_BINARY_DIR}/protovalidate_cc-config.cmake"
@@ -149,7 +151,7 @@ if(PROTOVALIDATE_CC_ENABLE_INSTALL)
     )
     write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/protovalidate_cc-config-version.cmake"
-        VERSION "${PROTOVALIDATE_CC_VERSION_MAJOR}.${PROTOVALIDATE_CC_VERSION_MINOR}"
+        VERSION "${PROTOVALIDATE_CC_CMAKE_VERSION}"
         COMPATIBILITY AnyNewerVersion
     )
     install(
