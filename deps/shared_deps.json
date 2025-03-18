@@ -13,8 +13,7 @@
   },
   "protobuf": {
     "meta": {
-      "version": "29.2",
-      "cmake_version_range": "5.27.0"
+      "version": "29.2"
     },
     "source": {
       "sha256": "63150aba23f7a90fd7d87bdf514e459dd5fe7023fdde01b56ac53335df64d4bd",
