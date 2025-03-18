@@ -43,8 +43,8 @@ Depending on your project setup, these can be sourced in different ways:
   will be used. Please note that in this case, you need to ensure that the
   versions of Abseil, Protocol Buffers, and re2 are supported by cel-cpp and
   protovalidate-cc. The versions specified in
-  [`deps/shared_deps.json`](../deps/shared_deps.json) are known to compile and
-  function correctly.
+  [https://github.com/google/cel-cpp/blob/v0.10.0/bazel/deps.bzl](cel-cpp) are
+  known to compile and function correctly.
 
 - ANTLR 4 can not be included externally as cel-cpp depends on the runtime
   library being compiled with a specific flag (`ANTLR4CPP_USING_ABSEIL`). It
@@ -74,3 +74,14 @@ Depending on your project setup, these can be sourced in different ways:
 > or Abseil from external dependencies. For more predictable behavior, you can
 > grab those external dependencies directly first, before including libraries
 > that require them.
+
+### Example
+
+There is an example of how to use protovalidate-cc in the [example](./example)
+directory. You can build and run it like this:
+
+```console
+$ cmake -B .build -S .
+$ cmake --build .build
+$ ./.build/example
+```
