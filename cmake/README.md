@@ -38,12 +38,12 @@ When built with CMake, protovalidate-cc has the following external dependencies:
 Depending on your project setup, these can be sourced in different ways:
 
 - Abseil, Protocol Buffers and re2 can link to external copies. If you already
-  have Abseil, Protocol Buffers, or re2 added to your CMake project *prior to
-  the `FetchContent_MakeAvailable` for protovalidate-cc*, the existing targets
+  have Abseil, Protocol Buffers, or re2 added to your CMake project prior to
+  the `FetchContent_MakeAvailable` for protovalidate-cc, the existing targets
   will be used. Please note that in this case, you need to ensure that the
   versions of Abseil, Protocol Buffers, and re2 are supported by cel-cpp and
   protovalidate-cc. The versions specified in
-  [https://github.com/google/cel-cpp/blob/v0.10.0/bazel/deps.bzl](cel-cpp) are
+  [cel-cpp](https://github.com/google/cel-cpp/blob/v0.10.0/bazel/deps.bzl) are
   known to compile and function correctly.
 
 - ANTLR 4 can not be included externally as cel-cpp depends on the runtime
@@ -81,6 +81,7 @@ There is an example of how to use protovalidate-cc in the [example](./example)
 directory. You can build and run it like this:
 
 ```console
+$ cd <protovalidate-cc>/cmake/example
 $ cmake -B .build -S .
 $ cmake --build .build
 $ ./.build/example

@@ -97,6 +97,9 @@ if(TARGET absl::base)
 else()
     find_package(absl CONFIG)
     if(absl_FOUND)
+        if(absl_VERSION LESS 20240722)
+            message(FATAL_ERROR "protovalidate-cc: cel-cpp is known to need absl 20240722 or higher (found: ${absl_VERSION}). Please update absl, or to use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
+        endif()
         message(STATUS "protovalidate-cc: Using external absl ${absl_VERSION}")
         set(protobuf_ABSL_PROVIDER "package")
         list(APPEND PROTOVALIDATE_CC_PKG_CONFIG_REQS "absl_base")
@@ -123,6 +126,27 @@ else()
         endif()
     endif()
 endif()
+get_property(PROTOVALIDATE_CC_ABSL_IMPORTED TARGET absl::status PROPERTY IMPORTED)
+if(PROTOVALIDATE_CC_ABSL_IMPORTED)
+    set(PROTOVALIDATE_CC_ABSL_TRY_COMPILE_FLAGS LINK_LIBRARIES absl::status)
+else()
+    set(PROTOVALIDATE_CC_ABSL_TRY_COMPILE_FLAGS CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${absl_SOURCE_DIR})
+endif()
+try_compile(ABSL_CAN_MOVE_ASSIGN_STATUS
+    SOURCE_FROM_CONTENT test_absl_status_move_assign.cc
+                        "#include <type_traits>\n\
+                        #include <absl/status/status.h>\n\
+                        static_assert(std::is_nothrow_move_assignable_v<absl::Status>);\n\
+                        int main() {}"
+    ${PROTOVALIDATE_CC_ABSL_TRY_COMPILE_FLAGS}
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED TRUE
+    NO_CACHE
+)
+if(NOT ABSL_CAN_MOVE_ASSIGN_STATUS)
+    message(FATAL_ERROR "protovalidate-cc: absl::Status is not nothrow-move-assignable; please make sure your copy of absl is up-to-date enough (cel-cpp is known to need at least 20240722). To use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
+endif()
+
 
 # Protobuf
 if(TARGET protobuf::libprotobuf)
