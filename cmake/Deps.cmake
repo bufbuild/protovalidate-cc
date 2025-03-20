@@ -7,6 +7,9 @@ include(MakePatchCommand)
 if(CMAKE_TOOLCHAIN_FILE)
 endif()
 
+# Don't link the try_compile tests.
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
+
 file(READ ${CMAKE_CURRENT_SOURCE_DIR}/deps/shared_deps.json SHARED_DEPS)
 
 set(PROTOVALIDATE_CC_EXPORT_TARGETS "")
