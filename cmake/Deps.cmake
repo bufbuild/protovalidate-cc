@@ -126,27 +126,21 @@ else()
         endif()
     endif()
 endif()
-get_property(PROTOVALIDATE_CC_ABSL_IMPORTED TARGET absl::status PROPERTY IMPORTED)
-if(PROTOVALIDATE_CC_ABSL_IMPORTED)
-    set(PROTOVALIDATE_CC_ABSL_TRY_COMPILE_FLAGS LINK_LIBRARIES absl::status)
-else()
-    set(PROTOVALIDATE_CC_ABSL_TRY_COMPILE_FLAGS CMAKE_FLAGS -DINCLUDE_DIRECTORIES=${absl_SOURCE_DIR})
-endif()
+get_target_property(ABSL_INCLUDE_DIRECTORIES absl::base INTERFACE_INCLUDE_DIRECTORIES)
 try_compile(ABSL_CAN_MOVE_ASSIGN_STATUS
     SOURCE_FROM_CONTENT test_absl_status_move_assign.cc
                         "#include <type_traits>\n\
                         #include <absl/status/status.h>\n\
                         static_assert(std::is_nothrow_move_assignable_v<absl::Status>);\n\
                         int main() {}"
-    ${PROTOVALIDATE_CC_ABSL_TRY_COMPILE_FLAGS}
+    CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${ABSL_INCLUDE_DIRECTORIES}"
     CXX_STANDARD 17
     CXX_STANDARD_REQUIRED TRUE
     NO_CACHE
 )
 if(NOT ABSL_CAN_MOVE_ASSIGN_STATUS)
-    message(FATAL_ERROR "protovalidate-cc: absl::Status is not nothrow-move-assignable; please make sure your copy of absl is up-to-date enough (cel-cpp is known to need at least 20240722). To use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
+    message(FATAL_ERROR "protovalidate-cc: Abseil seems to be too old (absl::Status is not nothrow-move-assignable). Please make sure your copy of absl is up-to-date enough (cel-cpp is known to need at least 20240722). To use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
 endif()
-
 
 # Protobuf
 if(TARGET protobuf::libprotobuf)
@@ -186,18 +180,34 @@ endif()
 set(PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
 # TODO(jchadwick-buf): Clean this up.
 if(DEFINED Protobuf_IMPORT_DIRS AND EXISTS ${Protobuf_IMPORT_DIRS}/google/protobuf/any.proto)
-    set(PROTOBUF_IMPORT_PATH ${Protobuf_IMPORT_DIRS} PARENT_SCOPE)
+    set(PROTOBUF_IMPORT_PATH ${Protobuf_IMPORT_DIRS} CACHE INTERNAL "")
 elseif(DEFINED PROTOBUF_IMPORT_DIRS AND EXISTS ${PROTOBUF_IMPORT_DIRS}/google/protobuf/any.proto)
-    set(PROTOBUF_IMPORT_PATH ${PROTOBUF_IMPORT_DIRS} PARENT_SCOPE)
+    set(PROTOBUF_IMPORT_PATH ${PROTOBUF_IMPORT_DIRS} CACHE INTERNAL "")
 elseif(DEFINED Protobuf_INCLUDE_DIRS AND EXISTS ${Protobuf_INCLUDE_DIRS}/google/protobuf/any.proto)
-    set(PROTOBUF_IMPORT_PATH ${Protobuf_INCLUDE_DIRS} PARENT_SCOPE)
+    set(PROTOBUF_IMPORT_PATH ${Protobuf_INCLUDE_DIRS} CACHE INTERNAL "")
 elseif(DEFINED protobuf_SOURCE_DIR AND EXISTS ${protobuf_SOURCE_DIR}/src/google/protobuf/any.proto)
-    set(PROTOBUF_IMPORT_PATH ${protobuf_SOURCE_DIR}/src PARENT_SCOPE)
+    set(PROTOBUF_IMPORT_PATH ${protobuf_SOURCE_DIR}/src CACHE INTERNAL "")
 else()
     get_target_property(PROTOBUF_IMPORT_PATH protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
+    set(PROTOBUF_IMPORT_PATH ${PROTOBUF_IMPORT_PATH} CACHE INTERNAL "")
     if(NOT EXISTS ${PROTOBUF_IMPORT_PATH}/google/protobuf/any.proto)
         message(FATAL_ERROR "protovalidate-cc: Error determining protobuf import path: well-known types not found in any of Protobuf_IMPORT_DIRS, PROTOBUF_IMPORT_DIRS, Protobuf_INCLUDE_DIRS, or protobuf_SOURCE_DIR. Check that your Protobuf installation is correct and up-to-date enough. To use a vendored copy of Protobuf instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_Protobuf=TRUE.")
     endif()
+endif()
+get_target_property(PROTOBUF_INCLUDE_DIRECTORIES protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
+list(APPEND PROTOBUF_INCLUDE_DIRECTORIES ${ABSL_INCLUDE_DIRECTORIES})
+try_compile(PROTOBUF_HAS_CPPSTRINGTYPE
+    SOURCE_FROM_CONTENT test_protobuf_has_cppstringtype.cc
+                        "#include <google/protobuf/descriptor.h>\n\
+                        using CppStringType = ::google::protobuf::FieldDescriptor::CppStringType;\n\
+                        int main() {}"
+    CMAKE_FLAGS "-DINCLUDE_DIRECTORIES=${PROTOBUF_INCLUDE_DIRECTORIES}"
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED TRUE
+    NO_CACHE
+)
+if(NOT PROTOBUF_HAS_CPPSTRINGTYPE)
+    message(FATAL_ERROR "protovalidate-cc: Protobuf seems to be too old (missing FieldDescriptor::CppStringType). To use a vendored copy of Protobuf instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_Protobuf=TRUE.")
 endif()
 
 # Re2
