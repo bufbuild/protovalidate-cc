@@ -34,9 +34,9 @@ int main(int argc, char** argv) {
     auto p = results.violations(i);
 
     // Print the validation message.
-    std::cout << p.proto().message();
+    std::cout << p.proto().message() << std::endl;
 
     // Print the entire ConstraintViolation to see its structure.
-    std::cout << p.proto().DebugString();
+    std::cout << p.proto().DebugString() << std::endl;
   }
 }
