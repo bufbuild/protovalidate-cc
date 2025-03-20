@@ -33,10 +33,10 @@ $ cmake -B .build -S . -DPROTOVALIDATE_CC_ENABLE_VENDORING=OFF
 >
 > Known compatible versions of dependencies can be found by looking at the
 > dependency table below. Additionally, you can individually disable usage of
-> external dependencies by setting CMake options like
+> system dependencies by setting CMake options like
 > `CMAKE_DISABLE_FIND_PACKAGE_absl` and `CMAKE_DISABLE_FIND_PACKAGE_Protobuf`.
 
-When built with CMake, protovalidate-cc has the following external dependencies:
+When built with CMake, protovalidate-cc has the following dependencies:
 
 | Dependency                                                 | Known Compatible Version | Flag to Disable System Version               |
 | ---------------------------------------------------------- | ------------------------ | -------------------------------------------- |
@@ -48,22 +48,22 @@ When built with CMake, protovalidate-cc has the following external dependencies:
 | [cel-cpp](https://github.com/google/cel-cpp)               | (Always vendored)        |                                              |
 | [protovalidate](https://github.com/bufbuild/protovalidate) | (Always vendored)        |                                              |
 
-You can disable vendoring for any package that supports being loaded externally
-by using the CMake flag `-DPROTOVALIDATE_CC_ENABLE_VENDORING=OFF`. External
+You can disable vendoring for any package that supports being loaded from the
+system by using the CMake flag `-DPROTOVALIDATE_CC_ENABLE_VENDORING=OFF`. System
 packages are always preferred when available, but this will ensure that
 protovalidate-cc does not use vendoring (except for the libraries that are
 always vendored.)
 
 Depending on your project setup, these can be sourced in different ways:
 
-- Abseil, Protocol Buffers and re2 can link to external copies. If you already
+- Abseil, Protocol Buffers and re2 can link to existing targets. If you already
   have Abseil, Protocol Buffers, or re2 added to your CMake project prior to
   the `FetchContent_MakeAvailable` for protovalidate-cc, the existing targets
   will be used. Please note that in this case, you need to ensure that the
   versions of Abseil, Protocol Buffers, and re2 are supported by cel-cpp and
   protovalidate-cc.
 
-- ANTLR 4 can not be included externally as cel-cpp depends on the runtime
+- ANTLR 4 can not be included from the system as cel-cpp depends on the runtime
   library being compiled with a specific flag (`ANTLR4CPP_USING_ABSEIL`). It
   will always be fetched using `FetchContent`. In addition, a version of the
   ANTLR 4 compiler will be downloaded from the Internet, and ran using `java`
@@ -109,9 +109,9 @@ FetchContent_MakeAvailable(protovalidate_cc)
 > protovalidate-cc before other libraries, the copy of re2, Protocol Buffers or
 > Abseil that it loads may influence other CMake dependencies. Likewise, if you
 > load protovalidate-cc *after* other libraries, it may pick up Protocol Buffers
-> or Abseil from external dependencies. For more predictable behavior, you can
-> grab those external dependencies directly first, before including libraries
-> that require them.
+> or Abseil from other dependencies. For more predictable behavior, you can
+> grab those dependencies directly first, before including libraries that
+> require them.
 
 ### Example
 
