@@ -1,0 +1,38 @@
+From 650f52b47ca47d9509ca9fd31b4ea0e644dc5ceb Mon Sep 17 00:00:00 2001
+From: John Chadwick <jchadwick@buf.build>
+Date: Wed, 12 Mar 2025 18:39:05 -0400
+Subject: [PATCH 3/3] Remove unnecessary dependency on cel_proto_wrap_util
+
+For some reason, cel_proto_wrap_util #includes "eval/testutil/test_message.pb.h" even though I don't think it is used anywhere. This results in an otherwise unnecessary dependency on the test protos in a non-test target.
+---
+ eval/public/structs/BUILD                  | 1 -
+ eval/public/structs/cel_proto_wrap_util.cc | 1 -
+ 2 files changed, 2 deletions(-)
+
+diff --git a/eval/public/structs/BUILD b/eval/public/structs/BUILD
+index 2da148ef..008f57a0 100644
+--- a/eval/public/structs/BUILD
++++ b/eval/public/structs/BUILD
+@@ -57,7 +57,6 @@ cc_library(
+     deps = [
+         ":protobuf_value_factory",
+         "//eval/public:cel_value",
+-        "//eval/testutil:test_message_cc_proto",
+         "//internal:overflow",
+         "//internal:proto_time_encoding",
+         "//internal:status_macros",
+diff --git a/eval/public/structs/cel_proto_wrap_util.cc b/eval/public/structs/cel_proto_wrap_util.cc
+index 3aaa205b..a039cc33 100644
+--- a/eval/public/structs/cel_proto_wrap_util.cc
++++ b/eval/public/structs/cel_proto_wrap_util.cc
+@@ -43,7 +43,6 @@
+ #include "absl/types/variant.h"
+ #include "eval/public/cel_value.h"
+ #include "eval/public/structs/protobuf_value_factory.h"
+-#include "eval/testutil/test_message.pb.h"
+ #include "internal/overflow.h"
+ #include "internal/proto_time_encoding.h"
+ #include "internal/status_macros.h"
+-- 
+2.47.2
+

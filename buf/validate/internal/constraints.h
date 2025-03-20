@@ -22,7 +22,7 @@
 #include "buf/validate/validate.pb.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/message.h"
-#include "src/google/protobuf/descriptor.h"
+#include "google/protobuf/descriptor.h"
 
 namespace buf::validate::internal {
 

@@ -42,5 +42,5 @@ user.bazelrc
 local_tsan.bazelrc
 /.clwb/
 .vscode
-.build
+.build*
 /cmake-build-*

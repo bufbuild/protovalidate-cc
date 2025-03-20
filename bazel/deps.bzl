@@ -77,7 +77,9 @@ _dependencies = {
     "com_google_cel_cpp": shared_dep(
         name="cel_cpp",
         patches=[
-            "@com_github_bufbuild_protovalidate_cc//bazel:patches/cel_cpp/0001-Allow-message-field-access-using-index-operator.patch"
+            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0001-Allow-message-field-access-using-index-operator.patch",
+            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0002-Add-missing-include-for-absl-StrCat.patch",
+            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0003-Remove-unnecessary-dependency-on-cel_proto_wrap_util.patch",
         ],
         patch_args=["-p1"],
     ),

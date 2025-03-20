@@ -1,0 +1,37 @@
+From a49ab714b98d3ca2327308c2f234d990bc1cd694 Mon Sep 17 00:00:00 2001
+From: John Chadwick <jchadwick@buf.build>
+Date: Wed, 5 Mar 2025 15:52:18 -0500
+Subject: [PATCH] Add RE2_INSTALL option
+
+---
+ CMakeLists.txt | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index bdac5af..71999f8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -12,6 +12,7 @@ include(GNUInstallDirs)
+ 
+ option(BUILD_SHARED_LIBS "build shared libraries" OFF)
+ option(RE2_USE_ICU "build against ICU for full Unicode properties support" OFF)
++option(RE2_INSTALL "install Re2" OFF)
+ 
+ # For historical reasons, this is just "USEPCRE", not "RE2_USE_PCRE".
+ option(USEPCRE "build against PCRE for testing and benchmarking" OFF)
+@@ -232,6 +233,7 @@ if(RE2_BUILD_TESTING)
+   endforeach()
+ endif()
+ 
++if(RE2_INSTALL)
+ install(TARGETS re2
+         EXPORT re2Targets
+         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+@@ -261,3 +263,4 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/re2.pc.in
+ 
+ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/re2.pc
+         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
++endif()
+-- 
+2.47.2
+

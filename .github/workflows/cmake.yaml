@@ -1,0 +1,55 @@
+name: CMake CI
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '15 22 * * *'
+  workflow_dispatch: {} # support manual runs
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-24.04, macos-latest]
+    name: Unit tests
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: .build
+          key: ${{ runner.os }}-cmake-build-cache
+      - name: Install ninja (Homebrew)
+        run: brew install ninja
+        if: runner.os == 'macOS'
+      - name: Install ninja (apt)
+        run: sudo apt-get install -y ninja-build
+        if: runner.os == 'Linux'
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Configure CMake
+        run: |
+            cmake \
+              -B .build -S . \
+              -DBUILD_TESTING=ON \
+              -DPROTOVALIDATE_CC_ENABLE_TESTS=ON \
+              -DPROTOVALIDATE_CC_ENABLE_VENDORING=ON \
+              -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF \
+              -GNinja
+      - name: Build with CMake
+        run: |
+            cmake --build .build
+      - name: Install go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: true
+      - name: Test with CMake
+        run: |
+            ctest --test-dir .build

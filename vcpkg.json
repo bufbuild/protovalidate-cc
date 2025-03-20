@@ -1,0 +1,16 @@
+{
+  "name": "protovalidate-cc",
+  "version": "0.5.0",
+  "dependencies": [
+    {
+      "name": "abseil",
+      "features": [
+        "cxx17"
+      ]
+    },
+    "benchmark",
+    "gtest",
+    "protobuf",
+    "re2"
+  ]
+}

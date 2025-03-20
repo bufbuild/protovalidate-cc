@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package example.v1;
+
+import "buf/validate/validate.proto";
+
+message User {
+   int32 id = 1 [(buf.validate.field).int32.gt = 99];
+}
