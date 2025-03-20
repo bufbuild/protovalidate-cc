@@ -194,7 +194,10 @@ elseif(DEFINED Protobuf_INCLUDE_DIRS AND EXISTS ${Protobuf_INCLUDE_DIRS}/google/
 elseif(DEFINED protobuf_SOURCE_DIR AND EXISTS ${protobuf_SOURCE_DIR}/src/google/protobuf/any.proto)
     set(PROTOBUF_IMPORT_PATH ${protobuf_SOURCE_DIR}/src PARENT_SCOPE)
 else()
-    message(FATAL_ERROR "protovalidate-cc: Error determining protobuf import path: well-known types not found in any of Protobuf_IMPORT_DIRS, PROTOBUF_IMPORT_DIRS, Protobuf_INCLUDE_DIRS, or protobuf_SOURCE_DIR. Check that your Protobuf installation is correct and up-to-date enough. To use a vendored copy of Protobuf instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_Protobuf=TRUE.")
+    get_target_property(PROTOBUF_IMPORT_PATH protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
+    if(NOT EXISTS ${PROTOBUF_IMPORT_PATH}/google/protobuf/any.proto)
+        message(FATAL_ERROR "protovalidate-cc: Error determining protobuf import path: well-known types not found in any of Protobuf_IMPORT_DIRS, PROTOBUF_IMPORT_DIRS, Protobuf_INCLUDE_DIRS, or protobuf_SOURCE_DIR. Check that your Protobuf installation is correct and up-to-date enough. To use a vendored copy of Protobuf instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_Protobuf=TRUE.")
+    endif()
 endif()
 
 # Re2
