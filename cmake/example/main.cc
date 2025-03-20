@@ -13,11 +13,30 @@
 // limitations under the License.
 
 #include "buf/validate/validator.h"
+#include "example.pb.h"
 
 int main(int argc, char** argv) {
+  example::v1::User user;
+  user.set_id(5);
+
   google::protobuf::Arena arena;
   auto factory = buf::validate::ValidatorFactory::New().value();
   auto validator = factory->NewValidator(&arena, false);
-  google::protobuf::Any any;
-  return !validator.Validate(any).ok();
+  
+  auto results = validator.Validate(user).value();
+  if (results.violations_size() > 0) {
+    std::cout << "validation failed" << std::endl;
+  } else {
+    std::cout << "validation succeeded" << std::endl;
+  }
+
+  for (int i = 0; i < results.violations_size(); i++) {
+    auto p = results.violations(i);
+
+    // Print the validation message.
+    std::cout << p.proto().message();
+
+    // Print the entire ConstraintViolation to see its structure.
+    std::cout << p.proto().DebugString();
+  }
 }

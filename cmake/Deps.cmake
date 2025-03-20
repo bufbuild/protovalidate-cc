@@ -185,9 +185,9 @@ else()
 endif()
 set(PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
 if(DEFINED Protobuf_INCLUDE_DIRS)
-    set(PROTOBUF_IMPORT_PATH ${Protobuf_INCLUDE_DIRS})
+    set(PROTOBUF_IMPORT_PATH ${Protobuf_INCLUDE_DIRS} PARENT_SCOPE)
 elseif(DEFINED protobuf_SOURCE_DIR)
-    set(PROTOBUF_IMPORT_PATH ${protobuf_SOURCE_DIR}/src)
+    set(PROTOBUF_IMPORT_PATH ${protobuf_SOURCE_DIR}/src PARENT_SCOPE)
 else()
     message(FATAL_ERROR "protovalidate-cc: Error determining protobuf import path: Protobuf_INCLUDE_DIRS is not set. Check that your Protobuf installation is correct and up-to-date enough. To use a vendored copy of Protobuf instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_Protobuf=TRUE.")
 endif()
@@ -306,9 +306,8 @@ protobuf_generate(
     PROTOS ${PROTOVALIDATE_PROTO}
     LANGUAGE cpp
     PROTOC_OUT_DIR ${PROTOVALIDATE_PROTO_GEN_DIR}
-    IMPORT_DIRS
-        ${protovalidate_SOURCE_DIR}/proto/protovalidate
-        ${PROTOBUF_IMPORT_PATH}
+    IMPORT_DIRS ${protovalidate_SOURCE_DIR}/proto/protovalidate
+                ${PROTOBUF_IMPORT_PATH}
 )
 target_include_directories(protovalidate_proto PUBLIC
     $<BUILD_INTERFACE:${PROTOVALIDATE_PROTO_GEN_DIR}>
