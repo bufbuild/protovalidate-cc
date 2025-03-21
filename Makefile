@@ -14,7 +14,8 @@ PROTOVALIDATE_VERSION ?= v$(shell <./deps/shared_deps.json jq -j .protovalidate.
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
-ARGS ?= --strict
+ARGS ?= --strict_message --expected_failures=buf/validate/conformance/expected_failures.yaml
+
 BAZEL ?= bazel
 
 .PHONY: help

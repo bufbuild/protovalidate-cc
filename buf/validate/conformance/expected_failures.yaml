@@ -1,0 +1,1470 @@
+library/is_email:
+  - valid/label_interior_hyphen
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsEmail]:{val:"foo@a-b.a--b"}
+       #  want: valid
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "library.is_email"
+       #       message: ""
+  - invalid/trailing_dot
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsEmail]:{val:"foo@example.com."}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_email"
+  #         got: valid
+  - valid/exhaust_atext
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsEmail]:{val:"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!#$%&'*+-/=?^_`{|}~@example.com"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_email"
+  #             message: ""
+  #             for_key: false
+  - valid/label_all_digits
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsEmail]:{val:"foo@0.1.2.3.4.5.6.7.8.9"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_email"
+  #             message: ""
+  #             for_key: false
+library/is_host_and_port:
+  - port_required/false/invalid/ipv6_zone-id_too_short
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsHostAndPort]:{val:"[::1%]"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_host_and_port"
+       #   got: valid
+  - port_required/false/invalid/port_number_sign
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsHostAndPort]:{val:"example.com:+0"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_host_and_port"
+  #         got: valid
+  - port_required/false/valid/ipv6_zone-id_any_non_null_character
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsHostAndPort]:{val:"[::1%% :x\x1f]"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_host_and_port"
+  #             message: ""
+  #             for_key: false
+  - port_required/true/invalid/port_number_sign
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsHostAndPort]:{val:"example.com:+0"  port_required:true}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_host_and_port"
+  #         got: valid
+library/is_ip:
+  - version/omitted/invalid/ipv6_zone-id
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsIp]:{val:"::1%"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_ip"
+       #   got: valid
+  - version/omitted/valid/ipv6_zone-id_any_non_null_character
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsIp]:{val:"::1%% :x\x1f"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_ip"
+  #             message: ""
+  #             for_key: false
+library/is_hostname:
+  - valid/label_interior_hyphen
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsHostname]:{val:"a-b.a--b"}
+       #  want: valid
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "library.is_hostname"
+       #       message: ""
+library/is_ip_prefix:
+  - version/omitted/strict/omitted/invalid/ipv4_prefix_trailing_space
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"127.0.0.1/16 "}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_ip_prefix"
+       #   got: valid
+  - version/omitted/strict/omitted/invalid/ipv6_prefix_trailing_space
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"::1/64 "}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_ip_prefix"
+       #   got: valid
+  - version/omitted/strict/omitted/invalid/ipv4_bad_leading_zero_in_prefix-length
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"192.168.1.0/024"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_ip_prefix"
+  #         got: valid
+  - version/omitted/strict/omitted/invalid/ipv6_bad_leading_zero_in_prefix-length
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"2001:0DB8:ABCD:0012:FFFF:FFFF:FFFF:FFFF/024"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_ip_prefix"
+  #         got: valid
+  - version/omitted/strict/omitted/invalid/ipv6_zone-id/a
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"::1%en1/64"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_ip_prefix"
+  #         got: valid
+library/is_uri:
+  - invalid/query_bad_pct-encoded
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com?%2x"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/host_reg-name_bad_pct-encoded/a
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://foo%"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/userinfo_bad_pct-encoded/a
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://%@example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/leading_space
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:" https://example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/host_reg-name_bad_pct-encoded/b
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://foo%2x"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/fragment_bad_control_character
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com#\x1f"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/scheme/a
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"1foo://example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/host_reg-name_pct-encoded_invalid_utf8
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://foo%c3x%96"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/scheme/d
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:":foo://example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/trailing_space
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com "}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/scheme/g
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo^bar://example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/scheme/c
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:".foo://example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/port/a
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com:8a"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/host_ipv6/a
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://2001:0db8:85a3:0000:0000:8a2e:0370:7334"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/host/a
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://\x1f.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/fragment_bad_hash
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com##"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/host/b
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://^.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/host_ipv6_zone-id_unquoted
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://[::1%eth0]"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/query_bad_caret
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com?^"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/scheme/f
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo\x1fbar://example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/scheme/e
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo%20bar://example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/userinfo_bad_pct-encoded/b
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://%2x@example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/port/c
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com: 1"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/userinfo_reserved_at
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://@@example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/fragment_bad_pct-encoded/a
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com#%2x"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/fragment_bad_pct-encoded/b
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com#%"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/userinfo_caret
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://^@example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/host/c
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://foo@你好.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/host_ipv6_zone-id_empty
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://[::1%25]"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/fragment_bad_caret
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com#^"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/scheme/b
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"-foo://example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/port/b
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com:x"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/query_bad_control_character
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://example.com?\x1f"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/userinfo_control_character
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://\x1f@example.com"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri"
+       #   got: valid
+  - invalid/authority_path-abempty_segment_bad_caret
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo://example.com/^"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: valid
+  - invalid/authority_path-abempty_segment_bad_control_character
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo://example.com/\x1f"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: valid
+  - invalid/authority_path-abempty_segment_bad_pct-encoded
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo://example.com/%x"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: valid
+  - invalid/host_ipfuture
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://[v1x]"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: runtime error: ('return error for overflow', <class 'ValueError'>, ('IPvFuture address is invalid',))
+  - invalid/host_ipv6/b
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://[2001::0370::7334]"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: runtime error: ('return error for overflow', <class 'ValueError'>, ("'2001::0370::7334' does not appear to be an IPv4 or IPv6 address",))
+  - invalid/host_ipv6_zone-id_bad_pct-encoded/a
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://[::1%25foo%]"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: runtime error: ('return error for overflow', <class 'ValueError'>, ("'::1%25foo%' does not appear to be an IPv4 or IPv6 address",))
+  - invalid/host_ipv6_zone-id_bad_pct-encoded/b
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://[::1%25foo%2x]"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: runtime error: ('return error for overflow', <class 'ValueError'>, ("'::1%25foo%2x' does not appear to be an IPv4 or IPv6 address",))
+  - invalid/host_ipv6_zone-id_pct-encoded_invalid_utf8
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://[::1%25foo%c3x%96]"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: runtime error: ('return error for overflow', <class 'ValueError'>, ("'::1%25foo%c3x%96' does not appear to be an IPv4 or IPv6 address",))
+  - invalid/userinfo_reserved_square_bracket_close
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://]@example.com"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: runtime error: ('return error for overflow', <class 'ValueError'>, ('Invalid IPv6 URL',))
+  - invalid/userinfo_reserved_square_bracket_open
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https://[@example.com"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #         got: runtime error: ('return error for overflow', <class 'ValueError'>, ('Invalid IPv6 URL',))
+  - valid/path-absolute
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/nz"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_exhaust_segment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/nz/0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%20!$&'()*+,;=:@%20"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_exhaust_segment-nz
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/@%20!$&()*+,;=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~:"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_segment-nz-pct-encoded_ascii
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/%61%20%23"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_segment-nz-pct-encoded_invalid_utf8
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/%c3x%96"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_segment-nz-pct-encoded_utf8
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/%c3%96"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_segment_pct-encoded_ascii
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/nz/%61%20%23"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_segment_pct-encoded_invalid_utf8
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/nz/%c3x%96"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_segment_pct-encoded_utf8
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/nz/%c3%96%c3"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_with_empty_pchar
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/nz/"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_with_query_and_fragment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/nz?q#f"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_with_segment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/nz/a"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_with_segments
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:/nz//segment//segment/"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-empty
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-empty_with_query_and_fragment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:?q#f"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:nz"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_segment-nz_exhaust
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:@%20!$&()*+,;=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~:"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_segment-nz_pct-encoded_ascii
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:%61%20%23"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_segment-nz_pct-encoded_invalid_utf8
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:%c3x%96"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_segment-nz_pct-encoded_utf8
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:%c3%96"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_segment_empty_pchar
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:nz/"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_segment_exhaust
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:nz/0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%20!$&'()*+,;=:@%20"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_segment_pct-encoded_ascii
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:nz/%61%20%23"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_segment_pct-encoded_invalid_utf8
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:nz/%c3x%96"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_segment_pct-encoded_utf8
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:nz/%c3%96"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_with_query_and_fragment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:nz?q#f"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_with_segment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:nz/a"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/path-rootless_with_segments
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"foo:nz//segment//segment/"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+  - valid/userinfo_reserved_slash_parses_as_path-abempty
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUri]:{val:"https:///@example.com"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri"
+  #             message: ""
+  #             for_key: false
+library/is_uri_ref:
+  - invalid/path-noscheme_query_bad_caret
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:".?^"}
+       # want: validation error (1 violation)
+       #1. constraint_id: "library.is_uri_ref"
+       #got: valid
+  - invalid/path-absolute_query_bad_control_character
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/?\x1f"}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri_ref"
+       #   got: valid
+  - valid/path-abempty_exhaust_userinfo
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~!$&'()*+,;=::@example.com"}
+       #  want: valid
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri_ref"
+       #       message: ""
+  - valid/path-absolute_segment-nz_matches_colon
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/:"}
+       #  want: valid
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri_ref"
+       #       message: ""
+  - valid/path-noscheme_exhaust_segment
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"./0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%20!$&'()*+,;=:@%20"}
+       #  want: valid
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri_ref"
+       #       message: ""
+  - valid/path-empty
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{}
+       #  want: valid
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri_ref"
+       #       message: ""
+  - valid/path-absolute_segment-nz_pct-encoded_ascii
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/%61%20%23"}
+       #  want: valid
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri_ref"
+       #       message: ""
+  - valid/path-absolute_segment-nz_pct-encoded_utf-8
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/%c3%96"}
+       #  want: valid
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri_ref"
+       #       message: ""
+  - valid/path-noscheme_segment-nz_pct-encoded_invalid_utf-8
+       # input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"%c3x%96"}
+       #  want: valid
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "library.is_uri_ref"
+       #       message: ""
+  - valid/path-absolute_segment-nz_pct-encoded_invalid_utf-8
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/%c3x%96"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-noscheme_segment_pct-encoded_invalid_utf-8
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"./%c3x%96"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-absolute_exhaust_segment-nz
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/@%20!$&()*+,;=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~:"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-noscheme_segment_pct-encoded_ascii
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"./%61%20%23"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-noscheme_segment_pct-encoded_utf-8
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"./%c3%96"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-abempty_segment_pct-encoded_invalid_utf-8
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host/%c3x%96"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-absolute_segment_pct-encoded_invalid_utf-8
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/nz/%c3x%96"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-noscheme_segment-nz_pct-encoded_ascii
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"%61%20%23"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-noscheme_segment-nz_pct-encoded_utf-8
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"%c3%96"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-abempty_segment_pct-encoded_ascii
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host/%61%20%23"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-abempty_port
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host:8080"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-abempty_segment_pct-encoded_utf-8
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host/%c3%96"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-absolute_exhaust_segment
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/nz/0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%20!$&()*+,;=:@"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-abempty_exhaust_segment
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host/0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%20!$&()*+,;=:@"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/empty_string
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-absolute_segment_pct-encoded_utf-8
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/nz/%c3%96"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-absolute_segment_pct-encoded_ascii
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/nz/%61%20%23"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-abempty_ipv6
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//[::1]"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-noscheme/b
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"*"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-empty_exhaust_query
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"?0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~%20!$&'()*+,=;:@?"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - valid/path-noscheme_exhaust_segment-nz-nc
+     #   input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"@%20!$&()*+,;=0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~"}
+     #    want: valid
+     #     got: validation error (1 violation)
+     #      1. constraint_id: "library.is_uri_ref"
+     #         message: ""
+  - invalid/path-abempty_query_bad_caret
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host?^"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #         got: valid
+  - invalid/path-abempty_query_bad_control_character
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host?\x1f"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #         got: valid
+  - invalid/path-abempty_query_bad_pct-encoded
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host?%"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #         got: valid
+  - invalid/path-absolute_query_bad_caret
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/?^"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #         got: valid
+  - invalid/path-absolute_query_bad_pct-encoded
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/?%"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #         got: valid
+  - invalid/path-noscheme_query_bad_control_character
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:".?\x1f"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #         got: valid
+  - invalid/path-noscheme_query_bad_pct-encoded
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:".?%"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #         got: valid
+  - valid/extreme
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//userinfo0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~!$&'()*+,;=::@host!$&'()*+,;=._~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ:0123456789/path0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ%20!$&'()*+,;=:@%20//foo/?query0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~%20!$&'()*+,=;:@?#fragment0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~%20!$&'()*+,=;:@?/"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-abempty_exhaust_fragment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host#0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~%20!$&'()*+,=;:@?/"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-abempty_with_fragment/a
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host#frag"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-abempty_with_fragment/b
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"//host/foo/bar#frag"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_exhaust_fragment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/#0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~%20!$&'()*+,=;:@?/"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_with_fragment/a
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/#frag"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-absolute_with_fragment/b
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"/foo/bar#frag"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-empty_exhaust_fragment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"#0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~%20!$&'()*+,=;:@?/"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-noscheme_exhaust_fragment
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:".#0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~%20!$&'()*+,=;:@?/"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-noscheme_with_fragment/a
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:".#frag"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+  - valid/path-noscheme_with_fragment/b
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsUriRef]:{val:"./foo/bar#frag"}
+  #        want: valid
+  #         got: validation error (1 violation)
+  #          1. constraint_id: "library.is_uri_ref"
+  #             message: ""
+  #             for_key: false
+standard_constraints/required:
+  - proto2/scalar/optional/unset
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.RequiredProto2ScalarOptional]:{}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "required"
+  #             field: "val" elements:{field_number:1  field_name:"val"  field_type:TYPE_STRING}
+  #             rule: "required" elements:{field_number:25  field_name:"required"  field_type:TYPE_BOOL}
+  #         got: valid
+  - proto2/scalar/optional_with_default/unset
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.RequiredProto2ScalarOptionalDefault]:{}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "required"
+  #             field: "val" elements:{field_number:1  field_name:"val"  field_type:TYPE_STRING}
+  #             rule: "required" elements:{field_number:25  field_name:"required"  field_type:TYPE_BOOL}
+  #         got: valid
+standard_constraints/string:
+  - uri_ref/valid/urn
+      #  input: [type.googleapis.com/buf.validate.conformance.cases.StringURI]:{val:"urn:isbn:0451450523"}
+      #   want: valid
+      #    got: validation error (1 violation)
+      #     1. constraint_id: "string.uri"
+      #        message: "value must be a valid URI"
+      #        field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_STRING}
+      #        rule: "string.uri" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:17 field_name:"uri" field_type:TYPE_BOOL}
+  - uri/valid/urn
+      #  input: [type.googleapis.com/buf.validate.conformance.cases.StringURI]:{val:"urn:isbn:0451450523"}
+      #   want: valid
+      #    got: validation error (1 violation)
+      #     1. constraint_id: "string.uri"
+      #        message: "value must be a valid URI"
+      #        field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_STRING}
+      #        rule: "string.uri" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:17 field_name:"uri" field_type:TYPE_BOOL}
+  - uri/invalid/url/absolute/encoding
+      #  input: [type.googleapis.com/buf.validate.conformance.cases.StringURI]:{val:"https://example.com/foo/bar?baz=%x"}
+      #   want: validation error (1 violation)
+      #     1. constraint_id: "string.uri"
+      #        field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_STRING}
+      #        rule: "string.uri" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:17 field_name:"uri" field_type:TYPE_BOOL}
+      #    got: valid
+standard_constraints/enum:
+  - defined_only/invalid/unknown
+       # input: [type.googleapis.com/buf.validate.conformance.cases.EnumDefined]:{val:2147483647}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "enum.defined_only"
+       #       message: "value must be one of the defined enum values"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_ENUM}
+       #       rule: "enum.defined_only" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"defined_only" field_type:TYPE_BOOL}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "enum.defined_only"
+       #       message: "enum value must be defined"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_ENUM}
+       #       rule: "enum.defined_only" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"defined_only" field_type:TYPE_BOOL}
+standard_constraints/well_known_types/duration:
+  - gt_lt/exclusive/invalid/max
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationExLTGT]:{val:{seconds:1}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt_exclusive"
+       #       message: "value must be greater than 1s or less than 0s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt_exclusive"
+       #       message: "value must be greater than duration('1s') or less than duration('0')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+  - gt_lt/invalid/max
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationGTLT]:{val:{seconds:1}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt"
+       #       message: "value must be greater than 0s and less than 1s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt"
+       #       message: "value must be greater than duration('0') and less than duration('1s')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+  - gte/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationGTE]:{val:{seconds:-1}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gte"
+       #       message: "value must be greater than or equal to 0.001s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gte" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gte"
+       #       message: "value must be greater than or equal to duration('1ms')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gte" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+  - const/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationConst]:{val:{nanos:3}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.const"
+       #       message: "value must equal 3s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.const" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"const" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.const"
+       #       message: "value must equal duration('3s')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.const" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"const" field_type:TYPE_MESSAGE}
+  - gt_lt/invalid/below
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationGTLT]:{val:{nanos:-1000}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt"
+       #       message: "value must be greater than 0s and less than 1s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt"
+       #       message: "value must be greater than duration('0') and less than duration('1s')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+  - not in/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationNotIn]:{val:{}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.not_in"
+       #       message: "value must not be in list [duration(\"0s\")]"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.not_in" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"not_in" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.not_in"
+       #       message: "value must not be in list [duration('0')]"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.not_in" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"not_in" field_type:TYPE_MESSAGE}
+  - gt/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationGT]:{val:{}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gt"
+       #       message: "value must be greater than 0.000001s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gt"
+       #       message: "value must be greater than duration('1us')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+  - gt_lt/invalid/above
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationGTLT]:{val:{seconds:1000}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt"
+       #       message: "value must be greater than 0s and less than 1s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt"
+       #       message: "value must be greater than duration('0') and less than duration('1s')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+  - gte_lte/invalid/above
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationGTELTE]:{val:{seconds:3600 nanos:1}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gte_lte"
+       #       message: "value must be greater than or equal to 60s and less than or equal to 3600s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gte" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gte_lte"
+       #       message: "value must be greater than or equal to duration('1m') and less than or equal to duration('1h')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gte" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+  - lt/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationLT]:{val:{seconds:1}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.lt"
+       #       message: "value must be less than 0s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.lt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"lt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.lt"
+       #       message: "value must be less than duration('0')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.lt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"lt" field_type:TYPE_MESSAGE}
+  - gt_lt/exclusive/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationExLTGT]:{val:{nanos:1000}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt_exclusive"
+       #       message: "value must be greater than 1s or less than 0s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt_exclusive"
+       #       message: "value must be greater than duration('1s') or less than duration('0')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+  - gte_lte/invalid/below
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationGTELTE]:{val:{seconds:59}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gte_lte"
+       #       message: "value must be greater than or equal to 60s and less than or equal to 3600s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gte" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gte_lte"
+       #       message: "value must be greater than or equal to duration('1m') and less than or equal to duration('1h')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gte" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+  - in/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationIn]:{val:{}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.in"
+       #       message: "value must be in list [duration(\"1s\"), duration(\"0.000001s\")]"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.in" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:7 field_name:"in" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.in"
+       #       message: "value must be in list [duration('1s'), duration('1us')]"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.in" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:7 field_name:"in" field_type:TYPE_MESSAGE}
+  - lt/invalid/equal
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationLT]:{val:{}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.lt"
+       #       message: "value must be less than 0s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.lt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"lt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.lt"
+       #       message: "value must be less than duration('0')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.lt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"lt" field_type:TYPE_MESSAGE}
+  - gte_lte/exclusive/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationExGTELTE]:{val:{seconds:61}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gte_lte_exclusive"
+       #       message: "value must be greater than or equal to 3600s or less than or equal to 60s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gte" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gte_lte_exclusive"
+       #       message: "value must be greater than or equal to duration('1h') or less than or equal to duration('1m')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gte" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+  - gt_lt/exclusive/invalid/min
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationExLTGT]:{val:{}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt_exclusive"
+       #       message: "value must be greater than 1s or less than 0s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt_exclusive"
+       #       message: "value must be greater than duration('1s') or less than duration('0')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+  - gt_lt/invalid/min
+       # input: [type.googleapis.com/buf.validate.conformance.cases.DurationGTLT]:{val:{}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt"
+       #       message: "value must be greater than 0s and less than 1s"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gt_lt"
+       #       message: "value must be greater than duration('0') and less than duration('1s')"
+       #       field: "val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE}
+       #       rule: "duration.gt" elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+kitchen_sink:
+  - many/all-non-message-fields/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.KitchenSinkMessage]:{val:{bool_const:true float_val:{} ts_val:{} float_const:8 any_val:{type_url:"asdf"} rep_ts_val:{nanos:1}}}
+       #  want: validation error (13 violations)
+       #    1. constraint_id: "any.in"
+       #       message: "type URL must be in the allow list"
+       #       field: "val.any_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:12 field_name:"any_val" field_type:TYPE_MESSAGE}
+       #       rule: "any.in" elements:{field_number:20 field_name:"any" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"in" field_type:TYPE_STRING}
+       #    2. constraint_id: "bool.const"
+       #       message: "value must equal false"
+       #       field: "val.bool_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"bool_const" field_type:TYPE_BOOL}
+       #       rule: "bool.const" elements:{field_number:13 field_name:"bool" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BOOL}
+       #    3. constraint_id: "bytes.const"
+       #       message: "value must be 0099"
+       #       field: "val.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    4. constraint_id: "double.in"
+       #       message: "value must be in list [456.789000, 123.000000]"
+       #       field: "val.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    5. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    6. constraint_id: "float.gt"
+       #       message: "value must be greater than 0"
+       #       field: "val.float_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"float_val" field_type:TYPE_MESSAGE}
+       #       rule: "float.gt" elements:{field_number:1 field_name:"float" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"gt" field_type:TYPE_FLOAT}
+       #    7. constraint_id: "float.lt"
+       #       message: "value must be less than 8"
+       #       field: "val.float_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:9 field_name:"float_const" field_type:TYPE_FLOAT}
+       #       rule: "float.lt" elements:{field_number:1 field_name:"float" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"lt" field_type:TYPE_FLOAT}
+       #    8. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    9. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   10. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   11. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #   12. constraint_id: "timestamp.gt"
+       #       message: "value must be greater than 1970-01-01T00:00:07Z"
+       #       field: "val.ts_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:7 field_name:"ts_val" field_type:TYPE_MESSAGE}
+       #       rule: "timestamp.gt" elements:{field_number:22 field_name:"timestamp" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   13. constraint_id: "timestamp.gte"
+       #       message: "value must be greater than or equal to 1970-01-01T00:00:00.001Z"
+       #       field: "val.rep_ts_val[0]" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:13 field_name:"rep_ts_val" field_type:TYPE_MESSAGE index:0}
+       #       rule: "repeated.items.timestamp.gte" elements:{field_number:18 field_name:"repeated" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"items" field_type:TYPE_MESSAGE} elements:{field_number:22 field_name:"timestamp" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+       #   got: validation error (13 violations)
+       #    1. constraint_id: "any.in"
+       #       message: "type URL must be in the allow list"
+       #       field: "val.any_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:12 field_name:"any_val" field_type:TYPE_MESSAGE}
+       #       rule: "any.in" elements:{field_number:20 field_name:"any" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"in" field_type:TYPE_STRING}
+       #    2. constraint_id: "bool.const"
+       #       message: "value must equal false"
+       #       field: "val.bool_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"bool_const" field_type:TYPE_BOOL}
+       #       rule: "bool.const" elements:{field_number:13 field_name:"bool" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BOOL}
+       #    3. constraint_id: "bytes.const"
+       #       message: "value must be 099"
+       #       field: "val.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    4. constraint_id: "double.in"
+       #       message: "value must be in list [456.789, 123]"
+       #       field: "val.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    5. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    6. constraint_id: "float.gt"
+       #       message: "value must be greater than 0"
+       #       field: "val.float_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"float_val" field_type:TYPE_MESSAGE}
+       #       rule: "float.gt" elements:{field_number:1 field_name:"float" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"gt" field_type:TYPE_FLOAT}
+       #    7. constraint_id: "float.lt"
+       #       message: "value must be less than 8"
+       #       field: "val.float_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:9 field_name:"float_const" field_type:TYPE_FLOAT}
+       #       rule: "float.lt" elements:{field_number:1 field_name:"float" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"lt" field_type:TYPE_FLOAT}
+       #    8. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    9. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   10. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   11. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #   12. constraint_id: "timestamp.gt"
+       #       message: "value must be greater than timestamp('1969-12-31T19:00:07-05:00')"
+       #       field: "val.ts_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:7 field_name:"ts_val" field_type:TYPE_MESSAGE}
+       #       rule: "timestamp.gt" elements:{field_number:22 field_name:"timestamp" field_type:TYPE_MESSAGE} elements:{field_number:5 field_name:"gt" field_type:TYPE_MESSAGE}
+       #   13. constraint_id: "timestamp.gte"
+       #       message: "value must be greater than or equal to timestamp('1969-12-31T19:00:00.001-05:00')"
+       #       field: "val.rep_ts_val[0]" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:13 field_name:"rep_ts_val" field_type:TYPE_MESSAGE index:0}
+       #       rule: "repeated.items.timestamp.gte" elements:{field_number:18 field_name:"repeated" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"items" field_type:TYPE_MESSAGE} elements:{field_number:22 field_name:"timestamp" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+  - field/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.KitchenSinkMessage]:{val:{}}
+       #  want: validation error (7 violations)
+       #    1. constraint_id: "bytes.const"
+       #       message: "value must be 0099"
+       #       field: "val.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    2. constraint_id: "double.in"
+       #       message: "value must be in list [456.789000, 123.000000]"
+       #       field: "val.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    3. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    4. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    5. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #    6. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #    7. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #   got: validation error (7 violations)
+       #    1. constraint_id: "bytes.const"
+       #       message: "value must be 099"
+       #       field: "val.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    2. constraint_id: "double.in"
+       #       message: "value must be in list [456.789, 123]"
+       #       field: "val.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    3. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    4. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    5. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #    6. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #    7. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+  - field/embedded/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.KitchenSinkMessage]:{val:{another:{}}}
+       #  want: validation error (14 violations)
+       #    1. constraint_id: "bytes.const"
+       #       message: "value must be 0099"
+       #       field: "val.another.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    2. constraint_id: "bytes.const"
+       #       message: "value must be 0099"
+       #       field: "val.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    3. constraint_id: "double.in"
+       #       message: "value must be in list [456.789000, 123.000000]"
+       #       field: "val.another.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    4. constraint_id: "double.in"
+       #       message: "value must be in list [456.789000, 123.000000]"
+       #       field: "val.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    5. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.another.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    6. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    7. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.another.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    8. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    9. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.another.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   10. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.another.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   11. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   12. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   13. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.another.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #   14. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #   got: validation error (14 violations)
+       #    1. constraint_id: "bytes.const"
+       #       message: "value must be 099"
+       #       field: "val.another.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    2. constraint_id: "bytes.const"
+       #       message: "value must be 099"
+       #       field: "val.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    3. constraint_id: "double.in"
+       #       message: "value must be in list [456.789, 123]"
+       #       field: "val.another.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    4. constraint_id: "double.in"
+       #       message: "value must be in list [456.789, 123]"
+       #       field: "val.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    5. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.another.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    6. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    7. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.another.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    8. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    9. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.another.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   10. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.another.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   11. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   12. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   13. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.another.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:8 field_name:"another" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #   14. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+  - field/transitive/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.KitchenSinkMessage]:{val:{const:"abcd" nested:{} bool_const:true}}
+       #  want: validation error (14 violations)
+       #    1. constraint_id: "bool.const"
+       #       message: "value must equal false"
+       #       field: "val.bool_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"bool_const" field_type:TYPE_BOOL}
+       #       rule: "bool.const" elements:{field_number:13 field_name:"bool" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BOOL}
+       #    2. constraint_id: "bytes.const"
+       #       message: "value must be 0099"
+       #       field: "val.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    3. constraint_id: "bytes.const"
+       #       message: "value must be 0099"
+       #       field: "val.nested.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    4. constraint_id: "double.in"
+       #       message: "value must be in list [456.789000, 123.000000]"
+       #       field: "val.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    5. constraint_id: "double.in"
+       #       message: "value must be in list [456.789000, 123.000000]"
+       #       field: "val.nested.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    6. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    7. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.nested.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    8. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    9. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.nested.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #   10. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   11. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.nested.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   12. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.nested.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   13. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   14. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.nested.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #   got: validation error (14 violations)
+       #    1. constraint_id: "bool.const"
+       #       message: "value must equal false"
+       #       field: "val.bool_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"bool_const" field_type:TYPE_BOOL}
+       #       rule: "bool.const" elements:{field_number:13 field_name:"bool" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BOOL}
+       #    2. constraint_id: "bytes.const"
+       #       message: "value must be 099"
+       #       field: "val.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    3. constraint_id: "bytes.const"
+       #       message: "value must be 099"
+       #       field: "val.nested.bytes_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:15 field_name:"bytes_val" field_type:TYPE_BYTES}
+       #       rule: "bytes.const" elements:{field_number:15 field_name:"bytes" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_BYTES}
+       #    4. constraint_id: "double.in"
+       #       message: "value must be in list [456.789, 123]"
+       #       field: "val.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    5. constraint_id: "double.in"
+       #       message: "value must be in list [456.789, 123]"
+       #       field: "val.nested.double_in" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:10 field_name:"double_in" field_type:TYPE_DOUBLE}
+       #       rule: "double.in" elements:{field_number:2 field_name:"double" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"in" field_type:TYPE_DOUBLE}
+       #    6. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    7. constraint_id: "enum.const"
+       #       message: "value must equal 2"
+       #       field: "val.nested.enum_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:11 field_name:"enum_const" field_type:TYPE_ENUM}
+       #       rule: "enum.const" elements:{field_number:16 field_name:"enum" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    8. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #    9. constraint_id: "int32.const"
+       #       message: "value must equal 5"
+       #       field: "val.nested.int_const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:3 field_name:"int_const" field_type:TYPE_INT32}
+       #       rule: "int32.const" elements:{field_number:3 field_name:"int32" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_INT32}
+       #   10. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   11. constraint_id: "required"
+       #       message: "value is required"
+       #       field: "val.nested.dur_val" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"dur_val" field_type:TYPE_MESSAGE}
+       #       rule: "required" elements:{field_number:25 field_name:"required" field_type:TYPE_BOOL}
+       #   12. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.nested.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   13. constraint_id: "required"
+       #       message: "exactly one field is required in oneof"
+       #       field: "val.o" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_name:"o"}
+       #   14. constraint_id: "string.const"
+       #       message: "value must equal `abcd`"
+       #       field: "val.nested.const" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE} elements:{field_number:2 field_name:"nested" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+       #       rule: "string.const" elements:{field_number:14 field_name:"string" field_type:TYPE_MESSAGE} elements:{field_number:1 field_name:"const" field_type:TYPE_STRING}
+standard_constraints/repeated:
+  - duration/gte/invalid
+       # input: [type.googleapis.com/buf.validate.conformance.cases.RepeatedDuration]:{val:{seconds:-1}}
+       #  want: validation error (1 violation)
+       #    1. constraint_id: "duration.gte"
+       #       message: "value must be greater than or equal to 0.001s"
+       #       field: "val[0]" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE index:0}
+       #       rule: "repeated.items.duration.gte" elements:{field_number:18 field_name:"repeated" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"items" field_type:TYPE_MESSAGE} elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+       #   got: validation error (1 violation)
+       #    1. constraint_id: "duration.gte"
+       #       message: "value must be greater than or equal to duration('1ms')"
+       #       field: "val[0]" elements:{field_number:1 field_name:"val" field_type:TYPE_MESSAGE index:0}
+       #       rule: "repeated.items.duration.gte" elements:{field_number:18 field_name:"repeated" field_type:TYPE_MESSAGE} elements:{field_number:4 field_name:"items" field_type:TYPE_MESSAGE} elements:{field_number:21 field_name:"duration" field_type:TYPE_MESSAGE} elements:{field_number:6 field_name:"gte" field_type:TYPE_MESSAGE}
+
