@@ -103,7 +103,7 @@ if(PROTOVALIDATE_CC_ENABLE_TESTS AND BUILD_TESTING)
             NAME protovalidate_cc_conformance
             COMMAND go run github.com/bufbuild/protovalidate/tools/protovalidate-conformance@v${PROTOVALIDATE_CC_PROTOVALIDATE_VERSION}
                     --strict_message
-                    --expected_failures=buf/validate/conformance/expected_failures.yaml
+                    --expected_failures=../buf/validate/conformance/expected_failures.yaml
                     $<TARGET_FILE:protovalidate_cc::conformance_runner_main>
         )
     endif()
