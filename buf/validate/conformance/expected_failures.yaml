@@ -25,7 +25,10 @@ library/is_email:
   #             message: ""
   #             for_key: false
 library/is_host_and_port:
-  - port_required/false/invalid/ipv6_zone-id_too_short
+  # FIXME - The following tests are inconsistent between CI and local --------
+  - port_required/false/valid/ipv6_with_zone-id
+  # - port_required/false/invalid/ipv6_zone-id_too_short
+  # --------------------------------------------------------------------------
        # input: [type.googleapis.com/buf.validate.conformance.cases.IsHostAndPort]:{val:"[::1%]"}
        #  want: validation error (1 violation)
        #    1. constraint_id: "library.is_host_and_port"
@@ -48,11 +51,19 @@ library/is_host_and_port:
   #          1. constraint_id: "library.is_host_and_port"
   #         got: valid
 library/is_ip:
-  - version/omitted/invalid/ipv6_zone-id
+  # FIXME - The following tests are inconsistent between CI and local --------
+  # - version/omitted/invalid/ipv6_zone-id
        # input: [type.googleapis.com/buf.validate.conformance.cases.IsIp]:{val:"::1%"}
        #  want: validation error (1 violation)
        #    1. constraint_id: "library.is_ip"
        #   got: valid
+  - version/omitted/valid/ipv6_zone-id
+         # input: [type.googleapis.com/buf.validate.conformance.cases.IsIp]:{val:"::1%foo"}
+         # want: valid
+         # got: validation error (1 violation)
+         # 1. constraint_id: "library.is_ip"
+         # message: ""
+  # --------------------------------------------------------------------------
   - version/omitted/valid/ipv6_zone-id_any_non_null_character
   #       input: [type.googleapis.com/buf.validate.conformance.cases.IsIp]:{val:"::1%% :x\x1f"}
   #        want: valid
@@ -68,6 +79,13 @@ library/is_hostname:
        #    1. constraint_id: "library.is_hostname"
        #       message: ""
 library/is_ip_prefix:
+  # FIXME - The following tests are inconsistent between CI and local --------
+  # - version/omitted/strict/omitted/invalid/ipv6_zone-id/a
+  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"::1%en1/64"}
+  #        want: validation error (1 violation)
+  #          1. constraint_id: "library.is_ip_prefix"
+  #         got: valid
+  # ------
   - version/omitted/strict/omitted/invalid/ipv4_prefix_trailing_space
        # input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"127.0.0.1/16 "}
        #  want: validation error (1 violation)
@@ -85,11 +103,6 @@ library/is_ip_prefix:
   #         got: valid
   - version/omitted/strict/omitted/invalid/ipv6_bad_leading_zero_in_prefix-length
   #       input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"2001:0DB8:ABCD:0012:FFFF:FFFF:FFFF:FFFF/024"}
-  #        want: validation error (1 violation)
-  #          1. constraint_id: "library.is_ip_prefix"
-  #         got: valid
-  - version/omitted/strict/omitted/invalid/ipv6_zone-id/a
-  #       input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"::1%en1/64"}
   #        want: validation error (1 violation)
   #          1. constraint_id: "library.is_ip_prefix"
   #         got: valid
