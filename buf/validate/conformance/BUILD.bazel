@@ -39,5 +39,4 @@ cc_binary(
         ":runner",
         "@com_github_bufbuild_protovalidate//proto/protovalidate-testing/buf/validate/conformance/harness:buf_validate_conformance_harness_proto_cc",
     ],
-    data = ["expected_failures.yaml"]
 )
