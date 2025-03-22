@@ -38,13 +38,13 @@
   },
   "protovalidate": {
     "meta": {
-      "version": "0.10.0"
+      "version": "0.10.3"
     },
     "source": {
-      "sha256": "5879da3a72bcbd48e42f84b1eb0dfb45e3657fb68232b6b7c12c01bb937b659d",
+      "sha256": "12c6a8018ea57a941ede58a9273f266e180b1f0800d963527de26bb26c876004",
       "strip_prefix": "protovalidate-{version}",
       "urls": [
-        "https://github.com/bufbuild/protovalidate/archive/v{version}.tar.gz"
+        "https://github.com/bufbuild/protovalidate/releases/download/v{version}/protovalidate-{version}.tar.gz"
       ]
     }
   }

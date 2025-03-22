@@ -22,8 +22,8 @@
 #include "eval/public/activation.h"
 #include "eval/public/builtin_func_registrar.h"
 #include "eval/public/cel_expr_builder_factory.h"
-#include "gtest/gtest.h"
 #include "gmock/gmock.h"
+#include "gtest/gtest.h"
 #include "parser/parser.h"
 
 namespace buf::validate {
@@ -201,7 +201,8 @@ TEST(ValidatorTest, ValidateBadURIRefFailure) {
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.uri_ref");
-  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value must be a valid URI");
+  EXPECT_EQ(
+      violations_or.value().violations(0).proto().message(), "value must be a valid URI Reference");
   EXPECT_THAT(
       violations_or.value().violations(0).field_value(),
       Optional(FieldValueOf(VariantWith<std::string>("!@#$%^&*"))));
@@ -249,7 +250,8 @@ TEST(ValidatorTest, ValidateStringContainsFailure) {
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.contains");
   EXPECT_EQ(
-      violations_or.value().violations(0).proto().message(), "value does not contain substring `bar`");
+      violations_or.value().violations(0).proto().message(),
+      "value does not contain substring `bar`");
 }
 
 TEST(ValidatorTest, ValidateStringContainsSuccess) {
@@ -305,7 +307,8 @@ TEST(ValidatorTest, ValidateStartsWithFailure) {
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.prefix");
-  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value does not have prefix `foo`");
+  EXPECT_EQ(
+      violations_or.value().violations(0).proto().message(), "value does not have prefix `foo`");
 }
 
 TEST(ValidatorTest, ValidateStartsWithSuccess) {
@@ -333,7 +336,8 @@ TEST(ValidatorTest, ValidateEndsWithFailure) {
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "string.suffix");
-  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value does not have suffix `baz`");
+  EXPECT_EQ(
+      violations_or.value().violations(0).proto().message(), "value does not have suffix `baz`");
 }
 
 TEST(ValidatorTest, ValidateHostnameSuccess) {
@@ -415,11 +419,13 @@ TEST(ValidatorTest, MessageConstraint) {
   auto violations_or = validator.Validate(message_expressions);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   ASSERT_EQ(violations_or.value().violations_size(), 3);
-  EXPECT_EQ(violations_or.value().violations(0).proto().constraint_id(), "message_expression_scalar");
+  EXPECT_EQ(
+      violations_or.value().violations(0).proto().constraint_id(), "message_expression_scalar");
   EXPECT_EQ(violations_or.value().violations(0).proto().message(), "a must be less than b");
   EXPECT_EQ(violations_or.value().violations(1).proto().constraint_id(), "message_expression_enum");
   EXPECT_EQ(violations_or.value().violations(1).proto().message(), "c must not equal d");
-  EXPECT_EQ(violations_or.value().violations(2).proto().constraint_id(), "message_expression_nested");
+  EXPECT_EQ(
+      violations_or.value().violations(2).proto().constraint_id(), "message_expression_nested");
   EXPECT_EQ(violations_or.value().violations(2).proto().message(), "a must be greater than b");
 }
 
