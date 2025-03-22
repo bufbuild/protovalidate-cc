@@ -37,13 +37,7 @@ jobs:
           fetch-depth: 1
       - name: Configure CMake
         run: |
-            cmake \
-              -B .build -S . \
-              -DBUILD_TESTING=ON \
-              -DPROTOVALIDATE_CC_ENABLE_TESTS=ON \
-              -DPROTOVALIDATE_CC_ENABLE_VENDORING=ON \
-              -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF \
-              -GNinja
+            cmake -B .build -S . -DBUILD_TESTING=ON -DPROTOVALIDATE_CC_ENABLE_TESTS=ON -DPROTOVALIDATE_CC_ENABLE_VENDORING=ON -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF -GNinja
       - name: Build with CMake
         run: |
             cmake --build .build
