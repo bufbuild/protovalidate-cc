@@ -14,8 +14,6 @@
 
 #pragma once
 
-#include <arpa/inet.h>
-
 #include <functional>
 #include <stdexcept>
 #include <string>

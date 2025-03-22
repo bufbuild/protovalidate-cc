@@ -216,7 +216,7 @@ target_include_directories(cel_cpp PUBLIC
 target_compile_definitions(cel_cpp PRIVATE ANTLR4CPP_USING_ABSEIL)
 add_library(cel_cpp::cel_cpp ALIAS cel_cpp)
 
-if(CEL_CPP_ENABLE_TESTS AND BUILD_TESTING)
+if(CEL_CPP_ENABLE_TESTS)
     enable_testing()
 
     # Generate C++ code for cel spec protos

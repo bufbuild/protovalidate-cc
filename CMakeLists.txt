@@ -37,6 +37,10 @@ set(PROTOVALIDATE_LIBS
     cel_cpp::cel_cpp
     protovalidate::proto
 )
+if(WIN32)
+    # For htonl/inet_pton
+    list(APPEND PROTOVALIDATE_LIBS Ws2_32)
+endif()
 set(PROTOVALIDATE_TESTING_LIBS
     GTest::gmock_main
     protovalidate::testing_proto
@@ -86,7 +90,7 @@ if(PROTOVALIDATE_CC_ENABLE_CONFORMANCE)
     list(APPEND PROTOVALIDATE_TESTING_LIBS protovalidate_cc::conformance_runner)
 endif()
 
-if(PROTOVALIDATE_CC_ENABLE_TESTS AND BUILD_TESTING)
+if(PROTOVALIDATE_CC_ENABLE_TESTS)
     enable_testing()
 
     foreach(PROTOVALIDATE_CC_TEST_SOURCE IN LISTS PROTOVALIDATE_CC_TEST_SOURCES)

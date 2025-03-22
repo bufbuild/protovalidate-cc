@@ -69,8 +69,8 @@ Depending on your project setup, these can be sourced in different ways:
   ANTLR 4 compiler will be downloaded from the Internet, and ran using `java`
   during the compilation process (naturally, this requires a JRE installation.)
   You can override this behavior by setting `FETCHCONTENT_SOURCE_DIR_ANTLR4` and
-  `ANTLR4_JAR_LOCATION` to the location of a copy of the ANTLR 4 source code and
-  a compiled ANTLR 4 compiler JAR before running
+  `PROTOVALIDATE_CC_ANTLR4_JAR_LOCATION` to the location of a copy of the ANTLR
+  4 source code and a compiled ANTLR 4 compiler JAR before running
   `FetchContent_MakeAvailable(protovalidate_cc)`.
 
 - A copy of googleapis is always fetched for cel-cpp. You can override this
