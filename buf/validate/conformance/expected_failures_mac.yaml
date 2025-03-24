@@ -1,3 +1,6 @@
+# There a handful of conformance tests that behave differently on Mac vs. Linux,
+# which are annotated with FIXME in this file. These will be fixed when the
+# validation logic from protovalidate-go is ported to this repo.
 library/is_email:
   - valid/label_interior_hyphen
        # input: [type.googleapis.com/buf.validate.conformance.cases.IsEmail]:{val:"foo@a-b.a--b"}
@@ -25,14 +28,10 @@ library/is_email:
   #             message: ""
   #             for_key: false
 library/is_host_and_port:
-  # FIXME - The following tests are inconsistent between CI and local --------
-  - port_required/false/valid/ipv6_with_zone-id
-  # - port_required/false/invalid/ipv6_zone-id_too_short
+  # FIXME - The following tests are inconsistent between Mac/Darwin and Linux 
+  # - port_required/false/valid/ipv6_with_zone-id
+  - port_required/false/invalid/ipv6_zone-id_too_short
   # --------------------------------------------------------------------------
-       # input: [type.googleapis.com/buf.validate.conformance.cases.IsHostAndPort]:{val:"[::1%]"}
-       #  want: validation error (1 violation)
-       #    1. constraint_id: "library.is_host_and_port"
-       #   got: valid
   - port_required/false/invalid/port_number_sign
   #       input: [type.googleapis.com/buf.validate.conformance.cases.IsHostAndPort]:{val:"example.com:+0"}
   #        want: validation error (1 violation)
@@ -51,13 +50,13 @@ library/is_host_and_port:
   #          1. constraint_id: "library.is_host_and_port"
   #         got: valid
 library/is_ip:
-  # FIXME - The following tests are inconsistent between CI and local --------
-  # - version/omitted/invalid/ipv6_zone-id
+  # FIXME - The following tests are inconsistent between Mac/Darwin and Linux 
+  - version/omitted/invalid/ipv6_zone-id
        # input: [type.googleapis.com/buf.validate.conformance.cases.IsIp]:{val:"::1%"}
        #  want: validation error (1 violation)
        #    1. constraint_id: "library.is_ip"
        #   got: valid
-  - version/omitted/valid/ipv6_zone-id
+  # - version/omitted/valid/ipv6_zone-id
          # input: [type.googleapis.com/buf.validate.conformance.cases.IsIp]:{val:"::1%foo"}
          # want: valid
          # got: validation error (1 violation)
@@ -79,13 +78,13 @@ library/is_hostname:
        #    1. constraint_id: "library.is_hostname"
        #       message: ""
 library/is_ip_prefix:
-  # FIXME - The following tests are inconsistent between CI and local --------
-  # - version/omitted/strict/omitted/invalid/ipv6_zone-id/a
+  # FIXME - The following test is inconsistent between Mac/Darwin and Linux 
+  - version/omitted/strict/omitted/invalid/ipv6_zone-id/a
   #       input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"::1%en1/64"}
   #        want: validation error (1 violation)
   #          1. constraint_id: "library.is_ip_prefix"
   #         got: valid
-  # ------
+  # --------------------------------------------------------------------------
   - version/omitted/strict/omitted/invalid/ipv4_prefix_trailing_space
        # input: [type.googleapis.com/buf.validate.conformance.cases.IsIpPrefix]:{val:"127.0.0.1/16 "}
        #  want: validation error (1 violation)

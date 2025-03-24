@@ -98,12 +98,21 @@ if(PROTOVALIDATE_CC_ENABLE_TESTS AND BUILD_TESTING)
         unset(target_name)
     endforeach()
 
+    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+        set(EXPECTED_FAILURES_FILE "expected_failures_linux.yaml")
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        set(EXPECTED_FAILURES_FILE "expected_failures_mac.yaml")
+    else()
+        # Default to Linux for now
+        set(EXPECTED_FAILURES_FILE "expected_failures_linux.yaml")
+    endif()
+
     if(PROTOVALIDATE_CC_ENABLE_CONFORMANCE)
         add_test(
             NAME protovalidate_cc_conformance
             COMMAND go run github.com/bufbuild/protovalidate/tools/protovalidate-conformance@v${PROTOVALIDATE_CC_PROTOVALIDATE_VERSION}
                     --strict_message
-                    --expected_failures=${CMAKE_CURRENT_SOURCE_DIR}/buf/validate/conformance/expected_failures.yaml
+                    --expected_failures=${CMAKE_CURRENT_SOURCE_DIR}/buf/validate/conformance/${EXPECTED_FAILURES_FILE}
                     $<TARGET_FILE:protovalidate_cc::conformance_runner_main>
         )
     endif()
