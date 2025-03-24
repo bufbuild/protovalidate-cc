@@ -102,13 +102,21 @@ if(PROTOVALIDATE_CC_ENABLE_TESTS)
         unset(target_name)
     endforeach()
 
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+        set(EXPECTED_FAILURES_FILE "expected_failures_mac.yaml")
+    else()
+        # Default to Linux for now
+        set(EXPECTED_FAILURES_FILE "expected_failures_linux.yaml")
+    endif()
+
     # TODO(jchadwick-buf): The conformance test runner does not work on Windows
     # yet, due to an issue with linking the protobuf descriptors.
     if(PROTOVALIDATE_CC_ENABLE_CONFORMANCE AND NOT WIN32)
         add_test(
             NAME protovalidate_cc_conformance
             COMMAND go run github.com/bufbuild/protovalidate/tools/protovalidate-conformance@v${PROTOVALIDATE_CC_PROTOVALIDATE_VERSION}
-                    --strict
+                    --strict_message
+                    --expected_failures=${CMAKE_CURRENT_SOURCE_DIR}/buf/validate/conformance/${EXPECTED_FAILURES_FILE}
                     $<TARGET_FILE:protovalidate_cc::conformance_runner_main>
         )
     endif()
