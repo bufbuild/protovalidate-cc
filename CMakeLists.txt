@@ -102,7 +102,9 @@ if(PROTOVALIDATE_CC_ENABLE_TESTS)
         unset(target_name)
     endforeach()
 
-    if(PROTOVALIDATE_CC_ENABLE_CONFORMANCE)
+    # TODO(jchadwick-buf): The conformance test runner does not work on Windows
+    # yet, due to an issue with linking the protobuf descriptors.
+    if(PROTOVALIDATE_CC_ENABLE_CONFORMANCE AND NOT WIN32)
         add_test(
             NAME protovalidate_cc_conformance
             COMMAND go run github.com/bufbuild/protovalidate/tools/protovalidate-conformance@v${PROTOVALIDATE_CC_PROTOVALIDATE_VERSION}
