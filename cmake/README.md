@@ -83,6 +83,14 @@ Depending on your project setup, these can be sourced in different ways:
   `FETCHCONTENT_SOURCE_DIR_CEL_CPP` prior to running
   `FetchContent_MakeAvailable(protovalidate_cc)`.
 
+In addition to these dependencies, there are some build-time dependencies:
+
+- Git, for getting the protovalidate-cc version
+
+- Java 11, for running the ANTLR 4 compiler
+
+- GNU patch 2.7 or Darwin patch 2.0, for applying Git patches
+
 ## Embedding
 
 protovalidate-cc requires C++17 or higher. Near the top of your CMakeLists,

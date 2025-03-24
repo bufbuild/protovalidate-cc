@@ -34,6 +34,9 @@ if(PROTOVALIDATE_CC_ENABLE_TESTS OR CEL_CPP_ENABLE_TESTS)
                 option(INSTALL_GTEST OFF)
                 option(INSTALL_GMOCK OFF)
                 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+                if(WIN32)
+                    set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
+                endif()
                 FetchContent_Declare(
                     googletest
                     URL https://github.com/google/googletest/archive/b514bdc898e2951020cbdca1304b75f5950d1f59.zip
