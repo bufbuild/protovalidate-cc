@@ -31,10 +31,10 @@ jobs:
         if: runner.os == 'Linux'
       - name: Set up MSVC (Windows)
         uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
-      - name: Set JAVA_HOME (Windows)
+      - name: Add JDK 11 to Path (Windows)
         if: runner.os == 'Windows'
         run:  |
-          Add-Content "$Env:GITHUB_ENV" "JAVA_HOME=$Env:JAVA_HOME_11_X64"
+          Add-Content "$Env:GITHUB_ENV" "PATH=$Env:JAVA_HOME_11_X64\bin;$Env:PATH"
       - name: Checkout code
         uses: actions/checkout@v4
         with:
