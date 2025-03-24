@@ -4,6 +4,13 @@ protovalidate-cc comes with a CMake build script. You can use this to embed
 protovalidate-cc into your existing CMake project or install protovalidate-cc
 system-wide.
 
+protovalidate-cc is known to build successfully on macOS, Linux and Windows,
+with GCC, Clang or MSVC. Please note that Windows support is still preliminary;
+some Windows functionality hasn't been validated, and protovalidate-cc supplies
+downstream patches to dependencies for Windows support.
+
+(Please note that Windows support is currently limited to building with CMake.)
+
 ## CMake Flags
 
 protovalidate-cc provides the following options:
