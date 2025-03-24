@@ -98,9 +98,7 @@ if(PROTOVALIDATE_CC_ENABLE_TESTS AND BUILD_TESTING)
         unset(target_name)
     endforeach()
 
-    if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-        set(EXPECTED_FAILURES_FILE "expected_failures_linux.yaml")
-    elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         set(EXPECTED_FAILURES_FILE "expected_failures_mac.yaml")
     else()
         # Default to Linux for now

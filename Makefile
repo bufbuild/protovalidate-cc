@@ -18,7 +18,8 @@ GO ?= go
 UNAME_OS := $(shell uname -s)
 ifeq ($(UNAME_OS),Darwin)
 EXPECTED_FAILURES_FILE := expected_failures_mac.yaml
-else ifeq ($(UNAME_OS),Linux)
+else
+# Default to Linux for now
 EXPECTED_FAILURES_FILE := expected_failures_linux.yaml
 endif
 
