@@ -4,6 +4,13 @@ protovalidate-cc comes with a CMake build script. You can use this to embed
 protovalidate-cc into your existing CMake project or install protovalidate-cc
 system-wide.
 
+protovalidate-cc is known to build successfully on macOS, Linux and Windows,
+with GCC, Clang or MSVC. Please note that Windows support is still preliminary;
+some Windows functionality hasn't been validated, and protovalidate-cc supplies
+downstream patches to dependencies for Windows support.
+
+(Please note that Windows support is currently limited to building with CMake.)
+
 ## CMake Flags
 
 protovalidate-cc provides the following options:
@@ -69,8 +76,8 @@ Depending on your project setup, these can be sourced in different ways:
   ANTLR 4 compiler will be downloaded from the Internet, and ran using `java`
   during the compilation process (naturally, this requires a JRE installation.)
   You can override this behavior by setting `FETCHCONTENT_SOURCE_DIR_ANTLR4` and
-  `ANTLR4_JAR_LOCATION` to the location of a copy of the ANTLR 4 source code and
-  a compiled ANTLR 4 compiler JAR before running
+  `PROTOVALIDATE_CC_ANTLR4_JAR_LOCATION` to the location of a copy of the ANTLR
+  4 source code and a compiled ANTLR 4 compiler JAR before running
   `FetchContent_MakeAvailable(protovalidate_cc)`.
 
 - A copy of googleapis is always fetched for cel-cpp. You can override this
@@ -82,6 +89,14 @@ Depending on your project setup, these can be sourced in different ways:
   You can override the externally-fetched code by setting
   `FETCHCONTENT_SOURCE_DIR_CEL_CPP` prior to running
   `FetchContent_MakeAvailable(protovalidate_cc)`.
+
+In addition to these dependencies, there are some build-time dependencies:
+
+- Git, for getting the protovalidate-cc version
+
+- Java 11, for running the ANTLR 4 compiler
+
+- GNU patch 2.7 or Darwin patch 2.0, for applying Git patches
 
 ## Embedding
 

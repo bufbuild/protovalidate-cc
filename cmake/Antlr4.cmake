@@ -17,6 +17,7 @@ target_include_directories(antlr4_static PUBLIC
 )
 target_compile_definitions(antlr4_static PUBLIC
     ANTLR4CPP_USING_ABSEIL
+    ANTLR4CPP_STATIC
 )
 target_link_libraries(antlr4_static PUBLIC
     absl::base
@@ -26,11 +27,19 @@ target_link_libraries(antlr4_static PUBLIC
 # Download ANTLR4 compiler
 set(ANTLR4_VERSION "4.13.1")
 set(ANTLR4_JAR_NAME "antlr-${ANTLR4_VERSION}-complete.jar")
-set(ANTLR4_JAR_URL "https://www.antlr.org/download/${ANTLR4_JAR_NAME}")
-set(ANTLR4_JAR_LOCATION "${CMAKE_CURRENT_BINARY_DIR}/${ANTLR4_JAR_NAME}")
-if(NOT EXISTS ${ANTLR4_JAR_LOCATION})
-    message(STATUS "protovalidate-cc: Downloading ANTLR4 JAR from ${ANTLR4_JAR_URL}")
-    file(DOWNLOAD ${ANTLR4_JAR_URL} ${ANTLR4_JAR_LOCATION}
+set(PROTOVALIDATE_CC_ANTLR4_JAR_URL
+    "https://www.antlr.org/download/${ANTLR4_JAR_NAME}"
+    CACHE STRING "URL to download ANTLR 4 JAR from")
+set(PROTOVALIDATE_CC_ANTLR4_HASH
+    "SHA256=bc13a9c57a8dd7d5196888211e5ede657cb64a3ce968608697e4f668251a8487"
+    CACHE STRING "Hash to expect for ANTLR 4 JAR download")
+set(PROTOVALIDATE_CC_ANTLR4_JAR_LOCATION
+    "${CMAKE_CURRENT_BINARY_DIR}/${ANTLR4_JAR_NAME}"
+    CACHE FILEPATH "Path to ANTLR 4 JAR, or path to download ANTLR 4 JAR to")
+if(NOT EXISTS ${PROTOVALIDATE_CC_ANTLR4_JAR_LOCATION})
+    message(STATUS "protovalidate-cc: Downloading ANTLR4 JAR from ${PROTOVALIDATE_CC_ANTLR4_HASH}")
+    file(DOWNLOAD ${PROTOVALIDATE_CC_ANTLR4_JAR_URL} ${PROTOVALIDATE_CC_ANTLR4_JAR_LOCATION}
+         EXPECTED_HASH "${PROTOVALIDATE_CC_ANTLR4_HASH}"
          SHOW_PROGRESS
          STATUS DOWNLOAD_STATUS)
     list(GET DOWNLOAD_STATUS 0 STATUS_CODE)
@@ -41,6 +50,8 @@ if(NOT EXISTS ${ANTLR4_JAR_LOCATION})
 endif()
 
 # Function to generate ANTLR4 parser
+# TODO(jchadwick-buf): If we can resolve the ANTLR4CPP_USING_ABSEIL issue, we
+# can remove this in favor of the upstream antlr4_generate function.
 function(Antlr4Generate output_variable grammar_file namespace output_dir)
     get_filename_component(grammar_name ${grammar_file} NAME_WE)
 
@@ -59,11 +70,17 @@ function(Antlr4Generate output_variable grammar_file namespace output_dir)
     # Create output directory
     file(MAKE_DIRECTORY ${output_dir})
 
+    find_program(JAVA_EXECUTABLE NAMES java java.exe)
+
+    if(NOT JAVA_EXECUTABLE)
+        message(FATAL_ERROR "Java runtime not found. Please install it.")
+    endif()
+
     # Add custom command to generate parser
     add_custom_command(
         OUTPUT ${ANTLR4_GENERATED_FILES}
         COMMAND
-            java -jar ${ANTLR4_JAR_LOCATION}
+            ${JAVA_EXECUTABLE} -jar ${PROTOVALIDATE_CC_ANTLR4_JAR_LOCATION}
             -Dlanguage=Cpp
             -no-listener
             -visitor

@@ -14,7 +14,7 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-latest]
+        os: [ubuntu-24.04, macos-latest, windows-latest]
     name: Unit tests
     runs-on: ${{ matrix.os }}
     steps:
@@ -29,19 +29,19 @@ jobs:
       - name: Install ninja (apt)
         run: sudo apt-get install -y ninja-build
         if: runner.os == 'Linux'
+      - name: Set up MSVC (Windows)
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+      - name: Add JDK 11 to Path (Windows)
+        if: runner.os == 'Windows'
+        run:  |
+          Add-Content "$Env:GITHUB_ENV" "PATH=$Env:JAVA_HOME_11_X64\bin;$Env:PATH"
       - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
       - name: Configure CMake
         run: |
-            cmake \
-              -B .build -S . \
-              -DBUILD_TESTING=ON \
-              -DPROTOVALIDATE_CC_ENABLE_TESTS=ON \
-              -DPROTOVALIDATE_CC_ENABLE_VENDORING=ON \
-              -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF \
-              -GNinja
+            cmake -B .build -S . -DBUILD_TESTING=ON -DPROTOVALIDATE_CC_ENABLE_TESTS=ON -DPROTOVALIDATE_CC_ENABLE_VENDORING=ON -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF -GNinja
       - name: Build with CMake
         run: |
             cmake --build .build

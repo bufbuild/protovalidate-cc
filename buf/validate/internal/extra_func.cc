@@ -27,6 +27,12 @@
 #include "google/protobuf/arena.h"
 #include "re2/re2.h"
 
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#else
+#include <arpa/inet.h>
+#endif
+
 namespace buf::validate::internal {
 
 bool isPathValid(const std::string_view path) {

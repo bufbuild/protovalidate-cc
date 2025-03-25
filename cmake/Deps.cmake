@@ -17,7 +17,7 @@ set(PROTOVALIDATE_CC_PKG_CONFIG_REQS "")
 set(PROTOVALIDATE_CC_FIND_DEPENDENCIES "")
 
 # Googletest, only needed when tests are enabled.
-if((PROTOVALIDATE_CC_ENABLE_TESTS OR CEL_CPP_ENABLE_TESTS) AND BUILD_TESTING)
+if(PROTOVALIDATE_CC_ENABLE_TESTS OR CEL_CPP_ENABLE_TESTS)
     message(STATUS "protovalidate-cc: tests are enabled")
     enable_testing()
     set(ABSL_BUILD_TEST_HELPERS ON)
@@ -34,6 +34,9 @@ if((PROTOVALIDATE_CC_ENABLE_TESTS OR CEL_CPP_ENABLE_TESTS) AND BUILD_TESTING)
                 option(INSTALL_GTEST OFF)
                 option(INSTALL_GMOCK OFF)
                 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+                if(WIN32)
+                    set(gtest_disable_pthreads ON CACHE BOOL "" FORCE)
+                endif()
                 FetchContent_Declare(
                     googletest
                     URL https://github.com/google/googletest/archive/b514bdc898e2951020cbdca1304b75f5950d1f59.zip
@@ -55,7 +58,7 @@ if((PROTOVALIDATE_CC_ENABLE_TESTS OR CEL_CPP_ENABLE_TESTS) AND BUILD_TESTING)
     endif()
 endif()
 
-if(CEL_CPP_ENABLE_TESTS AND BUILD_TESTING)
+if(CEL_CPP_ENABLE_TESTS)
     # Google Benchmark
     if(TARGET benchmark::benchmark)
         message(STATUS "protovalidate-cc: Using pre-existing google benchmark targets")
@@ -226,13 +229,16 @@ else()
                 message(FATAL_ERROR "protovalidate-cc: Installation can not be enabled when using vendored re2. Install re2 system-wide, or disable installation using -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF.")
             endif()
             message(STATUS "protovalidate-cc: Fetching re2")
-            set(RE2_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/re2/0001-Add-RE2_INSTALL-option.patch)
+            set(RE2_PATCHES
+                ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/re2/0001-Add-RE2_INSTALL-option.patch
+            )
+            MakePatchCommand(RE2_PATCH_COMMAND "${RE2_PATCHES}")
             FetchContent_Declare(
                 re2
                 GIT_REPOSITORY "https://github.com/google/re2.git"
                 GIT_TAG "2024-04-01"
                 GIT_SHALLOW TRUE
-                PATCH_COMMAND git apply --check -R ${RE2_PATCH} || git apply ${RE2_PATCH}
+                PATCH_COMMAND ${RE2_PATCH_COMMAND}
             )
             set(RE2_INSTALL OFF)
             FetchContent_MakeAvailable(re2)
@@ -272,6 +278,7 @@ set(CEL_CPP_PATCHES
     ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0001-Allow-message-field-access-using-index-operator.patch
     ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0002-Add-missing-include-for-absl-StrCat.patch
     ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0003-Remove-unnecessary-dependency-on-cel_proto_wrap_util.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0004-Fix-build-on-Windows-MSVC.patch
 )
 MakePatchCommand(CEL_CPP_PATCH_COMMAND "${CEL_CPP_PATCHES}")
 message(STATUS "protovalidate-cc: Fetching cel-cpp")
@@ -338,7 +345,7 @@ target_link_libraries(protovalidate_proto PUBLIC protobuf::libprotobuf)
 add_library(protovalidate::proto ALIAS protovalidate_proto)
 list(APPEND PROTOVALIDATE_CC_EXPORT_TARGETS protovalidate_proto)
 
-if((PROTOVALIDATE_CC_ENABLE_TESTS AND BUILD_TESTING) OR PROTOVALIDATE_CC_ENABLE_CONFORMANCE)
+if(PROTOVALIDATE_CC_ENABLE_TESTS OR PROTOVALIDATE_CC_ENABLE_CONFORMANCE)
     # protoc-gen-validate; just needed for the proto files. There is no CMake
     # build, so it is always vendored for now. When building in a hermetic
     # environment, use the FETCHCONTENT_SOURCE_DIR_PROTOC_GEN_VALIDATE option to
