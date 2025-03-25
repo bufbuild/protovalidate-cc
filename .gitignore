@@ -31,6 +31,10 @@
 *.out
 *.app
 
+# Clangd
+/.cache
+/compile_commands.json
+
 # Additional exclusions
 /.tmp/
 *.pprof

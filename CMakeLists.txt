@@ -20,6 +20,17 @@ else()
     option(PROTOVALIDATE_CC_ENABLE_INSTALL "Enable protovalidate-cc installation targets" ON)
     option(PROTOVALIDATE_CC_ENABLE_TESTS "Enable protovalidate-cc unit tests" ON)
     option(PROTOVALIDATE_CC_ENABLE_CONFORMANCE "Build conformance runner" ON)
+
+    # Set up compile_commands.json automatically when standalone.
+    option(PROTOVALIDATE_CC_SETUP_COMPILE_COMMANDS "Set up compile_commands.json" ON)
+    if(PROTOVALIDATE_CC_SETUP_COMPILE_COMMANDS)
+        set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+        execute_process(
+            COMMAND ${CMAKE_COMMAND} -E create_symlink
+                    ${CMAKE_CURRENT_BINARY_DIR}/compile_commands.json
+                    ${CMAKE_CURRENT_SOURCE_DIR}/compile_commands.json
+        )
+    endif()
 endif()
 
 if(CMAKE_CXX_STANDARD LESS 17)
