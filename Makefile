@@ -7,15 +7,24 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
 BIN := .tmp/bin
-COPYRIGHT_YEARS := 2023
+COPYRIGHT_YEARS := 2023-2025
 LICENSE_IGNORE := -e internal/testdata/
 LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
-# NOTE: Keep this version in sync with the version in `/bazel/deps.bzl`.
-PROTOVALIDATE_VERSION ?= v0.10.0
+PROTOVALIDATE_VERSION ?= v$(shell <./deps/shared_deps.json jq -j .protovalidate.meta.version)
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
-ARGS ?= --strict
+
+UNAME_OS := $(shell uname -s)
+ifeq ($(UNAME_OS),Darwin)
+EXPECTED_FAILURES_FILE := expected_failures_mac.yaml
+else
+# Default to Linux for now
+EXPECTED_FAILURES_FILE := expected_failures_linux.yaml
+endif
+
+ARGS ?= --strict_message --expected_failures=buf/validate/conformance/$(EXPECTED_FAILURES_FILE)
+
 BAZEL ?= bazel
 
 .PHONY: help

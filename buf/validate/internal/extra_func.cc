@@ -1,4 +1,4 @@
-// Copyright 2023 Buf Technologies, Inc.
+// Copyright 2023-2025 Buf Technologies, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,12 @@
 #include "eval/public/containers/container_backed_map_impl.h"
 #include "google/protobuf/arena.h"
 #include "re2/re2.h"
+
+#ifdef _WIN32
+#include <ws2tcpip.h>
+#else
+#include <arpa/inet.h>
+#endif
 
 namespace buf::validate::internal {
 
@@ -145,10 +151,10 @@ bool IsHostname(std::string_view to_validate) {
   to_validate = absl::StripSuffix(to_validate, ".");
   std::vector<std::string_view> split = absl::StrSplit(to_validate, '.');
   if (split.size() < 2) {
-    return re2::RE2::FullMatch(to_validate, component_regex)
-      && !re2::RE2::FullMatch(to_validate, all_digits);
+    return re2::RE2::FullMatch(to_validate, component_regex) &&
+        !re2::RE2::FullMatch(to_validate, all_digits);
   }
-  if (re2::RE2::FullMatch(split[split.size()-1], all_digits)) {
+  if (re2::RE2::FullMatch(split[split.size() - 1], all_digits)) {
     return false;
   }
   for (size_t i = 0; i < split.size(); i++) {
@@ -203,14 +209,14 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
 bool IsIpv4(const std::string_view to_validate) {
   // need to copy as string_view might not be null terminated
   const auto str = std::string{to_validate};
-  struct in_addr result{};
+  struct in_addr result {};
   return inet_pton(AF_INET, str.data(), &result) == 1;
 }
 
 bool IsIpv6(const std::string_view to_validate) {
   // need to copy as string_view might not be null terminated
   const auto str = std::string{to_validate};
-  struct in6_addr result{};
+  struct in6_addr result {};
   return inet_pton(AF_INET6, str.data(), &result) == 1;
 }
 
@@ -254,16 +260,15 @@ bool IsHostAndPort(const std::string_view str, const bool portRequired) {
   const auto splitIdx = str.rfind(':');
   if (str.front() == '[') {
     const auto end = str.find(']');
-    const auto afterEnd = end+1;
+    const auto afterEnd = end + 1;
     if (afterEnd == str.size()) { // no port
-      const auto host = str.substr(1, end-1);
+      const auto host = str.substr(1, end - 1);
       return !portRequired && IsIpv6(host);
     }
     if (afterEnd == splitIdx) { // port
-      const auto host = str.substr(1, end-1);
-      const auto port = str.substr(splitIdx+1);
-      return IsIpv6(host)
-        && IsPort(port);
+      const auto host = str.substr(1, end - 1);
+      const auto port = str.substr(splitIdx + 1);
+      return IsIpv6(host) && IsPort(port);
     }
     return false;
   }
@@ -272,11 +277,12 @@ bool IsHostAndPort(const std::string_view str, const bool portRequired) {
     return !portRequired && (IsHostname(str) || IsIpv4(str));
   }
   const auto host = str.substr(0, splitIdx);
-  const auto port = str.substr(splitIdx+1);
+  const auto port = str.substr(splitIdx + 1);
   return (IsHostname(host) || IsIpv4(host)) && IsPort(port);
 }
 
-cel::CelValue isHostAndPort(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs, cel::CelValue rhs) {
+cel::CelValue isHostAndPort(
+    google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs, cel::CelValue rhs) {
   const std::string_view str = lhs.value();
   const bool portReq = rhs.BoolOrDie();
   return cel::CelValue::CreateBool(IsHostAndPort(str, portReq));
@@ -434,7 +440,11 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
     scheme = split[0];
     std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
     host = hostSplit[0];
-    remainder = hostSplit[1];
+    // If hostSplit has a size greater than 1, then a '/' appeared in the string. Set the rest
+    // to remainder so we can parse any query string.
+    if (hostSplit.size() > 1) {
+      remainder = hostSplit[1];
+    }
   }
   std::vector<std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
   path = querySplit[0];
@@ -556,8 +566,8 @@ absl::Status RegisterExtraFuncs(
     return isUriStatus;
   }
   auto isHostAndPortStatus =
-     cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue>::
-         CreateAndRegister("isHostAndPort", true, &isHostAndPort, &registry);
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue>::
+          CreateAndRegister("isHostAndPort", true, &isHostAndPort, &registry);
   if (!isHostAndPortStatus.ok()) {
     return isHostAndPortStatus;
   }

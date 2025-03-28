@@ -1,0 +1,15 @@
+@PACKAGE_INIT@
+include("${CMAKE_CURRENT_LIST_DIR}/protovalidate-cc-targets.cmake")
+include(CMakeFindDependencyMacro)
+
+# Add current directory to module path temporarily so we can use custom find scripts.
+get_filename_component(_CONFIG_SELF_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
+set(_save_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
+list(APPEND CMAKE_MODULE_PATH "${_CONFIG_SELF_DIR}")
+
+@PROTOVALIDATE_CC_FIND_DEPENDENCIES_STR@
+
+# Restore original module path.
+set(CMAKE_MODULE_PATH ${_save_CMAKE_MODULE_PATH})
+unset(_CONFIG_SELF_DIR)
+unset(_save_CMAKE_MODULE_PATH)

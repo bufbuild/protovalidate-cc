@@ -1,0 +1,127 @@
+From 99917828897f5ee4b75a47182d7c1fee328605ee Mon Sep 17 00:00:00 2001
+From: John Chadwick <jchadwick@buf.build>
+Date: Fri, 21 Mar 2025 20:16:07 -0400
+Subject: [PATCH 4/4] Fix build on Windows/MSVC
+
+Some fixes+hacks+workarounds for build issues on MSVC.
+---
+ bazel/cel_cc_embed.cc                | 2 +-
+ common/internal/shared_byte_string.h | 4 ++--
+ common/types/list_type.cc            | 2 +-
+ common/types/map_type.cc             | 4 ++--
+ common/types/optional_type.cc        | 2 +-
+ internal/json.cc                     | 5 +++++
+ internal/well_known_types.cc         | 5 +++++
+ 7 files changed, 17 insertions(+), 7 deletions(-)
+
+diff --git a/bazel/cel_cc_embed.cc b/bazel/cel_cc_embed.cc
+index a9f0aec2..80515457 100644
+--- a/bazel/cel_cc_embed.cc
++++ b/bazel/cel_cc_embed.cc
+@@ -34,7 +34,7 @@ namespace {
+ 
+ std::vector<uint8_t> ReadFile(const std::string& path) {
+   ABSL_CHECK(!path.empty()) << "--in is required";
+-  std::ifstream file(path);
++  std::ifstream file(path, std::ifstream::binary);
+   ABSL_CHECK(file.is_open()) << path;
+   file.seekg(0, file.end);
+   ABSL_CHECK(file.good());
+diff --git a/common/internal/shared_byte_string.h b/common/internal/shared_byte_string.h
+index fd8228c0..c6660f80 100644
+--- a/common/internal/shared_byte_string.h
++++ b/common/internal/shared_byte_string.h
+@@ -57,12 +57,12 @@ inline constexpr uintptr_t kByteStringReferenceCountPooledBit = uintptr_t{1}
+                                                                 << 0;
+ 
+ #ifdef _MSC_VER
+-#pragma pack(pack, 1)
++#pragma pack(push, 1)
+ #endif
+ 
+ struct ABSL_ATTRIBUTE_PACKED SharedByteStringHeader final {
+   // True if the content is `absl::Cord`.
+-  bool is_cord : 1;
++  size_t is_cord : 1;
+   // Only used when `is_cord` is `false`.
+   size_t size : sizeof(size_t) * 8 - 1;
+ 
+diff --git a/common/types/list_type.cc b/common/types/list_type.cc
+index 41a6f2f1..f4dba5e5 100644
+--- a/common/types/list_type.cc
++++ b/common/types/list_type.cc
+@@ -28,7 +28,7 @@ namespace common_internal {
+ 
+ namespace {
+ 
+-ABSL_CONST_INIT const ListTypeData kDynListTypeData;
++const ListTypeData kDynListTypeData;
+ 
+ }  // namespace
+ 
+diff --git a/common/types/map_type.cc b/common/types/map_type.cc
+index e0c15df5..1df3b52b 100644
+--- a/common/types/map_type.cc
++++ b/common/types/map_type.cc
+@@ -28,11 +28,11 @@ namespace common_internal {
+ 
+ namespace {
+ 
+-ABSL_CONST_INIT const MapTypeData kDynDynMapTypeData = {
++const MapTypeData kDynDynMapTypeData = {
+     .key_and_value = {DynType(), DynType()},
+ };
+ 
+-ABSL_CONST_INIT const MapTypeData kStringDynMapTypeData = {
++const MapTypeData kStringDynMapTypeData = {
+     .key_and_value = {StringType(), DynType()},
+ };
+ 
+diff --git a/common/types/optional_type.cc b/common/types/optional_type.cc
+index a37300bb..3ec51ed8 100644
+--- a/common/types/optional_type.cc
++++ b/common/types/optional_type.cc
+@@ -47,7 +47,7 @@ static_assert(offsetof(OptionalTypeData, parameters_size) ==
+ static_assert(offsetof(OptionalTypeData, parameter) ==
+               offsetof(OpaqueTypeData, parameters));
+ 
+-ABSL_CONST_INIT const DynOptionalTypeData kDynOptionalTypeData = {
++const DynOptionalTypeData kDynOptionalTypeData = {
+     .optional =
+         {
+             .name = OptionalType::kName,
+diff --git a/internal/json.cc b/internal/json.cc
+index aa5d6cce..c658a1cd 100644
+--- a/internal/json.cc
++++ b/internal/json.cc
+@@ -53,6 +53,11 @@
+ #include "google/protobuf/message_lite.h"
+ #include "google/protobuf/util/time_util.h"
+ 
++// Workaround for Windows macro conflict.
++#ifdef GetMessage
++#undef GetMessage
++#endif
++
+ namespace cel::internal {
+ 
+ namespace {
+diff --git a/internal/well_known_types.cc b/internal/well_known_types.cc
+index f6511cff..e5e418af 100644
+--- a/internal/well_known_types.cc
++++ b/internal/well_known_types.cc
+@@ -56,6 +56,11 @@
+ #include "google/protobuf/reflection.h"
+ #include "google/protobuf/util/time_util.h"
+ 
++// Workaround for Windows macro conflict.
++#ifdef GetMessage
++#undef GetMessage
++#endif
++
+ namespace cel::well_known_types {
+ 
+ namespace {
+-- 
+2.47.2
+

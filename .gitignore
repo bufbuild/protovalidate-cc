@@ -31,6 +31,10 @@
 *.out
 *.app
 
+# Clangd
+/.cache
+/compile_commands.json
+
 # Additional exclusions
 /.tmp/
 *.pprof
@@ -42,3 +46,5 @@ user.bazelrc
 local_tsan.bazelrc
 /.clwb/
 .vscode
+.build*
+/cmake-build-*

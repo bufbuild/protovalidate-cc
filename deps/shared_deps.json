@@ -1,0 +1,51 @@
+{
+  "absl": {
+    "meta": {
+      "version": "20240722.0"
+    },
+    "source": {
+      "sha256": "f50e5ac311a81382da7fa75b97310e4b9006474f9560ac46f54a9967f07d4ae3",
+      "strip_prefix": "abseil-cpp-{version}",
+      "urls": [
+        "https://github.com/abseil/abseil-cpp/archive/{version}.tar.gz"
+      ]
+    }
+  },
+  "protobuf": {
+    "meta": {
+      "version": "29.2"
+    },
+    "source": {
+      "sha256": "63150aba23f7a90fd7d87bdf514e459dd5fe7023fdde01b56ac53335df64d4bd",
+      "strip_prefix": "protobuf-{version}",
+      "urls": [
+        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v{version}.tar.gz",
+        "https://github.com/protocolbuffers/protobuf/archive/v{version}.tar.gz"
+      ]
+    }
+  },
+  "cel_cpp": {
+    "meta": {
+      "version": "0.10.0"
+    },
+    "source": {
+      "sha256": "dd06b708a9f4c3728e76037ec9fb14fc9f6d9c9980e5d5f3a1d047f3855a8b98",
+      "strip_prefix": "cel-cpp-{version}",
+      "urls": [
+        "https://github.com/google/cel-cpp/archive/v{version}.tar.gz"
+      ]
+    }
+  },
+  "protovalidate": {
+    "meta": {
+      "version": "0.10.3"
+    },
+    "source": {
+      "sha256": "12c6a8018ea57a941ede58a9273f266e180b1f0800d963527de26bb26c876004",
+      "strip_prefix": "protovalidate-{version}",
+      "urls": [
+        "https://github.com/bufbuild/protovalidate/releases/download/v{version}/protovalidate-{version}.tar.gz"
+      ]
+    }
+  }
+}
