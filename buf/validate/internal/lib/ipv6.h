@@ -31,7 +31,7 @@ struct IPv6Prefix : public IPv6Address {
 
   // Returns the bits of the subnet mask, e.g. the bits that are 1 correspond to
   // the routing prefix and the bits that are 0 correspond to the host ID.
-  [[nodiscard]] constexpr std::bitset<bits_count> mask() const {
+  [[nodiscard]] std::bitset<bits_count> mask() const {
     return std::bitset<bits_count>{}.set() << (bits_count - prefixLength);
   }
 };
