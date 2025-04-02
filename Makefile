@@ -15,15 +15,7 @@ PROTOVALIDATE_VERSION ?= v$(shell <./deps/shared_deps.json jq -j .protovalidate.
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
 
-UNAME_OS := $(shell uname -s)
-ifeq ($(UNAME_OS),Darwin)
-EXPECTED_FAILURES_FILE := expected_failures_mac.yaml
-else
-# Default to Linux for now
-EXPECTED_FAILURES_FILE := expected_failures_linux.yaml
-endif
-
-ARGS ?= --strict_message --expected_failures=buf/validate/conformance/$(EXPECTED_FAILURES_FILE)
+ARGS ?= --strict_message --expected_failures=buf/validate/conformance/expected_failures.yaml
 
 BAZEL ?= bazel
 

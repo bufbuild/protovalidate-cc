@@ -133,6 +133,8 @@ cc_library(
     hdrs = ["extra_func.h"],
     deps = [
         ":string_format",
+        "//buf/validate/internal/lib:ipv4",
+        "//buf/validate/internal/lib:ipv6",
         "@com_google_absl//absl/status",
         "@com_google_cel_cpp//eval/public:cel_function_adapter",
         "@com_google_cel_cpp//eval/public:cel_function_registry",

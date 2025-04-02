@@ -14,24 +14,19 @@
 
 #include "buf/validate/internal/extra_func.h"
 
-#include <algorithm>
 #include <string>
 #include <string_view>
 
 #include "absl/strings/match.h"
 #include "absl/strings/str_split.h"
+#include "buf/validate/internal/lib/ipv4.h"
+#include "buf/validate/internal/lib/ipv6.h"
 #include "buf/validate/internal/string_format.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
 #include "eval/public/containers/container_backed_map_impl.h"
 #include "google/protobuf/arena.h"
 #include "re2/re2.h"
-
-#ifdef _WIN32
-#include <ws2tcpip.h>
-#else
-#include <arpa/inet.h>
-#endif
 
 namespace buf::validate::internal {
 
@@ -206,18 +201,12 @@ cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolde
   return cel::CelValue::CreateBool(IsHostname(domainPart));
 }
 
-bool IsIpv4(const std::string_view to_validate) {
-  // need to copy as string_view might not be null terminated
-  const auto str = std::string{to_validate};
-  struct in_addr result {};
-  return inet_pton(AF_INET, str.data(), &result) == 1;
+bool IsIpv4(const std::string_view toValidate) {
+  return lib::parseIPv4Address(toValidate).has_value();
 }
 
-bool IsIpv6(const std::string_view to_validate) {
-  // need to copy as string_view might not be null terminated
-  const auto str = std::string{to_validate};
-  struct in6_addr result {};
-  return inet_pton(AF_INET6, str.data(), &result) == 1;
+bool IsIpv6(const std::string_view toValidate) {
+  return lib::parseIPv6Address(toValidate).has_value();
 }
 
 bool IsIp(const std::string_view to_validate) {
@@ -291,85 +280,32 @@ cel::CelValue isHostAndPort(
 /**
  * IP Prefix Validation
  */
-bool IsIpv4Prefix(const std::string_view to_validate, bool strict) {
-  std::vector<std::string> split = absl::StrSplit(to_validate.data(), '/');
-  if (split.size() != 2) {
+bool IsIpv4Prefix(const std::string_view toValidate, bool strict) {
+  auto prefix = lib::parseIPv4Prefix(toValidate);
+  if (!prefix) {
     return false;
   }
-  std::string ip = split[0];
-  std::string prefixlen = split[1];
-
-  // validate ip
-  struct in_addr addr;
-  if (inet_pton(AF_INET, ip.c_str(), &addr) != 1) {
-    return false;
+  if (!strict) {
+    return true;
   }
-
-  // validate prefixlen
-  if (prefixlen.empty()) {
-    return false;
-  }
-  int prefixlen_int;
-  if (!absl::SimpleAtoi(prefixlen, &prefixlen_int)) {
-    return false;
-  }
-  if (prefixlen_int < 0 || prefixlen_int > 32) {
-    return false;
-  }
-
-  // check host part is all-zero if strict
-  if (strict) {
-    struct in_addr mask;
-    mask.s_addr = htonl((1ull << (32 - prefixlen_int)) - 1);
-    return ((addr.s_addr & mask.s_addr) == 0);
-  }
-
-  return true;
+  // Check that the host ID part is all zero when strict is true.
+  return (prefix->bits & ~prefix->mask()) == 0;
 }
 
-bool IsIpv6Prefix(const std::string_view to_validate, bool strict) {
-  std::vector<std::string> split = absl::StrSplit(to_validate.data(), '/');
-  if (split.size() != 2) {
+bool IsIpv6Prefix(const std::string_view toValidate, bool strict) {
+  auto prefix = lib::parseIPv6Prefix(toValidate);
+  if (!prefix) {
     return false;
   }
-  std::string ip = split[0];
-  std::string prefixlen = split[1];
-
-  // validate ip
-  struct in6_addr addr;
-  if (inet_pton(AF_INET6, ip.c_str(), &addr) != 1) {
-    return false;
+  if (!strict) {
+    return true;
   }
-
-  // validate prefixlen
-  if (prefixlen.empty()) {
-    return false;
-  }
-  int prefixlen_int;
-  if (!absl::SimpleAtoi(prefixlen, &prefixlen_int)) {
-    return false;
-  }
-  if (prefixlen_int < 0 || prefixlen_int > 128) {
-    return false;
-  }
-
-  // check host part is all-zero if strict
-  if (strict) {
-    int i;
-    int l;
-    for (i = 15, l = (128 - prefixlen_int); l > 0; i--, l -= 8) {
-      uint8_t mask = (l < 8) ? (1 << l) - 1 : 0xff;
-      if ((addr.s6_addr[i] & mask) != 0) {
-        return false;
-      }
-    }
-  }
-
-  return true;
+  // Check that the host ID part is all zero when strict is true.
+  return (prefix->bits & ~prefix->mask()) == 0;
 }
 
-bool IsIpPrefix(const std::string_view to_validate, bool strict) {
-  return IsIpv4Prefix(to_validate, strict) || IsIpv6Prefix(to_validate, strict);
+bool IsIpPrefix(const std::string_view toValidate, bool strict) {
+  return IsIpv4Prefix(toValidate, strict) || IsIpv6Prefix(toValidate, strict);
 }
 
 cel::CelValue isIpPrefixXY(
