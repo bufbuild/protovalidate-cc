@@ -30,7 +30,17 @@ struct IPv4Prefix : public IPv4Address {
 
   // Returns the bits of the subnet mask, e.g. the bits that are 1 correspond to
   // the routing prefix and the bits that are 0 correspond to the host ID.
-  [[nodiscard]] constexpr uint32_t mask() const { return ~0UL << (bits_count - prefixLength); }
+  [[nodiscard]] constexpr uint32_t mask() const {
+    if (prefixLength >= bits_count) {
+      // Shifting a uint32_t by >= 32 is undefined behavior.
+      // On x86, the right operand is truncated to 5 bits.
+      // For some reason, this isn't an issue on GCC/Linux even though the
+      // assembler output looks like it should exhibit the same issue. Not sure
+      // why that is.
+      return 0;
+    }
+    return ~0UL << (bits_count - prefixLength);
+  }
 };
 
 static inline bool operator==(const IPv4Address& a, const IPv4Address& b) {
