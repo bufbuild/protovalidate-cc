@@ -14,7 +14,12 @@ target_include_directories(cel_cpp_parser PUBLIC
     $<BUILD_INTERFACE:${CEL_CPP_PARSER_GEN_DIR}>
 )
 target_compile_definitions(cel_cpp_parser PRIVATE ANTLR4CPP_USING_ABSEIL)
-target_compile_options(cel_cpp_parser PUBLIC -fsized-deallocation)
+if(NOT MSVC)
+    # We don't need this on MSVC because this is the default.
+    # (We don't _want_ it either, since it isn't a valid command to the cl.exe
+    # driver and causes a lot of warnings to be printed.)
+    target_compile_options(cel_cpp_parser PUBLIC -fsized-deallocation)
+endif()
 target_link_libraries(cel_cpp_parser PUBLIC absl::base antlr4_static)
 add_library(cel_cpp::parser ALIAS cel_cpp_parser)
 

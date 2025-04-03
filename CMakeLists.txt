@@ -48,10 +48,6 @@ set(PROTOVALIDATE_LIBS
     cel_cpp::cel_cpp
     protovalidate::proto
 )
-if(WIN32)
-    # For htonl/inet_pton
-    list(APPEND PROTOVALIDATE_LIBS Ws2_32)
-endif()
 set(PROTOVALIDATE_TESTING_LIBS
     GTest::gmock_main
     protovalidate::testing_proto
@@ -59,10 +55,12 @@ set(PROTOVALIDATE_TESTING_LIBS
 file(GLOB PROTOVALIDATE_CC_CORE_HEADERS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     buf/validate/*.h
     buf/validate/internal/*.h
+    buf/validate/internal/lib/*.h
 )
 file(GLOB PROTOVALIDATE_CC_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     buf/validate/*.cc
     buf/validate/internal/*.cc
+    buf/validate/internal/lib/*.cc
 )
 set(PROTOVALIDATE_CC_TEST_SOURCES
     ${PROTOVALIDATE_CC_CORE_SOURCES}
@@ -113,13 +111,6 @@ if(PROTOVALIDATE_CC_ENABLE_TESTS)
         unset(target_name)
     endforeach()
 
-    if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-        set(EXPECTED_FAILURES_FILE "expected_failures_mac.yaml")
-    else()
-        # Default to Linux for now
-        set(EXPECTED_FAILURES_FILE "expected_failures_linux.yaml")
-    endif()
-
     # TODO(jchadwick-buf): The conformance test runner does not work on Windows
     # yet, due to an issue with linking the protobuf descriptors.
     if(PROTOVALIDATE_CC_ENABLE_CONFORMANCE AND NOT WIN32)
@@ -127,7 +118,7 @@ if(PROTOVALIDATE_CC_ENABLE_TESTS)
             NAME protovalidate_cc_conformance
             COMMAND go run github.com/bufbuild/protovalidate/tools/protovalidate-conformance@v${PROTOVALIDATE_CC_PROTOVALIDATE_VERSION}
                     --strict_message
-                    --expected_failures=${CMAKE_CURRENT_SOURCE_DIR}/buf/validate/conformance/${EXPECTED_FAILURES_FILE}
+                    --expected_failures=${CMAKE_CURRENT_SOURCE_DIR}/buf/validate/conformance/expected_failures.yaml
                     $<TARGET_FILE:protovalidate_cc::conformance_runner_main>
         )
     endif()

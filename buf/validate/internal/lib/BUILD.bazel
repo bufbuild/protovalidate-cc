@@ -1,0 +1,56 @@
+# Copyright 2023-2025 Buf Technologies, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+package(default_visibility = ["//:__subpackages__"])
+
+cc_library(
+    name = "ipv4",
+    srcs = ["ipv4.cc"],
+    hdrs = ["ipv4.h"],
+    deps = [
+        ":parser_common"
+    ]
+)
+
+cc_test(
+    name = "ipv4_test",
+    srcs = ["ipv4_test.cc"],
+    deps = [
+        ":ipv4",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "ipv6",
+    srcs = ["ipv6.cc"],
+    hdrs = ["ipv6.h"],
+    deps = [
+        ":parser_common"
+    ]
+)
+
+cc_test(
+    name = "ipv6_test",
+    srcs = ["ipv6_test.cc"],
+    deps = [
+        ":ipv6",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "parser_common",
+    hdrs = ["parser_common.h"]
+)
