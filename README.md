@@ -1,36 +1,54 @@
-# [![The Buf logo](.github/buf-logo.svg)][buf] protovalidate-cc
+[![The Buf logo](.github/buf-logo.svg)][buf] 
+
+# protovalidate-cc
 
 [![CI](https://github.com/bufbuild/protovalidate-cc/actions/workflows/ci.yaml/badge.svg)](https://github.com/bufbuild/protovalidate-cc/actions/workflows/ci.yaml)
 [![Conformance](https://github.com/bufbuild/protovalidate-cc/actions/workflows/conformance.yaml/badge.svg)](https://github.com/bufbuild/protovalidate-cc/actions/workflows/conformance.yaml)
 [![BSR](https://img.shields.io/badge/BSR-Module-0C65EC)][buf-mod]
 
-`protovalidate-cc` is the C++ language implementation
-of [`protovalidate`](https://github.com/bufbuild/protovalidate) designed
-to validate Protobuf messages at runtime based on user-defined validation constraints.
-Powered by Google's Common Expression Language ([CEL](https://github.com/google/cel-spec)), it provides a
-flexible and efficient foundation for defining and evaluating custom validation
-rules.
-The primary goal of `protovalidate` is to help developers ensure data
-consistency and integrity across the network without requiring generated code.
+[Protovalidate][protovalidate] provides standard annotations to validate common constraints on messages and fields, as well as the ability to use [CEL][cel] to write custom constraints. It's the next generation of [protoc-gen-validate][protoc-gen-validate], the only widely used validation library for Protobuf.
 
-## The `protovalidate` project
+With Protovalidate, you can annotate your Protobuf messages with both standard and custom validation rules:
 
-Head over to the core [`protovalidate`](https://github.com/bufbuild/protovalidate/) repository for:
+```protobuf
+syntax = "proto3";
 
-- [The API definition](https://github.com/bufbuild/protovalidate/tree/main/proto/protovalidate/buf/validate/validate.proto): used to describe validation constraints
-- [Documentation](https://github.com/bufbuild/protovalidate/tree/main/docs): how to apply `protovalidate` effectively
-- [Migration tooling](https://github.com/bufbuild/protovalidate/tree/main/docs/migrate.md): incrementally migrate from `protoc-gen-validate`
-- [Conformance testing utilities](https://github.com/bufbuild/protovalidate/tree/main/docs/conformance.md): for acceptance testing of `protovalidate` implementations
+package banking.v1;
 
-Other `protovalidate` runtime implementations include
+import "buf/validate/validate.proto";
 
-- Go: [`protovalidate-go`](https://github.com/bufbuild/protovalidate-go)
-- Java: [`protovalidate-java`](https://github.com/bufbuild/protovalidate-java)
-- Python: [`protovalidate-python`](https://github.com/bufbuild/protovalidate-python)
+message MoneyTransfer {
+  string to_account_id = 1 [
+    // Standard rule: `to_account_id` must be a UUID
+    (buf.validate.field).string.uuid = true
+  ];
 
-And others coming soon:
+  string from_account_id = 2 [
+    // Standard rule: `from_account_id` must be a UUID
+    (buf.validate.field).string.uuid = true
+  ];
 
-- TypeScript: `protovalidate-ts`
+  // Custom rule: `to_account_id` and `from_account_id` can't be the same.
+  option (buf.validate.message).cel = {
+    id: "to_account_id.not.from_account_id"
+    message: "to_account_id and from_account_id should not be the same value"
+    expression: "this.to_account_id != this.from_account_id"
+  };
+}
+```
+
+Once you've added `protovalidate-cc` to your project, validation is idiomatic C++:
+
+```c++
+std::unique_ptr<buf::validate::ValidatorFactory> factory =
+  buf::validate::ValidatorFactory::New().value();
+google::protobuf::Arena arena;
+buf::validate::Validator validator = factory->NewValidator(&arena);
+buf::validate::Violations results = validator.Validate(moneyTransfer).value();
+if (results.violations_size() > 0) {
+    // Handle failure
+}
+```
 
 ## Installation
 
@@ -44,16 +62,13 @@ cd protovalidate-cc
 make build
 ```
 
-Remember to always check for the latest version of `protovalidate-cc` on the
-project's [GitHub releases page](https://github.com/bufbuild/protovalidate-cc/releases)
-to ensure you're using the most up-to-date version.
+Remember to always check for the latest version of `protovalidate-cc` on the project's [GitHub releases page](https://github.com/bufbuild/protovalidate-cc/releases) to ensure you're using the most up-to-date version.
 
 ### Bazel external repository
 
 To use `protovalidate-cc` as an external Bazel repository, add the following to the `WORKSPACE` file:
 
 ```bzl
-
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 http_archive(
@@ -82,87 +97,69 @@ cc_library(
 )
 ```
 
-## Usage
+## Documentation
 
-### Implementing validation constraints
+Comprehensive documentation for Protovalidate is available in [Buf's documentation library][protovalidate].
 
-Validation constraints are defined directly within `.proto` files.
-Documentation for adding constraints can be found in the `protovalidate` project
-[README](https://github.com/bufbuild/protovalidate) and its [comprehensive docs](https://github.com/bufbuild/protovalidate/tree/main/docs).
+Highlights for C++ developers include:
 
-```protobuf
-syntax = "proto3";
+* The [developer quickstart][quickstart]
+* A [migration guide for protoc-gen-validate][migration-guide] users
 
-package my.package;
+## Additional Languages and Repositories
 
-import "google/protobuf/timestamp.proto";
-import "buf/validate/validate.proto";
+Protovalidate isn't just for C++! You might be interested in sibling repositories for other languages:
 
-message Transaction {
-  uint64 id = 1 [(buf.validate.field).uint64.gt = 999];
-  google.protobuf.Timestamp purchase_date = 2;
-  google.protobuf.Timestamp delivery_date = 3;
+- [`protovalidate-go`][pv-go] (Go)
+- [`protovalidate-java`][pv-java] (Java)
+- [`protovalidate-python`][pv-python] (Python)
+- `protovalidate-es` (TypeScript and JavaScript, coming soon!)
 
-  string price = 4 [(buf.validate.field).cel = {
-    id: "transaction.price",
-    message: "price must be positive and include a valid currency symbol ($ or £)",
-    expression: "(this.startsWith('$') || this.startsWith('£')) && double(this.substring(1)) > 0"
-  }];
+Additionally, [protovalidate's core repository](https://github.com/bufbuild/protovalidate) provides:
 
-  option (buf.validate.message).cel = {
-    id: "transaction.delivery_date",
-    message: "delivery date must be after purchase date",
-    expression: "this.delivery_date > this.purchase_date"
-  };
-}
-```
+- [Protovalidate's Protobuf API][validate-proto]
+- [Conformance testing utilities][conformance] for acceptance testing of `protovalidate` implementations
 
-### Example
+## Contribution
 
-In your C++ code, include the header file and use the `Validate` function to validate your messages.
+We genuinely appreciate any help! If you'd like to contribute, check out these resources:
 
-```cpp
-#include <iostream>
+- [Contributing Guidelines][contributing]: Guidelines to make your contribution process straightforward and meaningful
+- [Conformance testing utilities](https://github.com/bufbuild/protovalidate/tree/main/docs/conformance.md): Utilities providing acceptance testing of `protovalidate` implementations
 
-#include "buf/validate/validator.h"
-#include "google/protobuf/arena.h"
+## Related Sites
 
-#include "path/to/generated/protos/transaction.pb.h"
-
-int main() {
-  my::package::Transaction transaction;
-  transaction.set_id(1234);
-  transaction.set_price("$5.67");
-
-  google::protobuf::Timestamp* purchase_date = transaction.mutable_purchase_date();
-  google::protobuf::Timestamp* delivery_date = transaction.mutable_delivery_date();
-  // set time for purchase_date and delivery_date
-
-  std::unique_ptr<buf::validate::ValidatorFactory> factory =
-      buf::validate::ValidatorFactory::New().value();
-  google::protobuf::Arena arena;
-  buf::validate::Validator validator = factory->NewValidator(&arena);
-  buf::validate::Violations results = validator.Validate(transaction).value();
-  if (results.violations_size() > 0) {
-    std::cout << "validation failed" << std::endl;
-  } else {
-    std::cout << "validation succeeded" << std::endl;
-  }
-  return 0;
-}
-```
-
-### Ecosystem
-
-- [`protovalidate`](https://github.com/bufbuild/protovalidate) core repository
-- [Buf][buf]
-- [CEL Spec][cel-spec]
+- [Buf][buf]: Enterprise-grade Kafka and gRPC for the modern age
+- [Common Expression Language (CEL)][cel]: The open-source technology at the core of Protovalidate
 
 ## Legal
 
 Offered under the [Apache 2 license][license].
 
-[license]: LICENSE
 [buf]: https://buf.build
+[cel]: https://cel.dev
+
+[pv-go]: https://github.com/bufbuild/protovalidate-go
+[pv-java]: https://github.com/bufbuild/protovalidate-java
+[pv-python]: https://github.com/bufbuild/protovalidate-python
+[pv-cc]: https://github.com/bufbuild/protovalidate-cc
+
 [buf-mod]: https://buf.build/bufbuild/protovalidate
-[cel-spec]: https://github.com/google/cel-spec
+[license]: LICENSE
+[contributing]: .github/CONTRIBUTING.md
+
+[protoc-gen-validate]: https://github.com/bufbuild/protoc-gen-validate
+
+[protovalidate]: https://buf.build/docs/protovalidate/
+[quickstart]: https://buf.build/docs/protovalidate/quickstart/
+[connect-go]: https://buf.build/docs/protovalidate/quickstart/connect-go/
+[grpc-go]: https://buf.build/docs/protovalidate/quickstart/grpc-go/
+[grpc-java]: https://buf.build/docs/protovalidate/quickstart/grpc-java/
+[grpc-python]: https://buf.build/docs/protovalidate/quickstart/grpc-python/
+[migration-guide]: https://buf.build/docs/migration-guides/migrate-from-protoc-gen-validate/
+[pkg-go]: https://pkg.go.dev/github.com/bufbuild/protovalidate-go
+
+[validate-proto]: https://buf.build/bufbuild/protovalidate/docs/main:buf.validate
+[conformance]: https://github.com/bufbuild/protovalidate/blob/main/docs/conformance.md
+[examples]: https://github.com/bufbuild/protovalidate/tree/main/examples
+[migrate]: https://buf.build/docs/migration-guides/migrate-from-protoc-gen-validate/
