@@ -118,7 +118,6 @@ Protovalidate isn't just for C++! You might be interested in sibling repositorie
 Additionally, [protovalidate's core repository](https://github.com/bufbuild/protovalidate) provides:
 
 - [Protovalidate's Protobuf API][validate-proto]
-- [Example][examples] `.proto` files using `protovalidate`
 - [Conformance testing utilities][conformance] for acceptance testing of `protovalidate` implementations
 
 ## Contribution
