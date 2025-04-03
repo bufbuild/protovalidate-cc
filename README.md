@@ -150,12 +150,12 @@ Offered under the [Apache 2 license][license].
 
 [protoc-gen-validate]: https://github.com/bufbuild/protoc-gen-validate
 
-[protovalidate]: https://buf.build/docs/protovalidate/overview/
+[protovalidate]: https://buf.build/docs/protovalidate/
 [quickstart]: https://buf.build/docs/protovalidate/quickstart/
-[connect-go]: https://buf.build/docs/protovalidate/how-to/connect-go/
-[grpc-go]: https://buf.build/docs/protovalidate/how-to/grpc-go/
-[grpc-java]: https://buf.build/docs/protovalidate/how-to/grpc-java/
-[grpc-python]: https://buf.build/docs/protovalidate/how-to/grpc-python/
+[connect-go]: https://buf.build/docs/protovalidate/quickstart/connect-go/
+[grpc-go]: https://buf.build/docs/protovalidate/quickstart/grpc-go/
+[grpc-java]: https://buf.build/docs/protovalidate/quickstart/grpc-java/
+[grpc-python]: https://buf.build/docs/protovalidate/quickstart/grpc-python/
 [migration-guide]: https://buf.build/docs/migration-guides/migrate-from-protoc-gen-validate/
 [pkg-go]: https://pkg.go.dev/github.com/bufbuild/protovalidate-go
 
