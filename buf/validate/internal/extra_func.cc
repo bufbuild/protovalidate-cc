@@ -169,36 +169,10 @@ cel::CelValue isHostname(google::protobuf::Arena* arena, cel::CelValue::StringHo
 }
 
 cel::CelValue isEmail(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  absl::string_view addr = lhs.value();
-  if (addr.size() > 254 || addr.size() < 3) {
-    return cel::CelValue::CreateBool(false);
-  }
-  absl::string_view::size_type pos = addr.find('<');
-  if (pos != absl::string_view::npos) {
-    return cel::CelValue::CreateBool(false);
-  }
-
-  size_t atPos = addr.find('@');
-  if (atPos == absl::string_view::npos) {
-    return cel::CelValue::CreateBool(false);
-  }
-  absl::string_view localPart = addr.substr(0, atPos);
-  absl::string_view domainPart = addr.substr(atPos + 1);
-
-  int localLength = localPart.length();
-  if (localLength < 1 || localLength > 64) {
-    return cel::CelValue::CreateBool(false);
-  }
-
   // Based on https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
-  // Note that we are currently _stricter_ than this as we enforce length limits
-  static const re2::RE2 localPart_regex("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+$");
-  if (!re2::RE2::FullMatch(localPart, localPart_regex)) {
-    return cel::CelValue::CreateBool(false);
-  }
-
-  // Validate the hostname
-  return cel::CelValue::CreateBool(IsHostname(domainPart));
+  static const re2::RE2 regex(
+      "^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
+  return cel::CelValue::CreateBool(re2::RE2::FullMatch(lhs.value(), regex));
 }
 
 bool IsIpv4(const std::string_view toValidate) {
