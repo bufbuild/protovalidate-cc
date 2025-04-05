@@ -21,6 +21,7 @@
 #include "absl/strings/str_split.h"
 #include "buf/validate/internal/lib/ipv4.h"
 #include "buf/validate/internal/lib/ipv6.h"
+#include "buf/validate/internal/lib/uri.h"
 #include "buf/validate/internal/string_format.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
@@ -316,55 +317,17 @@ cel::CelValue isIpPrefix(google::protobuf::Arena* arena, cel::CelValue::StringHo
 }
 
 /**
- * Naive URI validation.
+ * URI validation.
  */
 cel::CelValue isUri(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  const std::string_view& ref = lhs.value();
-  if (ref.empty()) {
-    return cel::CelValue::CreateBool(false);
-  }
-  std::string_view scheme, host;
-  if (!absl::StrContains(ref, "://")) {
-    return cel::CelValue::CreateBool(false);
-  }
-  std::vector<std::string_view> split = absl::StrSplit(ref, absl::MaxSplits("://", 1));
-  scheme = split[0];
-  std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
-  host = hostSplit[0];
-  // Just checking that scheme and host are present.
-  return cel::CelValue::CreateBool(!scheme.empty() && !host.empty());
+  return cel::CelValue::CreateBool(lib::validateUri(lhs.value()));
 }
 
 /**
- * Naive URI ref validation.
+ * URI ref validation.
  */
 cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
-  const std::string_view& ref = lhs.value();
-  if (ref.empty()) {
-    return cel::CelValue::CreateBool(false);
-  }
-  std::string_view scheme, host, path;
-  std::string_view remainder = ref;
-  if (absl::StrContains(ref, "://")) {
-    std::vector<std::string_view> split = absl::StrSplit(ref, absl::MaxSplits("://", 1));
-    scheme = split[0];
-    std::vector<std::string_view> hostSplit = absl::StrSplit(split[1], absl::MaxSplits('/', 1));
-    host = hostSplit[0];
-    // If hostSplit has a size greater than 1, then a '/' appeared in the string. Set the rest
-    // to remainder so we can parse any query string.
-    if (hostSplit.size() > 1) {
-      remainder = hostSplit[1];
-    }
-  }
-  std::vector<std::string_view> querySplit = absl::StrSplit(remainder, absl::MaxSplits('?', 1));
-  path = querySplit[0];
-  if (!isPathValid(path)) {
-    return cel::CelValue::CreateBool(false);
-  }
-  // If the scheme and host are invalid, then the input is a URI ref (so make sure path exists).
-  // If the scheme and host are valid, then the input is a URI.
-  bool parsedResult = !path.empty() || (!scheme.empty() && !host.empty());
-  return cel::CelValue::CreateBool(parsedResult);
+  return cel::CelValue::CreateBool(lib::validateUriReference(lhs.value()));
 }
 
 absl::Status RegisterExtraFuncs(
