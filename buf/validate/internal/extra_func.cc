@@ -138,31 +138,25 @@ cel::CelValue endsWith(
   return cel::CelValue::CreateBool(result);
 }
 
-bool IsHostname(std::string_view to_validate) {
-  if (to_validate.length() > 253) {
+bool IsHostname(std::string_view toValidate) {
+  if (toValidate.length() > 253) {
     return false;
   }
-  static const re2::RE2 component_regex("^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$");
-  static const re2::RE2 all_digits("^[0-9]*$");
-  to_validate = absl::StripSuffix(to_validate, ".");
-  std::vector<std::string_view> split = absl::StrSplit(to_validate, '.');
-  if (split.size() < 2) {
-    return re2::RE2::FullMatch(to_validate, component_regex) &&
-        !re2::RE2::FullMatch(to_validate, all_digits);
-  }
-  if (re2::RE2::FullMatch(split[split.size() - 1], all_digits)) {
-    return false;
-  }
-  for (size_t i = 0; i < split.size(); i++) {
-    const std::string_view& part = split[i];
-    if (part.empty() || part.size() > 63) {
+  toValidate = absl::StripSuffix(toValidate, ".");
+  bool allDigits = false;
+  for (auto part : absl::StrSplit(toValidate, '.')) {
+    allDigits = true;
+    if (part.empty() || part.size() > 63 || part.starts_with('-') || part.ends_with('-')) {
       return false;
     }
-    if (!re2::RE2::FullMatch(part, component_regex)) {
-      return false;
+    for (auto ch : part) {
+      if ((ch < 'a' || ch > 'z') && (ch < 'A' || ch > 'Z') && (ch < '0' || ch > '9') && ch != '-') {
+        return false;
+      }
+      allDigits = allDigits && ch >= '0' && ch <= '9';
     }
   }
-  return true;
+  return !allDigits;
 }
 
 cel::CelValue isHostname(google::protobuf::Arena* arena, cel::CelValue::StringHolder lhs) {
@@ -209,6 +203,15 @@ cel::CelValue isIP(google::protobuf::Arena* arena, cel::CelValue::StringHolder l
 
 bool IsPort(const std::string_view str) {
   uint32_t port;
+  if (str.empty()) {
+    return false;
+  }
+  for (auto c : str) {
+    if ('0' <= c && c <= '9') {
+      continue;
+    }
+    return false;
+  }
   if (!absl::SimpleAtoi(str, &port)) {
     return false;
   }
