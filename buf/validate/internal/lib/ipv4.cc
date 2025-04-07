@@ -24,14 +24,14 @@ namespace buf::validate::internal::lib {
 namespace {
 
 struct IPv4Parser : ParserCommon, public IPv4Prefix {
-  bool consumePrefixLength() { return consumeDecimalNumber<uint8_t, bits_count>(prefixLength); }
+  bool parsePrefixLength() { return parseDecimalNumber<uint8_t, bits_count>(prefixLength); }
 
-  bool consumeAddressPart() {
+  bool parseAddressPart() {
     std::array<uint8_t, 4> octets;
-    if (!consumeDecimalOctet(octets[0]) || !consumeDot() || //
-        !consumeDecimalOctet(octets[1]) || !consumeDot() || //
-        !consumeDecimalOctet(octets[2]) || !consumeDot() || //
-        !consumeDecimalOctet(octets[3])) {
+    if (!parseDecimalOctet(octets[0]) || !consume<Char<'.'>>() || //
+        !parseDecimalOctet(octets[1]) || !consume<Char<'.'>>() || //
+        !parseDecimalOctet(octets[2]) || !consume<Char<'.'>>() || //
+        !parseDecimalOctet(octets[3])) {
       return false;
     }
     bits |= static_cast<uint32_t>(octets[0]) << 24;
@@ -41,10 +41,10 @@ struct IPv4Parser : ParserCommon, public IPv4Prefix {
     return true;
   }
 
-  bool parseAddress() { return consumeAddressPart() && str.empty(); }
+  bool parseAddress() { return parseAddressPart() && str.empty(); }
 
   bool parsePrefix() {
-    return consumeAddressPart() && consumeSlash() && consumePrefixLength() && str.empty();
+    return parseAddressPart() && consume<Char<'/'>>() && parsePrefixLength() && str.empty();
   }
 };
 

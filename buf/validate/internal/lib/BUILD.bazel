@@ -51,6 +51,24 @@ cc_test(
 )
 
 cc_library(
+    name = "uri",
+    srcs = ["uri.cc"],
+    hdrs = ["uri.h"],
+    deps = [
+        ":parser_common"
+    ]
+)
+
+cc_test(
+    name = "uri_test",
+    srcs = ["uri_test.cc"],
+    deps = [
+        ":uri",
+        "@com_google_googletest//:gtest_main",
+    ],
+)
+
+cc_library(
     name = "parser_common",
     hdrs = ["parser_common.h"]
 )
