@@ -146,7 +146,8 @@ bool IsHostname(std::string_view toValidate) {
   bool allDigits = false;
   for (auto part : absl::StrSplit(toValidate, '.')) {
     allDigits = true;
-    if (part.empty() || part.size() > 63 || part.starts_with('-') || part.ends_with('-')) {
+    if (part.empty() || part.size() > 63 || absl::StartsWith(part, "-") ||
+        absl::EndsWith(part, "-")) {
       return false;
     }
     for (auto ch : part) {
