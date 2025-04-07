@@ -16,21 +16,6 @@ library/is_hostname:
        #   got: validation error (1 violation)
        #    1. constraint_id: "library.is_hostname"
        #       message: ""
-standard_constraints/required:
-  - proto2/scalar/optional/unset
-  #       input: [type.googleapis.com/buf.validate.conformance.cases.RequiredProto2ScalarOptional]:{}
-  #        want: validation error (1 violation)
-  #          1. constraint_id: "required"
-  #             field: "val" elements:{field_number:1  field_name:"val"  field_type:TYPE_STRING}
-  #             rule: "required" elements:{field_number:25  field_name:"required"  field_type:TYPE_BOOL}
-  #         got: valid
-  - proto2/scalar/optional_with_default/unset
-  #       input: [type.googleapis.com/buf.validate.conformance.cases.RequiredProto2ScalarOptionalDefault]:{}
-  #        want: validation error (1 violation)
-  #          1. constraint_id: "required"
-  #             field: "val" elements:{field_number:1  field_name:"val"  field_type:TYPE_STRING}
-  #             rule: "required" elements:{field_number:25  field_name:"required"  field_type:TYPE_BOOL}
-  #         got: valid
 standard_constraints/enum:
   - defined_only/invalid/unknown
        # input: [type.googleapis.com/buf.validate.conformance.cases.EnumDefined]:{val:2147483647}
