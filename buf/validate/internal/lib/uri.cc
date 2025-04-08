@@ -202,34 +202,32 @@ struct UriParser : ParserCommon {
     const size_t hexadecatets_count = 8;
     int index = 0;
     bool doubleColonFound = false;
-    enum : uint8_t { Initial, Hexadecatet, Separator, DoubleColon } state = Initial;
     while (index < hexadecatets_count) {
-      if ((state == Separator || state == DoubleColon) &&
-          (doubleColonFound || index == hexadecatets_count - 2) &&
-          str.length() >= std::char_traits<char>::length("0.0.0.0") &&
+      if ((doubleColonFound || index == hexadecatets_count - 2) &&
+          str.length() >= std::char_traits<char>::length("0.0.0.0") && str[0] != ':' &&
           (str[1] == '.' || str[2] == '.' || str[3] == '.')) {
         uint8_t _;
         return parseDecimalOctet(_) && consume<Char<'.'>>() && //
             parseDecimalOctet(_) && consume<Char<'.'>>() && //
             parseDecimalOctet(_) && consume<Char<'.'>>() && //
             parseDecimalOctet(_);
-      } else if (uint16_t _; state != Hexadecatet && parseHexadecimalHexadecatet(_)) {
-        state = Hexadecatet;
+      } else if (uint16_t _; parseHexadecimalHexadecatet(_)) {
         index++;
-      } else if (state != Separator && consumeSequence<':', ':'>()) {
-        state = DoubleColon;
-        if (index++ > hexadecatets_count - 1 || doubleColonFound) {
+      } else if (consumeSequence<':', ':'>()) {
+        if (consume<Char<':'>>() || index++ > hexadecatets_count - 1 || doubleColonFound) {
           return false;
         }
         doubleColonFound = true;
-      } else if (state == Hexadecatet && consume<Char<':'>>()) {
-        state = Separator;
+      } else if (consume<Char<':'>>()) {
+        if (index == 0 || str.empty()) {
+          return false;
+        }
+        continue;
       } else {
         break;
       }
     }
-    return (state == Hexadecatet || state == DoubleColon) &&
-        (doubleColonFound || index == hexadecatets_count) &&
+    return (doubleColonFound || index == hexadecatets_count) &&
         (!consumeSequence<'%', '2', '5'>() || consumeZoneId());
   }
 

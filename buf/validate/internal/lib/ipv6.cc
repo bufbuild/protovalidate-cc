@@ -46,7 +46,7 @@ struct IPv6Parser : ParserCommon, public IPv6Prefix {
     if (str.length() < minLength) {
       return false;
     }
-    return str[1] == '.' || str[2] == '.' || str[3] == '.';
+    return str[0] != ':' && (str[1] == '.' || str[2] == '.' || str[3] == '.');
   }
 
   bool parseDotted() {
@@ -71,28 +71,22 @@ struct IPv6Parser : ParserCommon, public IPv6Prefix {
     int index = 0;
     bool doubleColonFound = false;
     uint16_t value;
-    enum : uint8_t {
-      Initial,
-      Hexadecatet,
-      Separator,
-      DoubleColon,
-    } state = Initial;
     while (index < hexadecatets_count) {
-      if ((state == Separator || state == DoubleColon) &&
-          (doubleColonFound || index == hexadecatets_count - 2) && checkDotted()) {
+      if ((doubleColonFound || index == hexadecatets_count - 2) && checkDotted()) {
         if (!parseDotted()) {
           return false;
         }
         b <<= 32;
         index += 2;
         break;
-      } else if (state != Hexadecatet && parseHexadecimalHexadecatet(value)) {
-        state = Hexadecatet;
+      } else if (parseHexadecimalHexadecatet(value)) {
         b <<= 16;
         b |= value;
         index++;
-      } else if (state != Separator && consumeSequence<':', ':'>()) {
-        state = DoubleColon;
+      } else if (consumeSequence<':', ':'>()) {
+        if (consume<Char<':'>>()) {
+          return false;
+        }
         if (index > hexadecatets_count - 1 || doubleColonFound) {
           return false;
         }
@@ -102,14 +96,14 @@ struct IPv6Parser : ParserCommon, public IPv6Prefix {
         // This ensures that we can't have more than 7 hexadecatets when there's
         // a double-colon, even though we don't actually process a hexadecatet.
         index++;
-      } else if (state == Hexadecatet && consume<Char<':'>>()) {
-        state = Separator;
-      } else {
-        // Unable to match anything: this is the end.
-        if (state != Hexadecatet && state != DoubleColon) {
-          // Ending on a separator is invalid.
+      } else if (consume<Char<':'>>()) {
+        if (index == 0 || str.empty()) {
+          // Can not start or end on a single colon.
           return false;
         }
+        continue;
+      } else {
+        // Unable to match anything: this is the end.
         break;
       }
     }
