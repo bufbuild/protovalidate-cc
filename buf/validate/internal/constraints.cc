@@ -231,7 +231,7 @@ absl::Status EnumConstraintRules::Validate(
     if (field_->enum_type()->FindValueByNumber(value) == nullptr) {
       Violation violation;
       *violation.mutable_constraint_id() = "enum.defined_only";
-      *violation.mutable_message() = "enum value must be defined";
+      *violation.mutable_message() = "value must be one of the defined enum values";
       *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field_);
       *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(EnumRules::descriptor()->FindFieldByNumber(EnumRules::kDefinedOnlyFieldNumber));
       *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kEnumFieldNumber));
