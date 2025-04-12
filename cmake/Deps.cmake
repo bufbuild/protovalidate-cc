@@ -84,17 +84,6 @@ if(CEL_CPP_ENABLE_TESTS)
             endif()
         endif()
     endif()
-
-    # Fetch CEL spec repository (needed for test protos)
-    # When building in a hermetic environment, use the
-    # FETCHCONTENT_SOURCE_DIR_CEL_SPEC option to avoid the external fetch.
-    # https://cmake.org/cmake/help/latest/module/FetchContent.html#variable:FETCHCONTENT_SOURCE_DIR_%3CuppercaseName%3E
-    FetchContent_Declare(
-        cel_spec
-        GIT_REPOSITORY https://github.com/google/cel-spec.git
-        GIT_TAG f027a86d2e5bf18f796be0c4373f637a61041cde
-    )
-    FetchContent_MakeAvailable(cel_spec)
 endif()
 
 # Abseil
@@ -268,6 +257,17 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(googleapis)
 
+# Fetch CEL spec repository
+# When building in a hermetic environment, use the
+# FETCHCONTENT_SOURCE_DIR_CEL_SPEC option to avoid the external fetch.
+# https://cmake.org/cmake/help/latest/module/FetchContent.html#variable:FETCHCONTENT_SOURCE_DIR_%3CuppercaseName%3E
+FetchContent_Declare(
+    cel_spec
+    GIT_REPOSITORY https://github.com/google/cel-spec.git
+    GIT_TAG f027a86d2e5bf18f796be0c4373f637a61041cde
+)
+FetchContent_MakeAvailable(cel_spec)
+
 # Cel-cpp; Note that cel-cpp has no CMake build and is not packaged anywhere,
 # so it is always vendored. When building in a hermetic environment, use the
 # FETCHCONTENT_SOURCE_DIR_CEL_CPP option to avoid the external fetch.
@@ -277,8 +277,7 @@ SharedDeps_GetSourceValue(PROTOVALIDATE_CC_CEL_CPP_SHA256 "cel_cpp" "sha256" "${
 set(CEL_CPP_PATCHES
     ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0001-Allow-message-field-access-using-index-operator.patch
     ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0002-Add-missing-include-for-absl-StrCat.patch
-    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0003-Remove-unnecessary-dependency-on-cel_proto_wrap_util.patch
-    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0004-Fix-build-on-Windows-MSVC.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0003-Fix-build-on-Windows-MSVC.patch
 )
 MakePatchCommand(CEL_CPP_PATCH_COMMAND "${CEL_CPP_PATCHES}")
 message(STATUS "protovalidate-cc: Fetching cel-cpp")

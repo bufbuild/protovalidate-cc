@@ -1,18 +1,17 @@
-From 99917828897f5ee4b75a47182d7c1fee328605ee Mon Sep 17 00:00:00 2001
+From c7701d744a3d46b078b92f51c76265de30b5a3ed Mon Sep 17 00:00:00 2001
 From: John Chadwick <jchadwick@buf.build>
 Date: Fri, 21 Mar 2025 20:16:07 -0400
-Subject: [PATCH 4/4] Fix build on Windows/MSVC
+Subject: [PATCH 3/3] Fix build on Windows/MSVC
 
 Some fixes+hacks+workarounds for build issues on MSVC.
 ---
- bazel/cel_cc_embed.cc                | 2 +-
- common/internal/shared_byte_string.h | 4 ++--
- common/types/list_type.cc            | 2 +-
- common/types/map_type.cc             | 4 ++--
- common/types/optional_type.cc        | 2 +-
- internal/json.cc                     | 5 +++++
- internal/well_known_types.cc         | 5 +++++
- 7 files changed, 17 insertions(+), 7 deletions(-)
+ bazel/cel_cc_embed.cc         | 2 +-
+ common/types/list_type.cc     | 2 +-
+ common/types/map_type.cc      | 4 ++--
+ common/types/optional_type.cc | 2 +-
+ internal/json.cc              | 5 +++++
+ internal/well_known_types.cc  | 5 +++++
+ 6 files changed, 15 insertions(+), 5 deletions(-)
 
 diff --git a/bazel/cel_cc_embed.cc b/bazel/cel_cc_embed.cc
 index a9f0aec2..80515457 100644
@@ -27,25 +26,6 @@ index a9f0aec2..80515457 100644
    ABSL_CHECK(file.is_open()) << path;
    file.seekg(0, file.end);
    ABSL_CHECK(file.good());
-diff --git a/common/internal/shared_byte_string.h b/common/internal/shared_byte_string.h
-index fd8228c0..c6660f80 100644
---- a/common/internal/shared_byte_string.h
-+++ b/common/internal/shared_byte_string.h
-@@ -57,12 +57,12 @@ inline constexpr uintptr_t kByteStringReferenceCountPooledBit = uintptr_t{1}
-                                                                 << 0;
- 
- #ifdef _MSC_VER
--#pragma pack(pack, 1)
-+#pragma pack(push, 1)
- #endif
- 
- struct ABSL_ATTRIBUTE_PACKED SharedByteStringHeader final {
-   // True if the content is `absl::Cord`.
--  bool is_cord : 1;
-+  size_t is_cord : 1;
-   // Only used when `is_cord` is `false`.
-   size_t size : sizeof(size_t) * 8 - 1;
- 
 diff --git a/common/types/list_type.cc b/common/types/list_type.cc
 index 41a6f2f1..f4dba5e5 100644
 --- a/common/types/list_type.cc
@@ -91,10 +71,10 @@ index a37300bb..3ec51ed8 100644
          {
              .name = OptionalType::kName,
 diff --git a/internal/json.cc b/internal/json.cc
-index aa5d6cce..c658a1cd 100644
+index bd261ac0..17fc4809 100644
 --- a/internal/json.cc
 +++ b/internal/json.cc
-@@ -53,6 +53,11 @@
+@@ -51,6 +51,11 @@
  #include "google/protobuf/message_lite.h"
  #include "google/protobuf/util/time_util.h"
  
@@ -107,10 +87,10 @@ index aa5d6cce..c658a1cd 100644
  
  namespace {
 diff --git a/internal/well_known_types.cc b/internal/well_known_types.cc
-index f6511cff..e5e418af 100644
+index 6626172e..97b6b4ee 100644
 --- a/internal/well_known_types.cc
 +++ b/internal/well_known_types.cc
-@@ -56,6 +56,11 @@
+@@ -58,6 +58,11 @@
  #include "google/protobuf/reflection.h"
  #include "google/protobuf/util/time_util.h"
  

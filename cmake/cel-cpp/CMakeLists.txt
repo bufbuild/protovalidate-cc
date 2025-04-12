@@ -67,6 +67,72 @@ protobuf_generate(
 )
 add_library(cel_cpp::googleapis_proto ALIAS cel_googleapis_proto)
 
+# Generate C++ code for cel spec protos
+set(CEL_SPEC_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/proto_cc_cel_spec)
+file(MAKE_DIRECTORY ${CEL_SPEC_PROTO_GEN_DIR}/proto)
+set(CEL_SPEC_PROTO
+    test/v1/proto2/test_all_types.proto
+    test/v1/proto3/test_all_types.proto
+    cel/expr/checked.proto
+    cel/expr/eval.proto
+    cel/expr/explain.proto
+    cel/expr/syntax.proto
+    cel/expr/value.proto
+)
+set(CEL_SPEC_PROTO_DIR ${cel_spec_SOURCE_DIR}/proto)
+list(TRANSFORM CEL_SPEC_PROTO PREPEND ${CEL_SPEC_PROTO_DIR}/)
+add_library(cel_cpp_spec_proto OBJECT ${CEL_SPEC_PROTO})
+target_include_directories(cel_cpp_spec_proto
+    PUBLIC ${CEL_SPEC_PROTO_GEN_DIR}/proto
+)
+target_link_libraries(cel_cpp_spec_proto PUBLIC protobuf::libprotobuf cel_cpp::googleapis_proto)
+protobuf_generate(
+    TARGET cel_cpp_spec_proto
+    LANGUAGE cpp
+    PROTOC_OUT_DIR ${CEL_SPEC_PROTO_GEN_DIR}/proto
+    IMPORT_DIRS ${CEL_SPEC_PROTO_DIR}
+                ${PROTOBUF_IMPORT_PATH}
+                ${CEL_CPP_GOOGLEAPIS_PROTO_DIR}
+    DEPENDENCIES cel_cpp::googleapis_proto
+)
+add_library(cel_cpp::spec_proto ALIAS cel_cpp_spec_proto)
+
+# Generate empty descriptor set
+set(CEL_CPP_EMPTY_DESCRIPTOR_SET_PATH ${CMAKE_CURRENT_BINARY_DIR}/empty_descriptor_set.pb)
+set(CEL_CPP_EMPTY_DESCRIPTOR_SET_PROTO google/protobuf/empty.proto)
+list(TRANSFORM CEL_CPP_EMPTY_DESCRIPTOR_SET_PROTO PREPEND ${PROTOBUF_IMPORT_PATH}/)
+add_custom_command(
+    OUTPUT ${CEL_CPP_EMPTY_DESCRIPTOR_SET_PATH}
+    COMMAND ${PROTOC_EXECUTABLE}
+            --include_imports
+            --descriptor_set_out=${CEL_CPP_EMPTY_DESCRIPTOR_SET_PATH}
+            -I${PROTOBUF_IMPORT_PATH}
+            ${CEL_CPP_EMPTY_DESCRIPTOR_SET_PROTO}
+    DEPENDS ${CEL_CPP_EMPTY_DESCRIPTOR_SET_PROTO}
+    COMMENT "Generating empty descriptor set"
+    VERBATIM
+)
+set(CEL_CPP_EMPTY_DESCRIPTOR_SET_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/empty_descriptor_set)
+file(MAKE_DIRECTORY ${CEL_CPP_EMPTY_DESCRIPTOR_SET_GEN_DIR}/internal)
+set(CEL_CPP_EMPTY_DESCRIPTOR_SET_EMBED_PATH ${CEL_CPP_EMPTY_DESCRIPTOR_SET_GEN_DIR}/internal/empty_descriptor_set_embed.inc)
+add_custom_command(
+    OUTPUT ${CEL_CPP_EMPTY_DESCRIPTOR_SET_EMBED_PATH}
+    COMMAND $<TARGET_FILE:cel_cpp::embed>
+            --in=${CEL_CPP_EMPTY_DESCRIPTOR_SET_PATH}
+            --out=${CEL_CPP_EMPTY_DESCRIPTOR_SET_EMBED_PATH}
+    DEPENDS ${CEL_CPP_EMPTY_DESCRIPTOR_SET_PATH}
+            cel_cpp::embed
+    COMMENT "Embedding empty descriptor set"
+    VERBATIM
+)
+add_custom_target(cel_cpp_empty_descriptor_set_gen DEPENDS ${CEL_CPP_EMPTY_DESCRIPTOR_SET_EMBED_PATH})
+add_library(cel_cpp_empty_descriptor_set INTERFACE)
+add_dependencies(cel_cpp_empty_descriptor_set cel_cpp_empty_descriptor_set_gen)
+target_include_directories(cel_cpp_empty_descriptor_set INTERFACE
+    $<BUILD_INTERFACE:${CEL_CPP_EMPTY_DESCRIPTOR_SET_GEN_DIR}>
+)
+add_library(cel_cpp::empty_descriptor_set ALIAS cel_cpp_empty_descriptor_set)
+
 # Generate embedded descriptor set
 set(CEL_CPP_MINIMAL_DESCRIPTOR_SET_PATH ${CMAKE_CURRENT_BINARY_DIR}/minimal_descriptor_set.pb)
 set(CEL_CPP_MINIMAL_DESCRIPTOR_SET_PROTO
@@ -117,6 +183,7 @@ file(GLOB CEL_CPP_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     checker/*.cc
     checker/internal/*.cc
     common/*.cc
+    common/ast/*.cc
     common/internal/*.cc
     common/types/*.cc
     common/values/*.cc
@@ -159,6 +226,7 @@ list(REMOVE_ITEM CEL_CPP_CORE_SOURCES ${CEL_CPP_TESTING_SOURCES})
 set(CEL_CPP_TEST_SOURCES ${CEL_CPP_CORE_SOURCES})
 list(FILTER CEL_CPP_TEST_SOURCES INCLUDE REGEX ".*_test\\.cc$")
 list(FILTER CEL_CPP_CORE_SOURCES EXCLUDE REGEX ".*_test\\.cc$")
+list(FILTER CEL_CPP_CORE_SOURCES EXCLUDE REGEX ".*_benchmarks\\.cc$")
 
 # Remove some tests that don't seem to work right.
 list(REMOVE_ITEM CEL_CPP_TEST_SOURCES
@@ -208,8 +276,10 @@ list(REMOVE_ITEM CEL_CPP_TEST_SOURCES
 add_library(cel_cpp STATIC ${CEL_CPP_CORE_SOURCES} ${CEL_CPP_MINIMAL_DESCRIPTOR_SET_EMBED_PATH})
 target_link_libraries(cel_cpp PUBLIC
     cel_cpp::parser
+    cel_cpp::empty_descriptor_set
     cel_cpp::minimal_descriptor_set
     cel_cpp::googleapis_proto
+    cel_cpp::spec_proto
     absl::base
     protobuf::libprotobuf
     re2::re2
@@ -223,37 +293,6 @@ add_library(cel_cpp::cel_cpp ALIAS cel_cpp)
 
 if(CEL_CPP_ENABLE_TESTS)
     enable_testing()
-
-    # Generate C++ code for cel spec protos
-    set(CEL_SPEC_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/proto_cc_cel_spec)
-    file(MAKE_DIRECTORY ${CEL_SPEC_PROTO_GEN_DIR}/proto)
-    set(CEL_SPEC_PROTO
-        test/v1/proto2/test_all_types.proto
-        test/v1/proto3/test_all_types.proto
-        cel/expr/checked.proto
-        cel/expr/eval.proto
-        cel/expr/explain.proto
-        cel/expr/syntax.proto
-        cel/expr/value.proto
-    )
-    set(CEL_SPEC_PROTO_DIR ${cel_spec_SOURCE_DIR}/proto)
-    list(TRANSFORM CEL_SPEC_PROTO PREPEND ${CEL_SPEC_PROTO_DIR}/)
-    add_library(cel_cpp_spec_proto OBJECT ${CEL_SPEC_PROTO})
-    target_include_directories(cel_cpp_spec_proto
-        PUBLIC ${CEL_SPEC_PROTO_GEN_DIR}
-        PRIVATE ${CEL_SPEC_PROTO_GEN_DIR}/proto
-    )
-    target_link_libraries(cel_cpp_spec_proto PUBLIC protobuf::libprotobuf cel_cpp::googleapis_proto)
-    protobuf_generate(
-        TARGET cel_cpp_spec_proto
-        LANGUAGE cpp
-        PROTOC_OUT_DIR ${CEL_SPEC_PROTO_GEN_DIR}/proto
-        IMPORT_DIRS ${CEL_SPEC_PROTO_DIR}
-                    ${PROTOBUF_IMPORT_PATH}
-                    ${CEL_CPP_GOOGLEAPIS_PROTO_DIR}
-        DEPENDENCIES cel_cpp::googleapis_proto
-    )
-    add_library(cel_cpp::spec_proto ALIAS cel_cpp_spec_proto)
 
     # Generate C++ code for cel-cpp test protos
     set(CEL_CPP_TEST_PROTO_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/proto_cc_cel_cpp_test)

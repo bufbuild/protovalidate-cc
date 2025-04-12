@@ -45,7 +45,7 @@ TEST(ValidatorTest, ParseAndEval) {
   std::string input = "1 + 2";
   auto pexpr_or = cel::parser::Parse(input);
   EXPECT_TRUE(pexpr_or.ok());
-  cel::v1alpha1::ParsedExpr pexpr = std::move(pexpr_or).value();
+  ::cel::expr::ParsedExpr pexpr = std::move(pexpr_or).value();
   cel::runtime::Activation activation;
 
   cel::runtime::InterpreterOptions options;
