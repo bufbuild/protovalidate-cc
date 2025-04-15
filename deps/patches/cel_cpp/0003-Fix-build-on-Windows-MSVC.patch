@@ -1,17 +1,24 @@
-From c7701d744a3d46b078b92f51c76265de30b5a3ed Mon Sep 17 00:00:00 2001
+From 3380da56bd9f9a997f093bfb8100d9d026106805 Mon Sep 17 00:00:00 2001
 From: John Chadwick <jchadwick@buf.build>
 Date: Fri, 21 Mar 2025 20:16:07 -0400
 Subject: [PATCH 3/3] Fix build on Windows/MSVC
 
 Some fixes+hacks+workarounds for build issues on MSVC.
 ---
- bazel/cel_cc_embed.cc         | 2 +-
- common/types/list_type.cc     | 2 +-
- common/types/map_type.cc      | 4 ++--
- common/types/optional_type.cc | 2 +-
- internal/json.cc              | 5 +++++
- internal/well_known_types.cc  | 5 +++++
- 6 files changed, 15 insertions(+), 5 deletions(-)
+ bazel/cel_cc_embed.cc                 |  2 +-
+ common/internal/byte_string.cc        |  2 +-
+ common/internal/byte_string.h         | 32 ++++++++++++++-------------
+ common/types/list_type.cc             |  2 +-
+ common/types/map_type.cc              |  4 ++--
+ common/types/optional_type.cc         |  2 +-
+ common/values/optional_value.cc       | 18 +++++++--------
+ common/values/struct_value_builder.cc |  7 ++++--
+ extensions/lists_functions.cc         |  5 +++++
+ internal/json.cc                      |  5 +++++
+ internal/time.cc                      | 14 ++++++++++++
+ internal/time.h                       | 20 ++++++++---------
+ internal/well_known_types.cc          |  5 +++++
+ 13 files changed, 75 insertions(+), 43 deletions(-)
 
 diff --git a/bazel/cel_cc_embed.cc b/bazel/cel_cc_embed.cc
 index a9f0aec2..80515457 100644
@@ -26,6 +33,110 @@ index a9f0aec2..80515457 100644
    ABSL_CHECK(file.is_open()) << path;
    file.seekg(0, file.end);
    ABSL_CHECK(file.good());
+diff --git a/common/internal/byte_string.cc b/common/internal/byte_string.cc
+index e01c797f..07cacc3c 100644
+--- a/common/internal/byte_string.cc
++++ b/common/internal/byte_string.cc
+@@ -97,7 +97,7 @@ ByteString ByteString::Concat(const ByteString& lhs, const ByteString& rhs,
+     result.rep_.medium.size = result_size;
+     result.rep_.medium.owner =
+         reinterpret_cast<uintptr_t>(arena) | kMetadataOwnerArenaBit;
+-    result.rep_.medium.kind = ByteStringKind::kMedium;
++    result.rep_.medium.kind = static_cast<size_t>(ByteStringKind::kMedium);
+   }
+   return result;
+ }
+diff --git a/common/internal/byte_string.h b/common/internal/byte_string.h
+index 4a659fdb..6d603876 100644
+--- a/common/internal/byte_string.h
++++ b/common/internal/byte_string.h
+@@ -78,17 +78,17 @@ inline std::ostream& operator<<(std::ostream& out, ByteStringKind kind) {
+ // Representation of small strings in ByteString, which are stored in place.
+ struct CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI SmallByteStringRep final {
+ #ifdef _MSC_VER
+-#pragma push(pack, 1)
++#pragma pack(push, 1)
+ #endif
+   struct ABSL_ATTRIBUTE_PACKED CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI {
+-    ByteStringKind kind : 2;
+-    size_t size : 6;
++    std::uint8_t kind : 2;
++    std::uint8_t size : 6;
+   };
++  char data[23 - sizeof(absl::Nullable<google::protobuf::Arena*>)];
++  absl::Nullable<google::protobuf::Arena*> arena;
+ #ifdef _MSC_VER
+-#pragma pop(pack)
++#pragma pack(pop)
+ #endif
+-  char data[23 - sizeof(google::protobuf::Arena*)];
+-  absl::Nullable<google::protobuf::Arena*> arena;
+ };
+ 
+ inline constexpr size_t kSmallByteStringCapacity =
+@@ -107,14 +107,14 @@ inline constexpr size_t kByteStringViewMaxSize =
+ // the same semantics as `cel::Owner`.
+ struct CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI MediumByteStringRep final {
+ #ifdef _MSC_VER
+-#pragma push(pack, 1)
++#pragma pack(push, 1)
+ #endif
+   struct ABSL_ATTRIBUTE_PACKED CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI {
+-    ByteStringKind kind : 2;
++    size_t kind : 2;
+     size_t size : kMediumByteStringSizeBits;
+   };
+ #ifdef _MSC_VER
+-#pragma pop(pack)
++#pragma pack(pop)
+ #endif
+   const char* data;
+   uintptr_t owner;
+@@ -124,14 +124,14 @@ struct CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI MediumByteStringRep final {
+ // `absl::Cord` and never owned by an arena.
+ struct CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI LargeByteStringRep final {
+ #ifdef _MSC_VER
+-#pragma push(pack, 1)
++#pragma pack(push, 1)
+ #endif
+   struct ABSL_ATTRIBUTE_PACKED CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI {
+-    ByteStringKind kind : 2;
++    size_t kind : 2;
+     size_t padding : kMediumByteStringSizeBits;
+   };
+ #ifdef _MSC_VER
+-#pragma pop(pack)
++#pragma pack(pop)
+ #endif
+   alignas(absl::Cord) std::byte data[sizeof(absl::Cord)];
+ };
+@@ -139,13 +139,13 @@ struct CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI LargeByteStringRep final {
+ // Representation of ByteString.
+ union CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI ByteStringRep final {
+ #ifdef _MSC_VER
+-#pragma push(pack, 1)
++#pragma pack(push, 1)
+ #endif
+   struct ABSL_ATTRIBUTE_PACKED CEL_COMMON_INTERNAL_BYTE_STRING_TRIVIAL_ABI {
+     ByteStringKind kind : 2;
+   } header;
+ #ifdef _MSC_VER
+-#pragma pop(pack)
++#pragma pack(pop)
+ #endif
+   SmallByteStringRep small;
+   MediumByteStringRep medium;
+@@ -350,7 +350,9 @@ ByteString final {
+   ByteString(absl::Nonnull<const ReferenceCount*> refcount,
+              absl::string_view string);
+ 
+-  constexpr ByteStringKind GetKind() const { return rep_.header.kind; }
++  constexpr ByteStringKind GetKind() const {
++    return rep_.header.kind;
++  }
+ 
+   absl::string_view GetSmall() const {
+     ABSL_DCHECK_EQ(GetKind(), ByteStringKind::kSmall);
 diff --git a/common/types/list_type.cc b/common/types/list_type.cc
 index 41a6f2f1..f4dba5e5 100644
 --- a/common/types/list_type.cc
@@ -70,6 +181,132 @@ index a37300bb..3ec51ed8 100644
      .optional =
          {
              .name = OptionalType::kName,
+diff --git a/common/values/optional_value.cc b/common/values/optional_value.cc
+index 729a4e7d..8a3e16df 100644
+--- a/common/values/optional_value.cc
++++ b/common/values/optional_value.cc
+@@ -122,7 +122,7 @@ absl::Status OptionalValueEqual(
+   return absl::OkStatus();
+ }
+ 
+-ABSL_CONST_INIT const OptionalValueDispatcher
++const OptionalValueDispatcher
+     empty_optional_value_dispatcher = {
+         {
+             .get_type_id = &OptionalValueGetTypeId,
+@@ -149,7 +149,7 @@ ABSL_CONST_INIT const OptionalValueDispatcher
+         },
+ };
+ 
+-ABSL_CONST_INIT const OptionalValueDispatcher null_optional_value_dispatcher = {
++const OptionalValueDispatcher null_optional_value_dispatcher = {
+     {
+         .get_type_id = &OptionalValueGetTypeId,
+         .get_arena = [](absl::Nonnull<const OpaqueValueDispatcher*>,
+@@ -171,7 +171,7 @@ ABSL_CONST_INIT const OptionalValueDispatcher null_optional_value_dispatcher = {
+        absl::Nonnull<cel::Value*> result) -> void { *result = NullValue(); },
+ };
+ 
+-ABSL_CONST_INIT const OptionalValueDispatcher bool_optional_value_dispatcher = {
++const OptionalValueDispatcher bool_optional_value_dispatcher = {
+     {
+         .get_type_id = &OptionalValueGetTypeId,
+         .get_arena = [](absl::Nonnull<const OpaqueValueDispatcher*>,
+@@ -195,7 +195,7 @@ ABSL_CONST_INIT const OptionalValueDispatcher bool_optional_value_dispatcher = {
+     },
+ };
+ 
+-ABSL_CONST_INIT const OptionalValueDispatcher int_optional_value_dispatcher = {
++const OptionalValueDispatcher int_optional_value_dispatcher = {
+     {
+         .get_type_id = &OptionalValueGetTypeId,
+         .get_arena = [](absl::Nonnull<const OpaqueValueDispatcher*>,
+@@ -219,7 +219,7 @@ ABSL_CONST_INIT const OptionalValueDispatcher int_optional_value_dispatcher = {
+     },
+ };
+ 
+-ABSL_CONST_INIT const OptionalValueDispatcher uint_optional_value_dispatcher = {
++const OptionalValueDispatcher uint_optional_value_dispatcher = {
+     {
+         .get_type_id = &OptionalValueGetTypeId,
+         .get_arena = [](absl::Nonnull<const OpaqueValueDispatcher*>,
+@@ -243,7 +243,7 @@ ABSL_CONST_INIT const OptionalValueDispatcher uint_optional_value_dispatcher = {
+     },
+ };
+ 
+-ABSL_CONST_INIT const OptionalValueDispatcher
++const OptionalValueDispatcher
+     double_optional_value_dispatcher = {
+         {
+             .get_type_id = &OptionalValueGetTypeId,
+@@ -268,7 +268,7 @@ ABSL_CONST_INIT const OptionalValueDispatcher
+         },
+ };
+ 
+-ABSL_CONST_INIT const OptionalValueDispatcher
++const OptionalValueDispatcher
+     duration_optional_value_dispatcher = {
+         {
+             .get_type_id = &OptionalValueGetTypeId,
+@@ -293,7 +293,7 @@ ABSL_CONST_INIT const OptionalValueDispatcher
+         },
+ };
+ 
+-ABSL_CONST_INIT const OptionalValueDispatcher
++const OptionalValueDispatcher
+     timestamp_optional_value_dispatcher = {
+         {
+             .get_type_id = &OptionalValueGetTypeId,
+@@ -323,7 +323,7 @@ struct OptionalValueContent {
+   absl::Nonnull<google::protobuf::Arena*> arena;
+ };
+ 
+-ABSL_CONST_INIT const OptionalValueDispatcher optional_value_dispatcher = {
++const OptionalValueDispatcher optional_value_dispatcher = {
+     {
+         .get_type_id = &OptionalValueGetTypeId,
+         .get_arena =
+diff --git a/common/values/struct_value_builder.cc b/common/values/struct_value_builder.cc
+index 9f536973..5d1b05a5 100644
+--- a/common/values/struct_value_builder.cc
++++ b/common/values/struct_value_builder.cc
+@@ -931,7 +931,7 @@ class MessageValueBuilderImpl {
+     reflection_->ClearField(message_, field);
+     const auto* map_value_field = field->message_type()->map_value();
+     absl::optional<ErrorValue> error_value;
+-    CEL_RETURN_IF_ERROR(map_value->ForEach(
++    auto status = map_value->ForEach(
+         [this, field, key_converter, map_value_field, value_converter,
+          &error_value](const Value& entry_key,
+                        const Value& entry_value) -> absl::StatusOr<bool> {
+@@ -956,7 +956,10 @@ class MessageValueBuilderImpl {
+           }
+           return true;
+         },
+-        descriptor_pool_, message_factory_, arena_));
++        descriptor_pool_, message_factory_, arena_);
++    if (!status.ok()) {
++      return status;
++    }
+     return error_value;
+   }
+ 
+diff --git a/extensions/lists_functions.cc b/extensions/lists_functions.cc
+index 1877ccdf..80239a60 100644
+--- a/extensions/lists_functions.cc
++++ b/extensions/lists_functions.cc
+@@ -45,6 +45,11 @@
+ #include "google/protobuf/descriptor.h"
+ #include "google/protobuf/message.h"
+ 
++#if defined(_MSC_VER)
++#include <BaseTsd.h>
++typedef SSIZE_T ssize_t;
++#endif
++
+ namespace cel::extensions {
+ namespace {
+ 
 diff --git a/internal/json.cc b/internal/json.cc
 index bd261ac0..17fc4809 100644
 --- a/internal/json.cc
@@ -86,6 +323,90 @@ index bd261ac0..17fc4809 100644
  namespace cel::internal {
  
  namespace {
+diff --git a/internal/time.cc b/internal/time.cc
+index fb48dd16..03a32d0b 100644
+--- a/internal/time.cc
++++ b/internal/time.cc
+@@ -24,9 +24,23 @@
+ #include "absl/strings/string_view.h"
+ #include "absl/time/time.h"
+ #include "internal/status_macros.h"
++#include "google/protobuf/util/time_util.h"
+ 
+ namespace cel::internal {
+ 
++const absl::Duration kMaxDuration =
++    absl::Seconds(google::protobuf::util::TimeUtil::kDurationMaxSeconds) +
++    absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMaxNanoseconds);
++const absl::Duration kMinDuration =
++    absl::Seconds(google::protobuf::util::TimeUtil::kDurationMinSeconds) +
++    absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMinNanoseconds);
++const absl::Time kMaxTimestamp = absl::UnixEpoch() +
++    absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMaxSeconds) +
++    absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMaxNanoseconds);
++const absl::Time kMinTimestamp = absl::UnixEpoch() +
++    absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMinSeconds) +
++    absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMinNanoseconds);
++
+ namespace {
+ 
+ std::string RawFormatTimestamp(absl::Time timestamp) {
+diff --git a/internal/time.h b/internal/time.h
+index 9d4b58e7..f469caa9 100644
+--- a/internal/time.h
++++ b/internal/time.h
+@@ -21,10 +21,14 @@
+ #include "absl/status/statusor.h"
+ #include "absl/strings/string_view.h"
+ #include "absl/time/time.h"
+-#include "google/protobuf/util/time_util.h"
+ 
+ namespace cel::internal {
+ 
++extern const absl::Duration kMaxDuration;
++extern const absl::Duration kMinDuration;
++extern const absl::Time kMaxTimestamp;
++extern const absl::Time kMinTimestamp;
++
+     inline absl::Duration
+     MaxDuration() {
+   // This currently supports a larger range then the current CEL spec. The
+@@ -32,8 +36,7 @@ namespace cel::internal {
+   // google.protobuf.Duration from protocol buffer messages, which this
+   // implementation currently supports.
+   // TODO: revisit
+-  return absl::Seconds(google::protobuf::util::TimeUtil::kDurationMaxSeconds) +
+-         absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMaxNanoseconds);
++  return kMaxDuration;
+ }
+ 
+     inline absl::Duration
+@@ -43,22 +46,17 @@ namespace cel::internal {
+   // google.protobuf.Duration from protocol buffer messages, which this
+   // implementation currently supports.
+   // TODO: revisit
+-  return absl::Seconds(google::protobuf::util::TimeUtil::kDurationMinSeconds) +
+-         absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMinNanoseconds);
++  return kMinDuration;
+ }
+ 
+     inline absl::Time
+     MaxTimestamp() {
+-  return absl::UnixEpoch() +
+-         absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMaxSeconds) +
+-         absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMaxNanoseconds);
++  return kMaxTimestamp;
+ }
+ 
+     inline absl::Time
+     MinTimestamp() {
+-  return absl::UnixEpoch() +
+-         absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMinSeconds) +
+-         absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMinNanoseconds);
++  return kMinTimestamp;
+ }
+ 
+ absl::Status ValidateDuration(absl::Duration duration);
 diff --git a/internal/well_known_types.cc b/internal/well_known_types.cc
 index 6626172e..97b6b4ee 100644
 --- a/internal/well_known_types.cc
