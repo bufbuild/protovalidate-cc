@@ -1,4 +1,4 @@
-From 3380da56bd9f9a997f093bfb8100d9d026106805 Mon Sep 17 00:00:00 2001
+From bc1f0c3182be2157c957d4a13ff74a950a466b80 Mon Sep 17 00:00:00 2001
 From: John Chadwick <jchadwick@buf.build>
 Date: Fri, 21 Mar 2025 20:16:07 -0400
 Subject: [PATCH 3/3] Fix build on Windows/MSVC
@@ -7,18 +7,18 @@ Some fixes+hacks+workarounds for build issues on MSVC.
 ---
  bazel/cel_cc_embed.cc                 |  2 +-
  common/internal/byte_string.cc        |  2 +-
- common/internal/byte_string.h         | 32 ++++++++++++++-------------
+ common/internal/byte_string.h         | 32 +++++++++++----------
  common/types/list_type.cc             |  2 +-
- common/types/map_type.cc              |  4 ++--
+ common/types/map_type.cc              |  4 +--
  common/types/optional_type.cc         |  2 +-
- common/values/optional_value.cc       | 18 +++++++--------
- common/values/struct_value_builder.cc |  7 ++++--
- extensions/lists_functions.cc         |  5 +++++
- internal/json.cc                      |  5 +++++
- internal/time.cc                      | 14 ++++++++++++
- internal/time.h                       | 20 ++++++++---------
- internal/well_known_types.cc          |  5 +++++
- 13 files changed, 75 insertions(+), 43 deletions(-)
+ common/values/optional_value.cc       | 18 ++++++------
+ common/values/struct_value_builder.cc |  7 +++--
+ extensions/lists_functions.cc         |  5 ++++
+ internal/json.cc                      |  5 ++++
+ internal/time.cc                      | 28 +++++++++++++++++++
+ internal/time.h                       | 40 +++------------------------
+ internal/well_known_types.cc          |  5 ++++
+ 13 files changed, 84 insertions(+), 68 deletions(-)
 
 diff --git a/bazel/cel_cc_embed.cc b/bazel/cel_cc_embed.cc
 index a9f0aec2..80515457 100644
@@ -324,10 +324,10 @@ index bd261ac0..17fc4809 100644
  
  namespace {
 diff --git a/internal/time.cc b/internal/time.cc
-index fb48dd16..03a32d0b 100644
+index fb48dd16..1688e343 100644
 --- a/internal/time.cc
 +++ b/internal/time.cc
-@@ -24,9 +24,23 @@
+@@ -24,6 +24,7 @@
  #include "absl/strings/string_view.h"
  #include "absl/time/time.h"
  #include "internal/status_macros.h"
@@ -335,27 +335,45 @@ index fb48dd16..03a32d0b 100644
  
  namespace cel::internal {
  
-+const absl::Duration kMaxDuration =
-+    absl::Seconds(google::protobuf::util::TimeUtil::kDurationMaxSeconds) +
-+    absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMaxNanoseconds);
-+const absl::Duration kMinDuration =
-+    absl::Seconds(google::protobuf::util::TimeUtil::kDurationMinSeconds) +
-+    absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMinNanoseconds);
-+const absl::Time kMaxTimestamp = absl::UnixEpoch() +
-+    absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMaxSeconds) +
-+    absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMaxNanoseconds);
-+const absl::Time kMinTimestamp = absl::UnixEpoch() +
-+    absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMinSeconds) +
-+    absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMinNanoseconds);
-+
- namespace {
+@@ -36,6 +37,33 @@ std::string RawFormatTimestamp(absl::Time timestamp) {
  
- std::string RawFormatTimestamp(absl::Time timestamp) {
+ }  // namespace
+ 
++absl::Duration MaxDuration() {
++  // This currently supports a larger range then the current CEL spec. The
++  // intent is to widen the CEL spec to support the larger range and match
++  // google.protobuf.Duration from protocol buffer messages, which this
++  // implementation currently supports.
++  // TODO: revisit
++  return absl::Seconds(google::protobuf::util::TimeUtil::kDurationMaxSeconds) +
++      absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMaxNanoseconds);
++}
++absl::Duration MinDuration() {
++  // This currently supports a larger range then the current CEL spec. The
++  // intent is to widen the CEL spec to support the larger range and match
++  // google.protobuf.Duration from protocol buffer messages, which this
++  // implementation currently supports.
++  // TODO: revisit
++  return absl::Seconds(google::protobuf::util::TimeUtil::kDurationMinSeconds) +
++      absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMinNanoseconds);
++}
++absl::Time MaxTimestamp() {
++  return absl::UnixEpoch() + absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMaxSeconds) +
++      absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMaxNanoseconds);
++}
++absl::Time MinTimestamp() {
++  return absl::UnixEpoch() + absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMinSeconds) +
++      absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMinNanoseconds);
++}
++
+ absl::Status ValidateDuration(absl::Duration duration) {
+   if (duration < MinDuration()) {
+     return absl::InvalidArgumentError(
 diff --git a/internal/time.h b/internal/time.h
-index 9d4b58e7..f469caa9 100644
+index 9d4b58e7..be131712 100644
 --- a/internal/time.h
 +++ b/internal/time.h
-@@ -21,10 +21,14 @@
+@@ -21,45 +21,13 @@
  #include "absl/status/statusor.h"
  #include "absl/strings/string_view.h"
  #include "absl/time/time.h"
@@ -363,50 +381,48 @@ index 9d4b58e7..f469caa9 100644
  
  namespace cel::internal {
  
-+extern const absl::Duration kMaxDuration;
-+extern const absl::Duration kMinDuration;
-+extern const absl::Time kMaxTimestamp;
-+extern const absl::Time kMinTimestamp;
-+
-     inline absl::Duration
-     MaxDuration() {
-   // This currently supports a larger range then the current CEL spec. The
-@@ -32,8 +36,7 @@ namespace cel::internal {
-   // google.protobuf.Duration from protocol buffer messages, which this
-   // implementation currently supports.
-   // TODO: revisit
+-    inline absl::Duration
+-    MaxDuration() {
+-  // This currently supports a larger range then the current CEL spec. The
+-  // intent is to widen the CEL spec to support the larger range and match
+-  // google.protobuf.Duration from protocol buffer messages, which this
+-  // implementation currently supports.
+-  // TODO: revisit
 -  return absl::Seconds(google::protobuf::util::TimeUtil::kDurationMaxSeconds) +
 -         absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMaxNanoseconds);
-+  return kMaxDuration;
- }
- 
-     inline absl::Duration
-@@ -43,22 +46,17 @@ namespace cel::internal {
-   // google.protobuf.Duration from protocol buffer messages, which this
-   // implementation currently supports.
-   // TODO: revisit
+-}
+-
+-    inline absl::Duration
+-    MinDuration() {
+-  // This currently supports a larger range then the current CEL spec. The
+-  // intent is to widen the CEL spec to support the larger range and match
+-  // google.protobuf.Duration from protocol buffer messages, which this
+-  // implementation currently supports.
+-  // TODO: revisit
 -  return absl::Seconds(google::protobuf::util::TimeUtil::kDurationMinSeconds) +
 -         absl::Nanoseconds(google::protobuf::util::TimeUtil::kDurationMinNanoseconds);
-+  return kMinDuration;
- }
- 
-     inline absl::Time
-     MaxTimestamp() {
+-}
+-
+-    inline absl::Time
+-    MaxTimestamp() {
 -  return absl::UnixEpoch() +
 -         absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMaxSeconds) +
 -         absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMaxNanoseconds);
-+  return kMaxTimestamp;
- }
- 
-     inline absl::Time
-     MinTimestamp() {
+-}
+-
+-    inline absl::Time
+-    MinTimestamp() {
 -  return absl::UnixEpoch() +
 -         absl::Seconds(google::protobuf::util::TimeUtil::kTimestampMinSeconds) +
 -         absl::Nanoseconds(google::protobuf::util::TimeUtil::kTimestampMinNanoseconds);
-+  return kMinTimestamp;
- }
+-}
++absl::Duration MaxDuration();
++absl::Duration MinDuration();
++absl::Time MaxTimestamp();
++absl::Time MinTimestamp();
  
  absl::Status ValidateDuration(absl::Duration duration);
+ 
 diff --git a/internal/well_known_types.cc b/internal/well_known_types.cc
 index 6626172e..97b6b4ee 100644
 --- a/internal/well_known_types.cc
