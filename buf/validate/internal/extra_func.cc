@@ -139,7 +139,7 @@ cel::CelValue endsWith(
 }
 
 bool IsHostname(std::string_view toValidate) {
-  if (toValidate.length() > 253) {
+  if (toValidate.empty() || toValidate.length() > 253) {
     return false;
   }
   toValidate = absl::StripSuffix(toValidate, ".");

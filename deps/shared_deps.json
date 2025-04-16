@@ -26,10 +26,10 @@
   },
   "cel_cpp": {
     "meta": {
-      "version": "0.10.0"
+      "version": "0.11.0"
     },
     "source": {
-      "sha256": "dd06b708a9f4c3728e76037ec9fb14fc9f6d9c9980e5d5f3a1d047f3855a8b98",
+      "sha256": "777f6780a3cc72264c3cc3279cc92affbaefb2bdc01aaff88463cca5b6167e1d",
       "strip_prefix": "cel-cpp-{version}",
       "urls": [
         "https://github.com/google/cel-cpp/archive/v{version}.tar.gz"

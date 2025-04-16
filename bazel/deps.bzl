@@ -61,10 +61,10 @@ _dependencies = {
         name="protobuf",
     ),
     "rules_proto": dict(
-        sha256="dc3fb206a2cb3441b485eb1e423165b231235a1ea9b031b4433cf7bc1fa460dd",
-        strip_prefix="rules_proto-5.3.0-21.7",
+        sha256="14a225870ab4e91869652cfd69ef2028277fc1dc4910d65d353b62d6e0ae21f4",
+        strip_prefix="rules_proto-7.1.0",
         urls=[
-            "https://github.com/bazelbuild/rules_proto/archive/refs/tags/5.3.0-21.7.tar.gz",
+            "https://github.com/bazelbuild/rules_proto/releases/download/7.1.0/rules_proto-7.1.0.tar.gz",
         ],
     ),
     "rules_buf": dict(
@@ -74,12 +74,35 @@ _dependencies = {
             "https://github.com/bufbuild/rules_buf/archive/refs/tags/v0.1.1.zip",
         ],
     ),
+    # cel-cpp v0.11.0 doesn't build correctly in WORKSPACE mode, this is a quick
+    # workaround.
+    "antlr4-cpp-runtime": dict(
+        build_file_content="""
+package(default_visibility = ["//visibility:public"])
+cc_library(
+    name = "antlr4-cpp-runtime",
+    srcs = glob(["runtime/Cpp/runtime/src/**/*.cpp"]),
+    hdrs = glob(["runtime/Cpp/runtime/src/**/*.h"]),
+    defines = ["ANTLR4CPP_USING_ABSEIL"],
+    includes = ["runtime/Cpp/runtime/src"],
+    deps = [
+        "@com_google_absl//absl/base",
+        "@com_google_absl//absl/base:core_headers",
+        "@com_google_absl//absl/container:flat_hash_map",
+        "@com_google_absl//absl/container:flat_hash_set",
+        "@com_google_absl//absl/synchronization",
+    ],
+)
+        """,
+        sha256="42d1268524a9c972f5ca1ad1633372ea02a812ff66c1e992925edea5e5cf9c81",
+        strip_prefix="antlr4-4.13.2",
+        urls=["https://github.com/antlr/antlr4/archive/refs/tags/4.13.2.zip"],
+    ),
     "com_google_cel_cpp": shared_dep(
         name="cel_cpp",
         patches=[
             "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0001-Allow-message-field-access-using-index-operator.patch",
             "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0002-Add-missing-include-for-absl-StrCat.patch",
-            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0003-Remove-unnecessary-dependency-on-cel_proto_wrap_util.patch",
         ],
         patch_args=["-p1"],
     ),

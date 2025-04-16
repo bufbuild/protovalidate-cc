@@ -96,8 +96,8 @@ absl::Status CelConstraintRules::Add(
   if (!pexpr_or.ok()) {
     return pexpr_or.status();
   }
-  cel::v1alpha1::ParsedExpr pexpr = std::move(pexpr_or).value();
-  auto expr_or = builder.CreateExpression(pexpr.mutable_expr(), pexpr.mutable_source_info());
+  ::cel::expr::ParsedExpr pexpr = std::move(pexpr_or).value();
+  auto expr_or = builder.CreateExpression(&pexpr.expr(), &pexpr.source_info());
   if (!expr_or.ok()) {
     return expr_or.status();
   }

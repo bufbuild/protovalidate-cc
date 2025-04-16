@@ -1,4 +1,4 @@
-From 6c0cc7682a294fe7fb7fe8c3608505bb70221a70 Mon Sep 17 00:00:00 2001
+From dfd27892a34130d62b1f96851288be1b195342d2 Mon Sep 17 00:00:00 2001
 From: John Chadwick <jchadwick@buf.build>
 Date: Wed, 5 Mar 2025 20:34:56 -0500
 Subject: [PATCH 2/3] Add missing #include for absl::StrCat
