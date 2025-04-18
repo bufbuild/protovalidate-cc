@@ -157,10 +157,7 @@ struct UriParser : ParserCommon {
   }
 
   bool consumeHost() {
-    if (str.empty()) {
-      return false;
-    }
-    if (str[0] == '[' && consumeIPLiteral()) {
+    if (!str.empty() && str[0] == '[' && consumeIPLiteral()) {
       return true;
     }
     return consumeRegName();

@@ -221,7 +221,8 @@ INSTANTIATE_TEST_SUITE_P(
         T{"FragmentBadControlCharacter", false, "https://example.com#\x1F"},
         T{"FragmentExhaust",
           true,
-          "https://example.com/#0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~%20!$&'()*+,=;:@?/"}),
+          "https://example.com/#0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-._~%20!$&'()*+,=;:@?/"},
+        T{"HostEmptyRegName", true, "A://"}),
     [](const auto& info) { return info.param.name; });
 
 struct URIReferenceValidateTestCase {
