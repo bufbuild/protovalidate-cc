@@ -207,6 +207,9 @@ bool IsPort(const std::string_view str) {
   if (str.empty()) {
     return false;
   }
+  if (str.length() > 1 && str[0] == '0') {
+    return false;
+  }
   for (auto c : str) {
     if ('0' <= c && c <= '9') {
       continue;

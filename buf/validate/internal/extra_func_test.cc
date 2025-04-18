@@ -53,4 +53,7 @@ TEST(ExtraFuncTest, TestIpPrefix) {
   EXPECT_TRUE(buf::validate::internal::IsIpv6Prefix("2001:db8:ff00:ff00::/57", true));
   EXPECT_TRUE(buf::validate::internal::IsIpv6Prefix("2001:db8:ff00:ff80::/57", true));
   EXPECT_FALSE(buf::validate::internal::IsIpv6Prefix("2001:db8:ff00:ffc0::/57", true));
+  // Additional Tests for IsHostAndPort()
+  EXPECT_FALSE(buf::validate::internal::IsHostAndPort("example.com:00", false));
+  EXPECT_FALSE(buf::validate::internal::IsHostAndPort("example.com:080", false));
 }
