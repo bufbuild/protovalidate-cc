@@ -26,5 +26,6 @@ absl::Status RegisterExtraFuncs(
 bool IsIpv4Prefix(std::string_view toValidate, bool strict);
 bool IsIpv6Prefix(std::string_view toValidate, bool strict);
 bool IsIpPrefix(std::string_view toValidate, bool strict);
+bool IsHostAndPort(std::string_view toValidate, bool portRequired);
 
 } // namespace buf::validate::internal
