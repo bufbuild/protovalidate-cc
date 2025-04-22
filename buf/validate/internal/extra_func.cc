@@ -22,7 +22,6 @@
 #include "buf/validate/internal/lib/ipv4.h"
 #include "buf/validate/internal/lib/ipv6.h"
 #include "buf/validate/internal/lib/uri.h"
-#include "buf/validate/internal/string_format.h"
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
 #include "eval/public/containers/container_backed_map_impl.h"
@@ -230,7 +229,7 @@ bool IsHostAndPort(const std::string_view str, const bool portRequired) {
 
   const auto splitIdx = str.rfind(':');
   if (str.front() == '[') {
-    const auto end = str.find(']');
+    const auto end = str.rfind(']');
     const auto afterEnd = end + 1;
     if (afterEnd == str.size()) { // no port
       const auto host = str.substr(1, end - 1);
@@ -339,19 +338,6 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
 
 absl::Status RegisterExtraFuncs(
     google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena) {
-  auto* formatter = google::protobuf::Arena::Create<StringFormat>(regArena);
-  auto status = cel::FunctionAdapter<cel::CelValue, cel::CelValue::StringHolder, cel::CelValue>::
-      CreateAndRegister(
-          "format",
-          true,
-          [formatter](
-              google::protobuf::Arena* arena,
-              cel::CelValue::StringHolder format,
-              cel::CelValue arg) -> cel::CelValue { return formatter->format(arena, format, arg); },
-          &registry);
-  if (!status.ok()) {
-    return status;
-  }
   auto isNanStatus = cel::FunctionAdapter<cel::CelValue, cel::CelValue>::CreateAndRegister(
       "isNan", true, &isNan, &registry);
   if (!isNanStatus.ok()) {
