@@ -1,4 +1,4 @@
-common --noenable_bzlmod --enable_workspace
+common --enable_bzlmod --noenable_workspace
 
 build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
 build --cxxopt=-fsized-deallocation

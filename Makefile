@@ -32,7 +32,7 @@ clean: ## Delete intermediate build artifacts
 	git clean -Xdf
 
 .PHONY: generate
-generate: generate-license ## Regenerate code and license headers
+generate: generate-bzlmod generate-license ## Regenerate code and license headers
 
 .PHONY: test
 test: generate ## Run all unit tests
@@ -48,6 +48,12 @@ conformance: $(BIN)/protovalidate-conformance
     	github.com/bufbuild/protovalidate/tools/protovalidate-conformance@$(PROTOVALIDATE_VERSION)
 	$(BAZEL) build -c opt //buf/validate/conformance:runner_main && \
 	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main $(ARGS)
+
+.PHONY: generate-bzlmod
+generate-bzlmod: ## Generate MODULE.bazel file from template
+	<MODULE.bazel.tmpl >MODULE.bazel \
+	jq -nrR --argjson json "$$(<./deps/shared_deps.json)" \
+		'inputs | gsub("\\{\\{(?<v>[^}]+)\\}\\}"; .v | split(".") as $$path | reduce $$path[] as $$key ($$json; .[$$key]) | tostring)'
 
 .PHONY: generate-license
 generate-license: $(BIN)/license-header ## Generate license headers for files

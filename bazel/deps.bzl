@@ -103,6 +103,7 @@ cc_library(
         patches=[
             "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0001-Allow-message-field-access-using-index-operator.patch",
             "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0002-Add-missing-include-for-absl-StrCat.patch",
+            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0003-Fix-build-on-Windows-MSVC.patch",
         ],
         patch_args=["-p1"],
     ),

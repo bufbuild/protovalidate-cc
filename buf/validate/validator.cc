@@ -21,7 +21,7 @@ absl::Status Validator::ValidateMessage(
   const auto* constraints_or = factory_->GetMessageConstraints(message.GetDescriptor());
   if (constraints_or == nullptr) {
     return absl::NotFoundError(
-        "constraints not loaded for message: " + message.GetDescriptor()->full_name());
+        absl::StrCat("constraints not loaded for message: ", message.GetDescriptor()->full_name()));
   }
   if (!constraints_or->ok()) {
     return constraints_or->status();
