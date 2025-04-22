@@ -139,6 +139,7 @@ cc_library(
         "@com_google_absl//absl/status",
         "@com_google_cel_cpp//eval/public:cel_function_adapter",
         "@com_google_cel_cpp//eval/public:cel_function_registry",
+        "@com_google_cel_cpp//eval/public/containers:field_access",
         "@com_google_cel_cpp//eval/public/containers:container_backed_map_impl",
         "@com_googlesource_code_re2//:re2",
     ],
