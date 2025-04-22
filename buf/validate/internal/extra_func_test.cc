@@ -56,4 +56,5 @@ TEST(ExtraFuncTest, TestIpPrefix) {
   // Additional Tests for IsHostAndPort()
   EXPECT_FALSE(buf::validate::internal::IsHostAndPort("example.com:00", false));
   EXPECT_FALSE(buf::validate::internal::IsHostAndPort("example.com:080", false));
+  EXPECT_TRUE(buf::validate::internal::IsHostAndPort("[::0%00]]", false));
 }

@@ -22,6 +22,7 @@
 #include "eval/public/containers/field_access.h"
 #include "eval/public/containers/field_backed_list_impl.h"
 #include "eval/public/containers/field_backed_map_impl.h"
+#include "eval/public/string_extension_func_registrar.h"
 #include "eval/public/structs/cel_proto_wrapper.h"
 #include "google/protobuf/dynamic_message.h"
 #include "google/protobuf/util/message_differencer.h"
@@ -102,6 +103,10 @@ NewConstraintBuilder(google::protobuf::Arena* arena) {
   std::unique_ptr<cel::runtime::CelExpressionBuilder> builder =
       cel::runtime::CreateCelExpressionBuilder(options);
   auto register_status = cel::runtime::RegisterBuiltinFunctions(builder->GetRegistry(), options);
+  if (!register_status.ok()) {
+    return register_status;
+  }
+  register_status = cel::runtime::RegisterStringExtensionFunctions(builder->GetRegistry());
   if (!register_status.ok()) {
     return register_status;
   }
