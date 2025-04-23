@@ -1,7 +1,7 @@
-From a4f1a7b520817badd93d60ab0e9b80d0d0d0e7b2 Mon Sep 17 00:00:00 2001
+From cb3a0807e258f86c76ece50a71768056fdff7808 Mon Sep 17 00:00:00 2001
 From: John Chadwick <jchadwick@buf.build>
 Date: Fri, 21 Mar 2025 20:16:07 -0400
-Subject: [PATCH 2/2] Fix build on Windows/MSVC
+Subject: [PATCH] Fix build on Windows/MSVC
 
 Some fixes+hacks+workarounds for build issues on MSVC.
 ---

@@ -101,8 +101,7 @@ cc_library(
     "com_google_cel_cpp": shared_dep(
         name="cel_cpp",
         patches=[
-            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0001-Add-missing-include-for-absl-StrCat.patch",
-            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0002-Fix-build-on-Windows-MSVC.patch",
+            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0001-Fix-build-on-Windows-MSVC.patch",
         ],
         patch_args=["-p1"],
     ),

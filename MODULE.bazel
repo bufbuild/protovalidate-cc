@@ -34,8 +34,7 @@ archive_override(
     module_name = "cel-cpp",
     strip_prefix = "cel-cpp-0.11.0",
     patches=[
-        "@protovalidate-cc//deps:patches/cel_cpp/0001-Add-missing-include-for-absl-StrCat.patch",
-        "@protovalidate-cc//deps:patches/cel_cpp/0002-Fix-build-on-Windows-MSVC.patch",
+        "@protovalidate-cc//deps:patches/cel_cpp/0001-Fix-build-on-Windows-MSVC.patch",
     ],
     patch_args=["-p1"],
     urls = [
