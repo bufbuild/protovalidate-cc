@@ -26,7 +26,7 @@ namespace buf::validate::internal {
 
 // A compiled constraint expression.
 struct CompiledConstraint {
-  buf::validate::Constraint constraint;
+  buf::validate::Rule constraint;
   std::unique_ptr<google::api::expr::runtime::CelExpression> expr;
   const absl::optional<FieldPath> rulePath;
   const google::protobuf::FieldDescriptor* rule;
@@ -41,7 +41,7 @@ class CelConstraintRules : public ConstraintRules {
 
   absl::Status Add(
       google::api::expr::runtime::CelExpressionBuilder& builder,
-      Constraint constraint,
+      Rule constraint,
       absl::optional<FieldPath> rulePath,
       const google::protobuf::FieldDescriptor* rule);
   absl::Status Add(

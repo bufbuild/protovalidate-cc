@@ -26,6 +26,7 @@
 #include "eval/public/cel_value.h"
 #include "eval/public/containers/container_backed_map_impl.h"
 #include "eval/public/containers/field_access.h"
+#include "eval/public/containers/field_backed_list_impl.h"
 #include "google/protobuf/arena.h"
 #include "re2/re2.h"
 
@@ -72,8 +73,14 @@ cel::CelValue getField(
         arena, absl::StatusCode::kInvalidArgument, "no such field");
     return cel::CelValue::CreateError(error);
   }
-  if (cel::CelValue result; cel::CreateValueFromSingleField(message, field, arena, &result).ok()) {
-    return result;
+  if (field->is_repeated()) {
+    return cel::CelValue::CreateList(
+        google::protobuf::Arena::Create<cel::FieldBackedListImpl>(
+            arena, message, field, arena));
+  } else {
+    if (cel::CelValue result; cel::CreateValueFromSingleField(message, field, arena, &result).ok()) {
+      return result;
+    }
   }
   return cel::CelValue::CreateNull();
 }

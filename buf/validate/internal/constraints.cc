@@ -127,8 +127,8 @@ absl::Status MessageConstraintRules::Validate(
 absl::Status FieldConstraintRules::Validate(
     ConstraintContext& ctx, const google::protobuf::Message& message) const {
   static const google::protobuf::FieldDescriptor* requiredField =
-      FieldConstraints::descriptor()->FindFieldByNumber(
-          FieldConstraints::kRequiredFieldNumber);
+      FieldRules::descriptor()->FindFieldByNumber(
+          FieldRules::kRequiredFieldNumber);
   google::api::expr::runtime::Activation activation;
   cel::runtime::CelValue result;
   std::string subPath;
@@ -141,11 +141,11 @@ absl::Status FieldConstraintRules::Validate(
         return absl::OkStatus();
       } else if (required_) {
         Violation violation;
-        *violation.mutable_constraint_id() = "required";
+        *violation.mutable_rule_id() = "required";
         *violation.mutable_message() = "value is required";
         *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field_);
         *violation.mutable_rule()->mutable_elements()->Add() =
-            staticFieldPathElement<FieldConstraints, FieldConstraints::kRequiredFieldNumber>();
+            staticFieldPathElement<FieldRules, FieldRules::kRequiredFieldNumber>();
         ctx.violations.emplace_back(
             std::move(violation),
             ProtoField{&message, field_},
@@ -161,11 +161,11 @@ absl::Status FieldConstraintRules::Validate(
         return absl::OkStatus();
       } else if (required_) {
         Violation violation;
-        *violation.mutable_constraint_id() = "required";
+        *violation.mutable_rule_id() = "required";
         *violation.mutable_message() = "value is required";
         *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field_);
         *violation.mutable_rule()->mutable_elements()->Add() =
-            staticFieldPathElement<FieldConstraints, FieldConstraints::kRequiredFieldNumber>();
+            staticFieldPathElement<FieldRules, FieldRules::kRequiredFieldNumber>();
         ctx.violations.emplace_back(
             std::move(violation),
             ProtoField{&message, field_},
@@ -176,11 +176,11 @@ absl::Status FieldConstraintRules::Validate(
     if (!message.GetReflection()->HasField(message, field_)) {
       if (required_) {
         Violation violation;
-        *violation.mutable_constraint_id() = "required";
+        *violation.mutable_rule_id() = "required";
         *violation.mutable_message() = "value is required";
         *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field_);
         *violation.mutable_rule()->mutable_elements()->Add() =
-            staticFieldPathElement<FieldConstraints, FieldConstraints::kRequiredFieldNumber>();
+            staticFieldPathElement<FieldRules, FieldRules::kRequiredFieldNumber>();
         ctx.violations.emplace_back(
             std::move(violation),
             ProtoField{&message, field_},
@@ -235,11 +235,11 @@ absl::Status EnumConstraintRules::Validate(
     auto value = message.GetReflection()->GetEnumValue(message, field_);
     if (field_->enum_type()->FindValueByNumber(value) == nullptr) {
       Violation violation;
-      *violation.mutable_constraint_id() = "enum.defined_only";
+      *violation.mutable_rule_id() = "enum.defined_only";
       *violation.mutable_message() = "value must be one of the defined enum values";
       *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field_);
       *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(EnumRules::descriptor()->FindFieldByNumber(EnumRules::kDefinedOnlyFieldNumber));
-      *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kEnumFieldNumber));
+      *violation.mutable_rule()->mutable_elements()->Add() = fieldPathElement(FieldRules::descriptor()->FindFieldByNumber(FieldRules::kEnumFieldNumber));
       ctx.violations.emplace_back(
           std::move(violation),
           ProtoField{&message, field_},
@@ -280,7 +280,7 @@ absl::Status RepeatedConstraintRules::Validate(
       ctx.appendFieldPathElement(element, pos);
       ctx.appendRulePathElement({
         fieldPathElement(RepeatedRules::descriptor()->FindFieldByNumber(RepeatedRules::kItemsFieldNumber)),
-        fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kRepeatedFieldNumber)),
+        fieldPathElement(FieldRules::descriptor()->FindFieldByNumber(FieldRules::kRepeatedFieldNumber)),
       }, pos);
       ctx.setFieldValue(ProtoField{&message, field_, i}, pos);
     }
@@ -320,7 +320,7 @@ absl::Status MapConstraintRules::Validate(
         if (ctx.violations.size() > pos) {
           ctx.appendRulePathElement({
             fieldPathElement(MapRules::descriptor()->FindFieldByNumber(MapRules::kKeysFieldNumber)),
-            fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kMapFieldNumber)),
+            fieldPathElement(FieldRules::descriptor()->FindFieldByNumber(FieldRules::kMapFieldNumber)),
           }, pos);
           ctx.setFieldValue(ProtoField{&elemMsg, keyField}, pos);
           ctx.setForKey(pos);
@@ -340,7 +340,7 @@ absl::Status MapConstraintRules::Validate(
         if (ctx.violations.size() > valuePos) {
           ctx.appendRulePathElement({
             fieldPathElement(MapRules::descriptor()->FindFieldByNumber(MapRules::kValuesFieldNumber)),
-            fieldPathElement(FieldConstraints::descriptor()->FindFieldByNumber(FieldConstraints::kMapFieldNumber)),
+            fieldPathElement(FieldRules::descriptor()->FindFieldByNumber(FieldRules::kMapFieldNumber)),
           }, valuePos);
           ctx.setFieldValue(ProtoField{&elemMsg, valueField}, pos);
         }
@@ -389,7 +389,7 @@ absl::Status FieldConstraintRules::ValidateAny(
     }
     if (!found) {
       Violation violation;
-      *violation.mutable_constraint_id() = "any.in";
+      *violation.mutable_rule_id() = "any.in";
       *violation.mutable_message() = "type URL must be in the allow list";
       if (field.index() == -1) {
         *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field.descriptor());
@@ -397,7 +397,7 @@ absl::Status FieldConstraintRules::ValidateAny(
       *violation.mutable_rule()->mutable_elements()->Add() =
           staticFieldPathElement<AnyRules, AnyRules::kInFieldNumber>();
       *violation.mutable_rule()->mutable_elements()->Add() =
-          staticFieldPathElement<FieldConstraints, FieldConstraints::kAnyFieldNumber>();
+          staticFieldPathElement<FieldRules, FieldRules::kAnyFieldNumber>();
       ctx.violations.emplace_back(
           std::move(violation),
           field,
@@ -407,7 +407,7 @@ absl::Status FieldConstraintRules::ValidateAny(
   for (const auto& block : anyRules_->not_in()) {
     if (block == typeUri) {
       Violation violation;
-      *violation.mutable_constraint_id() = "any.not_in";
+      *violation.mutable_rule_id() = "any.not_in";
       *violation.mutable_message() = "type URL must not be in the block list";
       if (field.index() == -1) {
         *violation.mutable_field()->mutable_elements()->Add() = fieldPathElement(field.descriptor());
@@ -415,7 +415,7 @@ absl::Status FieldConstraintRules::ValidateAny(
       *violation.mutable_rule()->mutable_elements()->Add() =
           staticFieldPathElement<AnyRules, AnyRules::kNotInFieldNumber>();
       *violation.mutable_rule()->mutable_elements()->Add() =
-          staticFieldPathElement<FieldConstraints, FieldConstraints::kAnyFieldNumber>();
+          staticFieldPathElement<FieldRules, FieldRules::kAnyFieldNumber>();
       ctx.violations.emplace_back(
           std::move(violation),
           field,
@@ -432,7 +432,7 @@ absl::Status OneofConstraintRules::Validate(
   if (required_) {
     if (!message.GetReflection()->HasOneof(message, oneof_)) {
       Violation violation;
-      *violation.mutable_constraint_id() = "required";
+      *violation.mutable_rule_id() = "required";
       *violation.mutable_message() = "exactly one field is required in oneof";
       *violation.mutable_field()->mutable_elements()->Add() = oneofPathElement(*oneof_);
       ctx.violations.emplace_back(std::move(violation), absl::nullopt, absl::nullopt);

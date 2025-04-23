@@ -38,7 +38,7 @@ class FieldConstraintRules : public CelConstraintRules {
  public:
   FieldConstraintRules(
       const google::protobuf::FieldDescriptor* desc,
-      const FieldConstraints& field,
+      const FieldRules& field,
       const AnyRules* anyRules = nullptr)
       : fieldConstraints_(field),
         field_(desc),
@@ -66,7 +66,7 @@ class FieldConstraintRules : public CelConstraintRules {
   [[nodiscard]] bool getIgnoreDefault() const { return ignoreDefault_; }
 
  protected:
-  const FieldConstraints& fieldConstraints_;
+  const FieldRules& fieldConstraints_;
   const google::protobuf::FieldDescriptor* field_ = nullptr;
   bool mapEntryField_ = false;
   bool ignoreEmpty_ = false;
@@ -79,7 +79,7 @@ class EnumConstraintRules : public FieldConstraintRules {
   using Base = FieldConstraintRules;
 
  public:
-  EnumConstraintRules(const google::protobuf::FieldDescriptor* desc, const FieldConstraints& field)
+  EnumConstraintRules(const google::protobuf::FieldDescriptor* desc, const FieldRules& field)
       : Base(desc, field), definedOnly_(field.enum_().defined_only()) {}
 
   absl::Status Validate(
@@ -95,7 +95,7 @@ class RepeatedConstraintRules : public FieldConstraintRules {
  public:
   RepeatedConstraintRules(
       const google::protobuf::FieldDescriptor* desc,
-      const FieldConstraints& field,
+      const FieldRules& field,
       std::unique_ptr<FieldConstraintRules> itemRules)
       : Base(desc, field), itemRules_(std::move(itemRules)) {}
 
@@ -112,7 +112,7 @@ class MapConstraintRules : public FieldConstraintRules {
  public:
   MapConstraintRules(
       const google::protobuf::FieldDescriptor* desc,
-      const FieldConstraints& field,
+      const FieldRules& field,
       std::unique_ptr<FieldConstraintRules> keyRules,
       std::unique_ptr<FieldConstraintRules> valueRules)
       : Base(desc, field), keyRules_(std::move(keyRules)), valueRules_(std::move(valueRules)) {}
@@ -130,7 +130,7 @@ class OneofConstraintRules : public ConstraintRules {
   using Base = ConstraintRules;
 
  public:
-  OneofConstraintRules(const google::protobuf::OneofDescriptor* desc, const OneofConstraints& oneof)
+  OneofConstraintRules(const google::protobuf::OneofDescriptor* desc, const OneofRules& oneof)
       : oneof_(desc), required_(oneof.required()) {}
 
   absl::Status Validate(
