@@ -44,7 +44,7 @@ class ExpressionTest : public testing::Test {
   google::protobuf::Arena arena_;
 
   absl::Status AddConstraint(std::string expr, std::string message, std::string id) {
-    Constraint constraint;
+    Rule constraint;
     constraint.set_expression(std::move(expr));
     constraint.set_message(std::move(message));
     constraint.set_id(std::move(id));
@@ -77,7 +77,7 @@ TEST_F(ExpressionTest, BoolResult) {
   ASSERT_TRUE(status.ok()) << status;
   ASSERT_EQ(violations.size(), 1);
   EXPECT_EQ(violations[0].proto().message(), "always fails");
-  EXPECT_EQ(violations[0].proto().constraint_id(), "always-fails");
+  EXPECT_EQ(violations[0].proto().rule_id(), "always-fails");
 }
 
 TEST_F(ExpressionTest, StringResult) {
@@ -90,7 +90,7 @@ TEST_F(ExpressionTest, StringResult) {
   ASSERT_TRUE(status.ok()) << status;
   ASSERT_EQ(violations.size(), 1);
   EXPECT_EQ(violations[0].proto().message(), "error");
-  EXPECT_EQ(violations[0].proto().constraint_id(), "always-fails");
+  EXPECT_EQ(violations[0].proto().rule_id(), "always-fails");
 }
 
 TEST_F(ExpressionTest, Error) {

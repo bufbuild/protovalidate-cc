@@ -35,6 +35,6 @@ Constraints NewMessageConstraints(
 
 absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
     google::api::expr::runtime::CelExpressionBuilder& builder,
-    const MessageConstraints& constraints);
+    const MessageRules& constraints);
 
 } // namespace buf::validate::internal

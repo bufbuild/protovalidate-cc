@@ -20,7 +20,7 @@ namespace buf::validate::internal {
 
 absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
     google::api::expr::runtime::CelExpressionBuilder& builder,
-    const MessageConstraints& constraints) {
+    const MessageRules& constraints) {
   auto result = std::make_unique<MessageConstraintRules>();
   for (const auto& constraint : constraints.cel()) {
     if (auto status = result->Add(builder, constraint, absl::nullopt, nullptr); !status.ok()) {

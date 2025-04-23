@@ -25,6 +25,8 @@
 #include "eval/public/cel_function_adapter.h"
 #include "eval/public/cel_value.h"
 #include "eval/public/containers/container_backed_map_impl.h"
+#include "eval/public/containers/field_access.h"
+#include "eval/public/containers/field_backed_list_impl.h"
 #include "google/protobuf/arena.h"
 #include "re2/re2.h"
 
@@ -50,6 +52,38 @@ bool isPathValid(const std::string_view path) {
 }
 
 namespace cel = google::api::expr::runtime;
+
+cel::CelValue getField(
+    google::protobuf::Arena* arena, cel::CelValue msgval, cel::CelValue nameval) {
+  if (!msgval.IsMessage()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "expected a message value for first argument");
+    return cel::CelValue::CreateError(error);
+  }
+  if (!nameval.IsString()) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "expected a string value for second argument");
+    return cel::CelValue::CreateError(error);
+  }
+  const auto* message = msgval.MessageOrDie();
+  auto name = nameval.StringOrDie();
+  const auto* field = message->GetDescriptor()->FindFieldByName(name.value());
+  if (field == nullptr) {
+    auto* error = google::protobuf::Arena::Create<cel::CelError>(
+        arena, absl::StatusCode::kInvalidArgument, "no such field");
+    return cel::CelValue::CreateError(error);
+  }
+  if (field->is_repeated()) {
+    return cel::CelValue::CreateList(
+        google::protobuf::Arena::Create<cel::FieldBackedListImpl>(
+            arena, message, field, arena));
+  } else {
+    if (cel::CelValue result; cel::CreateValueFromSingleField(message, field, arena, &result).ok()) {
+      return result;
+    }
+  }
+  return cel::CelValue::CreateNull();
+}
 
 cel::CelValue isNan(google::protobuf::Arena* arena, cel::CelValue rhs) {
   if (!rhs.IsDouble()) {
@@ -338,6 +372,12 @@ cel::CelValue isUriRef(google::protobuf::Arena* arena, cel::CelValue::StringHold
 
 absl::Status RegisterExtraFuncs(
     google::api::expr::runtime::CelFunctionRegistry& registry, google::protobuf::Arena* regArena) {
+  auto getFieldStatus =
+      cel::FunctionAdapter<cel::CelValue, cel::CelValue, cel::CelValue>::CreateAndRegister(
+          "getField", false, &getField, &registry);
+  if (!getFieldStatus.ok()) {
+    return getFieldStatus;
+  }
   auto isNanStatus = cel::FunctionAdapter<cel::CelValue, cel::CelValue>::CreateAndRegister(
       "isNan", true, &isNan, &registry);
   if (!isNanStatus.ok()) {

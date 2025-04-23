@@ -33,27 +33,27 @@ constexpr int ruleFieldNumber() = delete;
     return fieldNumber;                           \
   }
 
-MAP_RULES_TO_FIELD_NUMBER(FloatRules, FieldConstraints::kFloatFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(DoubleRules, FieldConstraints::kDoubleFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(Int32Rules, FieldConstraints::kInt32FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(Int64Rules, FieldConstraints::kInt64FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(UInt32Rules, FieldConstraints::kUint32FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(UInt64Rules, FieldConstraints::kUint64FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(SInt32Rules, FieldConstraints::kSint32FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(SInt64Rules, FieldConstraints::kSint64FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(Fixed32Rules, FieldConstraints::kFixed32FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(Fixed64Rules, FieldConstraints::kFixed64FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(SFixed32Rules, FieldConstraints::kSfixed32FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(SFixed64Rules, FieldConstraints::kSfixed64FieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(BoolRules, FieldConstraints::kBoolFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(StringRules, FieldConstraints::kStringFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(BytesRules, FieldConstraints::kBytesFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(EnumRules, FieldConstraints::kEnumFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(RepeatedRules, FieldConstraints::kRepeatedFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(MapRules, FieldConstraints::kMapFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(AnyRules, FieldConstraints::kAnyFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(DurationRules, FieldConstraints::kDurationFieldNumber)
-MAP_RULES_TO_FIELD_NUMBER(TimestampRules, FieldConstraints::kTimestampFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(FloatRules, FieldRules::kFloatFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(DoubleRules, FieldRules::kDoubleFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(Int32Rules, FieldRules::kInt32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(Int64Rules, FieldRules::kInt64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(UInt32Rules, FieldRules::kUint32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(UInt64Rules, FieldRules::kUint64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(SInt32Rules, FieldRules::kSint32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(SInt64Rules, FieldRules::kSint64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(Fixed32Rules, FieldRules::kFixed32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(Fixed64Rules, FieldRules::kFixed64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(SFixed32Rules, FieldRules::kSfixed32FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(SFixed64Rules, FieldRules::kSfixed64FieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(BoolRules, FieldRules::kBoolFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(StringRules, FieldRules::kStringFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(BytesRules, FieldRules::kBytesFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(EnumRules, FieldRules::kEnumFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(RepeatedRules, FieldRules::kRepeatedFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(MapRules, FieldRules::kMapFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(AnyRules, FieldRules::kAnyFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(DurationRules, FieldRules::kDurationFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(TimestampRules, FieldRules::kTimestampFieldNumber)
 
 #undef MAP_RULES_TO_FIELD_NUMBER
 
@@ -97,7 +97,7 @@ absl::Status BuildCelRules(
     FieldPath rulePath;
     *rulePath.mutable_elements()->Add() = fieldPathElement(field);
     *rulePath.mutable_elements()->Add() =
-        staticFieldPathElement<FieldConstraints, ruleFieldNumber<R>()>();
+        staticFieldPathElement<FieldRules, ruleFieldNumber<R>()>();
     if (!field->options().HasExtension(buf::validate::predefined)) {
       continue;
     }

@@ -275,9 +275,7 @@ FetchContent_MakeAvailable(cel_spec)
 SharedDeps_GetSourceValue(PROTOVALIDATE_CC_CEL_CPP_URLS "cel_cpp" "urls" "${SHARED_DEPS}")
 SharedDeps_GetSourceValue(PROTOVALIDATE_CC_CEL_CPP_SHA256 "cel_cpp" "sha256" "${SHARED_DEPS}")
 set(CEL_CPP_PATCHES
-    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0001-Allow-message-field-access-using-index-operator.patch
-    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0002-Add-missing-include-for-absl-StrCat.patch
-    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0003-Fix-build-on-Windows-MSVC.patch
+    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0001-Fix-build-on-Windows-MSVC.patch
 )
 MakePatchCommand(CEL_CPP_PATCH_COMMAND "${CEL_CPP_PATCHES}")
 message(STATUS "protovalidate-cc: Fetching cel-cpp")

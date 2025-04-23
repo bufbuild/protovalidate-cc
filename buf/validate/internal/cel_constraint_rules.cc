@@ -40,7 +40,7 @@ absl::Status ProcessConstraint(
       // Add violation with the constraint message.
       Violation violation;
       violation.set_message(expr.constraint.message());
-      violation.set_constraint_id(expr.constraint.id());
+      violation.set_rule_id(expr.constraint.id());
       if (expr.rulePath.has_value()) {
         *violation.mutable_rule() = *expr.rulePath;
       }
@@ -51,7 +51,7 @@ absl::Status ProcessConstraint(
       // Add violation with custom message.
       Violation violation;
       violation.set_message(std::string(result.StringOrDie().value()));
-      violation.set_constraint_id(expr.constraint.id());
+      violation.set_rule_id(expr.constraint.id());
       if (expr.rulePath.has_value()) {
         *violation.mutable_rule() = *expr.rulePath;
       }
@@ -89,7 +89,7 @@ cel::runtime::CelValue ProtoFieldToCelValue(
 
 absl::Status CelConstraintRules::Add(
     google::api::expr::runtime::CelExpressionBuilder& builder,
-    Constraint constraint,
+    Rule constraint,
     absl::optional<FieldPath> rulePath,
     const google::protobuf::FieldDescriptor* rule) {
   auto pexpr_or = cel::parser::Parse(constraint.expression());
@@ -113,7 +113,7 @@ absl::Status CelConstraintRules::Add(
     std::string_view expression,
     absl::optional<FieldPath> rulePath,
     const google::protobuf::FieldDescriptor* rule) {
-  Constraint constraint;
+  Rule constraint;
   *constraint.mutable_id() = id;
   *constraint.mutable_message() = message;
   *constraint.mutable_expression() = expression;

@@ -30,7 +30,7 @@ absl::Status BuildScalarFieldRules(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
-    const FieldConstraints& fieldLvl,
+    const FieldRules& fieldLvl,
     const R& rules,
     google::protobuf::FieldDescriptor::Type expectedType,
     std::string_view wrapperName = "") {
@@ -59,7 +59,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewScalarFieldRules(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
-    const FieldConstraints& fieldLvl,
+    const FieldRules& fieldLvl,
     const R& rules,
     google::protobuf::FieldDescriptor::Type expectedType,
     std::string_view wrapperName = "") {
@@ -87,6 +87,6 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::FieldDescriptor* field,
-    const FieldConstraints& fieldLvl);
+    const FieldRules& fieldLvl);
 
 } // namespace buf::validate::internal

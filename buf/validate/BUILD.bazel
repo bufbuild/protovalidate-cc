@@ -30,7 +30,7 @@ cc_test(
     deps = [
         ":validator",
         "@com_github_bufbuild_protovalidate//proto/protovalidate-testing/buf/validate/conformance/cases:buf_validate_conformance_cases_proto_cc",
-        "@com_github_bufbuild_protovalidate//proto/protovalidate-testing/buf/validate/conformance/cases/custom_constraints:buf_validate_conformance_cases_custom_constraints_cc_proto",
+        "@com_github_bufbuild_protovalidate//proto/protovalidate-testing/buf/validate/conformance/cases/custom_rules:buf_validate_conformance_cases_custom_rules_cc_proto",
         "@com_google_cel_cpp//eval/public:activation",
         "@com_google_cel_cpp//eval/public:builtin_func_registrar",
         "@com_google_cel_cpp//eval/public:cel_expr_builder_factory",
