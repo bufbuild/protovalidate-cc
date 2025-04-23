@@ -109,6 +109,7 @@ cc_library(
         "@com_github_bufbuild_protovalidate//proto/protovalidate/buf/validate:validate_proto_cc",
         "@com_google_cel_cpp//eval/public:activation",
         "@com_google_cel_cpp//eval/public:builtin_func_registrar",
+        "@com_google_cel_cpp//eval/public:string_extension_func_registrar",
         "@com_google_cel_cpp//eval/public:cel_expr_builder_factory",
         "@com_google_cel_cpp//eval/public:cel_expression",
         "@com_google_cel_cpp//eval/public/containers:field_access",
@@ -132,7 +133,6 @@ cc_library(
     srcs = ["extra_func.cc"],
     hdrs = ["extra_func.h"],
     deps = [
-        ":string_format",
         "//buf/validate/internal/lib:ipv4",
         "//buf/validate/internal/lib:ipv6",
         "//buf/validate/internal/lib:uri",
@@ -142,24 +142,6 @@ cc_library(
         "@com_google_cel_cpp//eval/public/containers:field_access",
         "@com_google_cel_cpp//eval/public/containers:container_backed_map_impl",
         "@com_googlesource_code_re2//:re2",
-    ],
-)
-
-cc_library(
-    name = "string_format",
-    srcs = ["string_format.cc"],
-    hdrs = ["string_format.h"],
-    deps = [
-        "@com_google_cel_cpp//eval/public:cel_value",
-    ],
-)
-
-cc_test(
-    name = "string_format_test",
-    srcs = ["string_format_test.cc"],
-    deps = [
-        ":string_format",
-        "@com_google_googletest//:gtest_main",
     ],
 )
 
