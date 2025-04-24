@@ -16,22 +16,22 @@
 
 #include "absl/status/status.h"
 #include "absl/strings/escaping.h"
-#include "buf/validate/validate.pb.h"
 #include "buf/validate/internal/proto_field.h"
+#include "buf/validate/validate.pb.h"
 #include "eval/public/cel_value.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/message.h"
 
 namespace buf::validate::internal {
-inline std::string fieldPathString(const FieldPath &path);
+inline std::string fieldPathString(const FieldPath& path);
 
-/// ConstraintViolation is a wrapper for the protobuf Violation that provides additional in-memory
+/// RuleViolation is a wrapper for the protobuf Violation that provides additional in-memory
 /// information, specifically, references to the in-memory values for the field and rule.
-class ConstraintViolation {
-  friend struct ConstraintContext;
+class RuleViolation {
+  friend struct RuleContext;
 
  public:
-  ConstraintViolation(
+  RuleViolation(
       Violation proto,
       const absl::optional<ProtoField>& fieldValue,
       const absl::optional<ProtoField>& ruleValue)
@@ -47,20 +47,20 @@ class ConstraintViolation {
   absl::optional<ProtoField> ruleValue_;
 };
 
-struct ConstraintContext {
-  ConstraintContext() : failFast(false), arena(nullptr) {}
-  ConstraintContext(const ConstraintContext&) = delete;
-  void operator=(const ConstraintContext&) = delete;
+struct RuleContext {
+  RuleContext() : failFast(false), arena(nullptr) {}
+  RuleContext(const RuleContext&) = delete;
+  void operator=(const RuleContext&) = delete;
 
   bool failFast;
   google::protobuf::Arena* arena;
-  std::vector<ConstraintViolation> violations;
+  std::vector<RuleViolation> violations;
 
-  [[nodiscard]] bool shouldReturn(const absl::Status status) {
+  [[nodiscard]] bool shouldReturn(const absl::Status& status) const {
     return !status.ok() || (failFast && !violations.empty());
   }
 
-  void appendFieldPathElement(const FieldPathElement &element, int start) {
+  void appendFieldPathElement(const FieldPathElement& element, int start) {
     for (int i = start; i < violations.size(); i++) {
       *violations[i].proto_.mutable_field()->mutable_elements()->Add() = element;
     }
@@ -92,7 +92,7 @@ struct ConstraintContext {
   }
 
   void finalize() {
-    for (ConstraintViolation& violation : violations) {
+    for (RuleViolation& violation : violations) {
       if (violation.proto().has_field()) {
         std::reverse(
             violation.proto_.mutable_field()->mutable_elements()->begin(),
@@ -107,19 +107,19 @@ struct ConstraintContext {
   }
 };
 
-class ConstraintRules {
+class ValidationRules {
  public:
-  ConstraintRules() = default;
-  virtual ~ConstraintRules() = default;
+  ValidationRules() = default;
+  virtual ~ValidationRules() = default;
 
-  ConstraintRules(const ConstraintRules&) = delete;
-  void operator=(const ConstraintRules&) = delete;
+  ValidationRules(const ValidationRules&) = delete;
+  void operator=(const ValidationRules&) = delete;
 
   virtual absl::Status Validate(
-      ConstraintContext& ctx, const google::protobuf::Message& message) const = 0;
+      RuleContext& ctx, const google::protobuf::Message& message) const = 0;
 };
 
-inline std::string fieldPathString(const FieldPath &path) {
+inline std::string fieldPathString(const FieldPath& path) {
   std::string result;
   for (const FieldPathElement& element : path.elements()) {
     if (!result.empty()) {
@@ -136,10 +136,12 @@ inline std::string fieldPathString(const FieldPath &path) {
         absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.int_key()), "]");
         break;
       case FieldPathElement::kUintKey:
-        absl::StrAppend(&result, element.field_name(), "[", std::to_string(element.uint_key()), "]");
+        absl::StrAppend(
+            &result, element.field_name(), "[", std::to_string(element.uint_key()), "]");
         break;
       case FieldPathElement::kStringKey:
-        absl::StrAppend(&result, element.field_name(), "[\"", absl::CEscape(element.string_key()), "\"]");
+        absl::StrAppend(
+            &result, element.field_name(), "[\"", absl::CEscape(element.string_key()), "\"]");
         break;
       case FieldPathElement::SUBSCRIPT_NOT_SET:
         absl::StrAppend(&result, element.field_name());

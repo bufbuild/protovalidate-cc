@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "buf/validate/internal/cel_constraint_rules.h"
+#include "buf/validate/internal/cel_validation_rules.h"
 
 #include "common/values/struct_value.h"
 #include "eval/public/containers/field_access.h"
@@ -26,21 +26,21 @@ namespace cel = google::api::expr;
 
 namespace {
 
-absl::Status ProcessConstraint(
-    ConstraintContext& ctx,
+absl::Status ProcessRule(
+    RuleContext& ctx,
     const google::api::expr::runtime::BaseActivation& activation,
-    const CompiledConstraint& expr) {
-  auto result_or= expr.expr->Evaluate(activation, ctx.arena);
+    const CompiledRule& expr) {
+  auto result_or = expr.expr->Evaluate(activation, ctx.arena);
   if (!result_or.ok()) {
     return result_or.status();
   }
   cel::runtime::CelValue result = std::move(result_or).value();
   if (result.IsBool()) {
     if (!result.BoolOrDie()) {
-      // Add violation with the constraint message.
+      // Add violation with the rule message.
       Violation violation;
-      violation.set_message(expr.constraint.message());
-      violation.set_rule_id(expr.constraint.id());
+      violation.set_message(expr.rule.message());
+      violation.set_rule_id(expr.rule.id());
       if (expr.rulePath.has_value()) {
         *violation.mutable_rule() = *expr.rulePath;
       }
@@ -51,7 +51,7 @@ absl::Status ProcessConstraint(
       // Add violation with custom message.
       Violation violation;
       violation.set_message(std::string(result.StringOrDie().value()));
-      violation.set_rule_id(expr.constraint.id());
+      violation.set_rule_id(expr.rule.id());
       if (expr.rulePath.has_value()) {
         *violation.mutable_rule() = *expr.rulePath;
       }
@@ -87,12 +87,12 @@ cel::runtime::CelValue ProtoFieldToCelValue(
 
 } // namespace
 
-absl::Status CelConstraintRules::Add(
+absl::Status CelValidationRules::Add(
     google::api::expr::runtime::CelExpressionBuilder& builder,
-    Rule constraint,
+    Rule rule,
     absl::optional<FieldPath> rulePath,
-    const google::protobuf::FieldDescriptor* rule) {
-  auto pexpr_or = cel::parser::Parse(constraint.expression());
+    const google::protobuf::FieldDescriptor* ruleField) {
+  auto pexpr_or = cel::parser::Parse(rule.expression());
   if (!pexpr_or.ok()) {
     return pexpr_or.status();
   }
@@ -102,40 +102,40 @@ absl::Status CelConstraintRules::Add(
     return expr_or.status();
   }
   std::unique_ptr<cel::runtime::CelExpression> expr = std::move(expr_or).value();
-  exprs_.emplace_back(CompiledConstraint{std::move(constraint), std::move(expr), std::move(rulePath), rule});
+  exprs_.emplace_back(
+      CompiledRule{std::move(rule), std::move(expr), std::move(rulePath), ruleField});
   return absl::OkStatus();
 }
 
-absl::Status CelConstraintRules::Add(
+absl::Status CelValidationRules::Add(
     google::api::expr::runtime::CelExpressionBuilder& builder,
     std::string_view id,
     std::string_view message,
     std::string_view expression,
     absl::optional<FieldPath> rulePath,
-    const google::protobuf::FieldDescriptor* rule) {
-  Rule constraint;
-  *constraint.mutable_id() = id;
-  *constraint.mutable_message() = message;
-  *constraint.mutable_expression() = expression;
-  return Add(builder, constraint, std::move(rulePath), rule);
+    const google::protobuf::FieldDescriptor* ruleField) {
+  Rule rule;
+  *rule.mutable_id() = id;
+  *rule.mutable_message() = message;
+  *rule.mutable_expression() = expression;
+  return Add(builder, rule, std::move(rulePath), ruleField);
 }
 
-absl::Status CelConstraintRules::ValidateCel(
-    ConstraintContext& ctx,
-    google::api::expr::runtime::Activation& activation) const {
+absl::Status CelValidationRules::ValidateCel(
+    RuleContext& ctx, google::api::expr::runtime::Activation& activation) const {
   activation.InsertValue("rules", rules_);
   activation.InsertValue("now", cel::runtime::CelValue::CreateTimestamp(absl::Now()));
   absl::Status status = absl::OkStatus();
 
   for (const auto& expr : exprs_) {
-    if (rules_.IsMessage() && expr.rule != nullptr) {
+    if (rules_.IsMessage() && expr.ruleField != nullptr) {
       activation.InsertValue(
-          "rule", ProtoFieldToCelValue(rules_.MessageOrDie(), expr.rule, ctx.arena));
+          "rule", ProtoFieldToCelValue(rules_.MessageOrDie(), expr.ruleField, ctx.arena));
     }
     int pos = ctx.violations.size();
-    status = ProcessConstraint(ctx, activation, expr);
-    if (rules_.IsMessage() && expr.rule != nullptr && ctx.violations.size() > pos) {
-      ctx.setRuleValue(ProtoField{rules_.MessageOrDie(), expr.rule}, pos);
+    status = ProcessRule(ctx, activation, expr);
+    if (rules_.IsMessage() && expr.ruleField != nullptr && ctx.violations.size() > pos) {
+      ctx.setRuleValue(ProtoField{rules_.MessageOrDie(), expr.ruleField}, pos);
     }
     if (ctx.shouldReturn(status)) {
       break;
@@ -146,7 +146,7 @@ absl::Status CelConstraintRules::ValidateCel(
   return status;
 }
 
-void CelConstraintRules::setRules(
+void CelValidationRules::setRules(
     const google::protobuf::Message* rules, google::protobuf::Arena* arena) {
   rules_ = cel::runtime::CelProtoWrapper::CreateMessage(rules, arena);
 }

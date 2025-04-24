@@ -16,7 +16,7 @@
 
 #include "absl/status/statusor.h"
 #include "buf/validate/internal/cel_rules.h"
-#include "buf/validate/internal/constraints.h"
+#include "buf/validate/internal/rules.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/descriptor.h"
 
@@ -24,7 +24,7 @@ namespace buf::validate::internal {
 
 template <typename R>
 absl::Status BuildScalarFieldRules(
-    FieldConstraintRules& result,
+    FieldValidationRules& result,
     std::unique_ptr<MessageFactory>& messageFactory,
     bool allowUnknownFields,
     google::protobuf::Arena* arena,
@@ -38,13 +38,13 @@ absl::Status BuildScalarFieldRules(
     if (field->type() == google::protobuf::FieldDescriptor::TYPE_MESSAGE) {
       if (field->message_type()->full_name() != wrapperName) {
         return absl::FailedPreconditionError(absl::StrFormat(
-            "field type does not match constraint type: %s != %s",
+            "field type does not match rule type: %s != %s",
             field->type_name(),
             google::protobuf::FieldDescriptor::TypeName(expectedType)));
       }
     } else {
       return absl::FailedPreconditionError(absl::StrFormat(
-          "field type does not match constraint type: %s != %s",
+          "field type does not match rule type: %s != %s",
           google::protobuf::FieldDescriptor::TypeName(field->type()),
           google::protobuf::FieldDescriptor::TypeName(expectedType)));
     }
@@ -53,7 +53,7 @@ absl::Status BuildScalarFieldRules(
 }
 
 template <typename R>
-absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewScalarFieldRules(
+absl::StatusOr<std::unique_ptr<FieldValidationRules>> NewScalarFieldRules(
     std::unique_ptr<MessageFactory>& messageFactory,
     bool allowUnknownFields,
     google::protobuf::Arena* arena,
@@ -63,7 +63,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewScalarFieldRules(
     const R& rules,
     google::protobuf::FieldDescriptor::Type expectedType,
     std::string_view wrapperName = "") {
-  auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
+  auto result = std::make_unique<FieldValidationRules>(field, fieldLvl);
   auto status = BuildScalarFieldRules(
       *result,
       messageFactory,
@@ -81,7 +81,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewScalarFieldRules(
   return result;
 }
 
-absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
+absl::StatusOr<std::unique_ptr<FieldValidationRules>> NewFieldRules(
     std::unique_ptr<MessageFactory>& messageFactory,
     bool allowUnknownFields,
     google::protobuf::Arena* arena,

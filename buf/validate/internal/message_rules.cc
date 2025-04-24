@@ -18,25 +18,24 @@
 
 namespace buf::validate::internal {
 
-absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    const MessageRules& constraints) {
-  auto result = std::make_unique<MessageConstraintRules>();
-  for (const auto& constraint : constraints.cel()) {
-    if (auto status = result->Add(builder, constraint, absl::nullopt, nullptr); !status.ok()) {
+absl::StatusOr<std::unique_ptr<MessageValidationRules>> BuildMessageRules(
+    google::api::expr::runtime::CelExpressionBuilder& builder, const MessageRules& rules) {
+  auto result = std::make_unique<MessageValidationRules>();
+  for (const auto& rule : rules.cel()) {
+    if (auto status = result->Add(builder, rule, absl::nullopt, nullptr); !status.ok()) {
       return status;
     }
   }
   return result;
 }
 
-Constraints NewMessageConstraints(
+Rules NewMessageRules(
     std::unique_ptr<MessageFactory>& messageFactory,
     bool allowUnknownFields,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
-  std::vector<std::unique_ptr<ConstraintRules>> result;
+  std::vector<std::unique_ptr<ValidationRules>> result;
   if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
     if (msgLvl.disabled()) {
@@ -71,7 +70,7 @@ Constraints NewMessageConstraints(
       continue;
     }
     const auto& oneofLvl = oneof->options().GetExtension(buf::validate::oneof);
-    result.emplace_back(std::make_unique<OneofConstraintRules>(oneof, oneofLvl));
+    result.emplace_back(std::make_unique<OneofValidationRules>(oneof, oneofLvl));
   }
 
   return result;

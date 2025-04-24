@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "buf/validate/internal/constraints.h"
+#include "buf/validate/internal/rules.h"
 
 #include <memory>
 
@@ -27,36 +27,35 @@ namespace {
 class ExpressionTest : public testing::Test {
  public:
   void SetUp() override {
-    constraints_ = std::make_unique<MessageConstraintRules>();
+    rules_ = std::make_unique<MessageValidationRules>();
     cel::runtime::InterpreterOptions options;
     options.enable_qualified_type_identifiers = true;
     options.enable_timestamp_duration_overflow_errors = true;
     options.enable_heterogeneous_equality = true;
     options.enable_empty_wrapper_null_unboxing = true;
-    auto builder_or = NewConstraintBuilder(&arena_);
+    auto builder_or = NewRuleBuilder(&arena_);
     ASSERT_TRUE(builder_or.ok());
     builder_ = std::move(builder_or).value();
   }
 
  protected:
   std::unique_ptr<cel::runtime::CelExpressionBuilder> builder_;
-  std::unique_ptr<MessageConstraintRules> constraints_;
+  std::unique_ptr<MessageValidationRules> rules_;
   google::protobuf::Arena arena_;
 
-  absl::Status AddConstraint(std::string expr, std::string message, std::string id) {
-    Rule constraint;
-    constraint.set_expression(std::move(expr));
-    constraint.set_message(std::move(message));
-    constraint.set_id(std::move(id));
-    return constraints_->Add(*builder_, constraint, absl::nullopt, nullptr);
+  absl::Status AddRule(std::string expr, std::string message, std::string id) {
+    Rule rule;
+    rule.set_expression(std::move(expr));
+    rule.set_message(std::move(message));
+    rule.set_id(std::move(id));
+    return rules_->Add(*builder_, rule, absl::nullopt, nullptr);
   }
 
   absl::Status Validate(
-      google::api::expr::runtime::Activation& activation,
-      std::vector<ConstraintViolation>& violations) {
-    ConstraintContext ctx;
+      google::api::expr::runtime::Activation& activation, std::vector<RuleViolation>& violations) {
+    RuleContext ctx;
     ctx.arena = &arena_;
-    auto status = constraints_->ValidateCel(ctx, activation);
+    auto status = rules_->ValidateCel(ctx, activation);
     if (!status.ok()) {
       return status;
     }
@@ -68,11 +67,11 @@ class ExpressionTest : public testing::Test {
 };
 
 TEST_F(ExpressionTest, BoolResult) {
-  ASSERT_TRUE(AddConstraint("true", "always succeeds", "always-succeeds").ok());
-  ASSERT_TRUE(AddConstraint("false", "always fails", "always-fails").ok());
+  ASSERT_TRUE(AddRule("true", "always succeeds", "always-succeeds").ok());
+  ASSERT_TRUE(AddRule("false", "always fails", "always-fails").ok());
 
   cel::runtime::Activation ctx;
-  std::vector<ConstraintViolation> violations;
+  std::vector<RuleViolation> violations;
   auto status = Validate(ctx, violations);
   ASSERT_TRUE(status.ok()) << status;
   ASSERT_EQ(violations.size(), 1);
@@ -81,11 +80,11 @@ TEST_F(ExpressionTest, BoolResult) {
 }
 
 TEST_F(ExpressionTest, StringResult) {
-  ASSERT_TRUE(AddConstraint("''", "always succeeds", "always-succeeds").ok());
-  ASSERT_TRUE(AddConstraint("'error'", "always fails", "always-fails").ok());
+  ASSERT_TRUE(AddRule("''", "always succeeds", "always-succeeds").ok());
+  ASSERT_TRUE(AddRule("'error'", "always fails", "always-fails").ok());
 
   cel::runtime::Activation ctx;
-  std::vector<ConstraintViolation> violations;
+  std::vector<RuleViolation> violations;
   auto status = Validate(ctx, violations);
   ASSERT_TRUE(status.ok()) << status;
   ASSERT_EQ(violations.size(), 1);
@@ -94,9 +93,9 @@ TEST_F(ExpressionTest, StringResult) {
 }
 
 TEST_F(ExpressionTest, Error) {
-  ASSERT_TRUE(AddConstraint("1/0", "always fails", "always-fails").ok());
+  ASSERT_TRUE(AddRule("1/0", "always fails", "always-fails").ok());
   cel::runtime::Activation ctx;
-  std::vector<ConstraintViolation> violations;
+  std::vector<RuleViolation> violations;
   auto status = Validate(ctx, violations);
   ASSERT_FALSE(status.ok()) << status;
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);
@@ -104,9 +103,9 @@ TEST_F(ExpressionTest, Error) {
 }
 
 TEST_F(ExpressionTest, BadType) {
-  ASSERT_TRUE(AddConstraint("1", "always fails", "always-fails").ok());
+  ASSERT_TRUE(AddRule("1", "always fails", "always-fails").ok());
   cel::runtime::Activation ctx;
-  std::vector<ConstraintViolation> violations;
+  std::vector<RuleViolation> violations;
   auto status = Validate(ctx, violations);
   ASSERT_FALSE(status.ok()) << status;
   EXPECT_EQ(status.code(), absl::StatusCode::kInvalidArgument);

@@ -15,8 +15,8 @@
 #pragma once
 
 #include "absl/status/statusor.h"
-#include "buf/validate/internal/constraints.h"
 #include "buf/validate/internal/message_factory.h"
+#include "buf/validate/internal/rules.h"
 #include "buf/validate/validate.pb.h"
 #include "eval/public/cel_expression.h"
 #include "google/protobuf/arena.h"
@@ -24,17 +24,16 @@
 
 namespace buf::validate::internal {
 
-using Constraints = absl::StatusOr<std::vector<std::unique_ptr<ConstraintRules>>>;
+using Rules = absl::StatusOr<std::vector<std::unique_ptr<ValidationRules>>>;
 
-Constraints NewMessageConstraints(
+Rules NewMessageRules(
     std::unique_ptr<MessageFactory>& messageFactory,
     bool allowUnknownFields,
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor);
 
-absl::StatusOr<std::unique_ptr<MessageConstraintRules>> BuildMessageRules(
-    google::api::expr::runtime::CelExpressionBuilder& builder,
-    const MessageRules& constraints);
+absl::StatusOr<std::unique_ptr<MessageValidationRules>> BuildMessageRules(
+    google::api::expr::runtime::CelExpressionBuilder& builder, const MessageRules& rules);
 
 } // namespace buf::validate::internal
