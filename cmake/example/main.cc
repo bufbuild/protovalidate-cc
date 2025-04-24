@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
   google::protobuf::Arena arena;
   auto factory = buf::validate::ValidatorFactory::New().value();
   auto validator = factory->NewValidator(&arena, false);
-  
+
   auto results = validator.Validate(user).value();
   if (results.violations_size() > 0) {
     std::cout << "validation failed" << std::endl;
@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     // Print the validation message.
     std::cout << p.proto().message() << std::endl;
 
-    // Print the entire ConstraintViolation to see its structure.
+    // Print the entire RuleViolation to see its structure.
     std::cout << p.proto().DebugString() << std::endl;
   }
 }

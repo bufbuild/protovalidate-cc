@@ -15,9 +15,9 @@
 #pragma once
 
 #include "absl/status/status.h"
-#include "buf/validate/internal/cel_constraint_rules.h"
-#include "buf/validate/internal/constraints.h"
+#include "buf/validate/internal/cel_validation_rules.h"
 #include "buf/validate/internal/message_factory.h"
+#include "buf/validate/internal/rules.h"
 #include "buf/validate/validate.pb.h"
 #include "google/protobuf/arena.h"
 #include "google/protobuf/descriptor.h"
@@ -64,8 +64,8 @@ absl::Status BuildCelRules(
     google::protobuf::Arena* arena,
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const R& rules,
-    CelConstraintRules& result) {
-  // Look for constraints on the set fields.
+    CelValidationRules& result) {
+  // Look for rules on the set fields.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
   google::protobuf::Message* reparsedRules{};
   if (messageFactory && rules.unknown_fields().field_count() > 0) {
@@ -81,14 +81,13 @@ absl::Status BuildCelRules(
     if (!allowUnknownFields &&
         !reparsedRules->GetReflection()->GetUnknownFields(*reparsedRules).empty()) {
       return absl::FailedPreconditionError(
-          absl::StrCat("unknown constraints in ", reparsedRules->GetTypeName()));
+          absl::StrCat("unknown rules in ", reparsedRules->GetTypeName()));
     }
     result.setRules(reparsedRules, arena);
     reparsedRules->GetReflection()->ListFields(*reparsedRules, &fields);
   } else {
     if (!allowUnknownFields && !R::GetReflection()->GetUnknownFields(rules).empty()) {
-      return absl::FailedPreconditionError(
-          absl::StrCat("unknown constraints in ", rules.GetTypeName()));
+      return absl::FailedPreconditionError(absl::StrCat("unknown rules in ", rules.GetTypeName()));
     }
     result.setRules(&rules, arena);
     R::GetReflection()->ListFields(rules, &fields);
@@ -102,9 +101,9 @@ absl::Status BuildCelRules(
       continue;
     }
     const auto& fieldLvl = field->options().GetExtension(buf::validate::predefined);
-    for (const auto& constraint : fieldLvl.cel()) {
-      auto status = result.Add(
-          builder, constraint.id(), constraint.message(), constraint.expression(), rulePath, field);
+    for (const auto& rule : fieldLvl.cel()) {
+      auto status =
+          result.Add(builder, rule.id(), rule.message(), rule.expression(), rulePath, field);
       if (!status.ok()) {
         return status;
       }

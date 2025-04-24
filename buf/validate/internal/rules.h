@@ -18,46 +18,42 @@
 #include <string_view>
 #include <utility>
 
-#include "buf/validate/internal/cel_constraint_rules.h"
+#include "buf/validate/internal/cel_validation_rules.h"
 #include "buf/validate/validate.pb.h"
 #include "google/protobuf/arena.h"
-#include "google/protobuf/message.h"
 #include "google/protobuf/descriptor.h"
+#include "google/protobuf/message.h"
 
 namespace buf::validate::internal {
 
-class MessageConstraintRules final : public CelConstraintRules {
+class MessageValidationRules final : public CelValidationRules {
  public:
-  MessageConstraintRules() = default;
+  MessageValidationRules() = default;
 
-  absl::Status Validate(
-      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
+  absl::Status Validate(RuleContext& ctx, const google::protobuf::Message& message) const override;
 };
 
-class FieldConstraintRules : public CelConstraintRules {
+class FieldValidationRules : public CelValidationRules {
  public:
-  FieldConstraintRules(
+  FieldValidationRules(
       const google::protobuf::FieldDescriptor* desc,
       const FieldRules& field,
       const AnyRules* anyRules = nullptr)
-      : fieldConstraints_(field),
+      : fieldRules_(field),
         field_(desc),
         mapEntryField_(desc->containing_type()->options().map_entry()),
-        ignoreEmpty_(field.ignore() == IGNORE_IF_DEFAULT_VALUE ||
-                     field.ignore() == IGNORE_IF_UNPOPULATED ||
-                     (desc->has_presence() && !mapEntryField_)),
-        ignoreDefault_(field.ignore() == IGNORE_IF_DEFAULT_VALUE &&
-                       (desc->has_presence() && !mapEntryField_)),
+        ignoreEmpty_(
+            field.ignore() == IGNORE_IF_DEFAULT_VALUE || field.ignore() == IGNORE_IF_UNPOPULATED ||
+            (desc->has_presence() && !mapEntryField_)),
+        ignoreDefault_(
+            field.ignore() == IGNORE_IF_DEFAULT_VALUE && (desc->has_presence() && !mapEntryField_)),
         required_(field.required()),
         anyRules_(anyRules) {}
 
-  absl::Status Validate(
-      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
+  absl::Status Validate(RuleContext& ctx, const google::protobuf::Message& message) const override;
 
   absl::Status ValidateAny(
-      ConstraintContext& ctx,
-      const ProtoField& field,
-      const google::protobuf::Message& anyMsg) const;
+      RuleContext& ctx, const ProtoField& field, const google::protobuf::Message& anyMsg) const;
 
   [[nodiscard]] const AnyRules* getAnyRules() const { return anyRules_; }
 
@@ -66,7 +62,7 @@ class FieldConstraintRules : public CelConstraintRules {
   [[nodiscard]] bool getIgnoreDefault() const { return ignoreDefault_; }
 
  protected:
-  const FieldRules& fieldConstraints_;
+  const FieldRules& fieldRules_;
   const google::protobuf::FieldDescriptor* field_ = nullptr;
   bool mapEntryField_ = false;
   bool ignoreEmpty_ = false;
@@ -75,77 +71,74 @@ class FieldConstraintRules : public CelConstraintRules {
   const AnyRules* anyRules_ = nullptr;
 };
 
-class EnumConstraintRules : public FieldConstraintRules {
-  using Base = FieldConstraintRules;
+class EnumValidationRules : public FieldValidationRules {
+  using Base = FieldValidationRules;
 
  public:
-  EnumConstraintRules(const google::protobuf::FieldDescriptor* desc, const FieldRules& field)
+  EnumValidationRules(const google::protobuf::FieldDescriptor* desc, const FieldRules& field)
       : Base(desc, field), definedOnly_(field.enum_().defined_only()) {}
 
-  absl::Status Validate(
-      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
+  absl::Status Validate(RuleContext& ctx, const google::protobuf::Message& message) const override;
 
  private:
   bool definedOnly_;
 };
 
-class RepeatedConstraintRules : public FieldConstraintRules {
-  using Base = FieldConstraintRules;
+class RepeatedValidationRules : public FieldValidationRules {
+  using Base = FieldValidationRules;
 
  public:
-  RepeatedConstraintRules(
+  RepeatedValidationRules(
       const google::protobuf::FieldDescriptor* desc,
       const FieldRules& field,
-      std::unique_ptr<FieldConstraintRules> itemRules)
+      std::unique_ptr<FieldValidationRules> itemRules)
       : Base(desc, field), itemRules_(std::move(itemRules)) {}
 
-  absl::Status Validate(
-      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
+  absl::Status Validate(RuleContext& ctx, const google::protobuf::Message& message) const override;
 
  private:
-  std::unique_ptr<FieldConstraintRules> itemRules_;
+  std::unique_ptr<FieldValidationRules> itemRules_;
 };
 
-class MapConstraintRules : public FieldConstraintRules {
-  using Base = FieldConstraintRules;
+class MapValidationRules : public FieldValidationRules {
+  using Base = FieldValidationRules;
 
  public:
-  MapConstraintRules(
+  MapValidationRules(
       const google::protobuf::FieldDescriptor* desc,
       const FieldRules& field,
-      std::unique_ptr<FieldConstraintRules> keyRules,
-      std::unique_ptr<FieldConstraintRules> valueRules)
+      std::unique_ptr<FieldValidationRules> keyRules,
+      std::unique_ptr<FieldValidationRules> valueRules)
       : Base(desc, field), keyRules_(std::move(keyRules)), valueRules_(std::move(valueRules)) {}
 
-  absl::Status Validate(
-      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
+  absl::Status Validate(RuleContext& ctx, const google::protobuf::Message& message) const override;
 
  private:
-  std::unique_ptr<FieldConstraintRules> keyRules_;
-  std::unique_ptr<FieldConstraintRules> valueRules_;
+  std::unique_ptr<FieldValidationRules> keyRules_;
+  std::unique_ptr<FieldValidationRules> valueRules_;
 };
 
-// A set of constraints that share the same 'rule' value.
-class OneofConstraintRules : public ConstraintRules {
-  using Base = ConstraintRules;
+// A set of rules that share the same 'rule' value.
+class OneofValidationRules : public ValidationRules {
+  using Base = ValidationRules;
 
  public:
-  OneofConstraintRules(const google::protobuf::OneofDescriptor* desc, const OneofRules& oneof)
+  OneofValidationRules(const google::protobuf::OneofDescriptor* desc, const OneofRules& oneof)
       : oneof_(desc), required_(oneof.required()) {}
 
-  absl::Status Validate(
-      ConstraintContext& ctx, const google::protobuf::Message& message) const override;
+  absl::Status Validate(RuleContext& ctx, const google::protobuf::Message& message) const override;
 
  private:
   const google::protobuf::OneofDescriptor* oneof_ = nullptr;
   bool required_ = false;
 };
 
-// Creates a new expression builder suitable for creating constraints.
-absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>>
-NewConstraintBuilder(google::protobuf::Arena* arena);
+// Creates a new expression builder suitable for creating rules.
+absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>> NewRuleBuilder(
+    google::protobuf::Arena* arena);
 
-inline auto fieldPathElement(const google::protobuf::FieldDescriptor* fieldDescriptor) -> FieldPathElement {
+inline auto fieldPathElement(const google::protobuf::FieldDescriptor* fieldDescriptor)
+    -> FieldPathElement {
   FieldPathElement element;
   element.set_field_number(fieldDescriptor->number());
   element.set_field_type(
@@ -158,7 +151,7 @@ inline auto fieldPathElement(const google::protobuf::FieldDescriptor* fieldDescr
   return element;
 }
 
-template<typename ProtoMessage, int number>
+template <typename ProtoMessage, int number>
 auto staticFieldPathElement() -> FieldPathElement {
   // This is thread-safe: C++11 guarantees static local initialization to be done only once and is
   // synchronized automatically.

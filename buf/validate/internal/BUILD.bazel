@@ -15,11 +15,11 @@
 package(default_visibility = ["//:__subpackages__"])
 
 cc_library(
-    name = "cel_constraint_rules",
-    srcs = ["cel_constraint_rules.cc"],
-    hdrs = ["cel_constraint_rules.h"],
+    name = "cel_validation_rules",
+    srcs = ["cel_validation_rules.cc"],
+    hdrs = ["cel_validation_rules.h"],
     deps = [
-        ":constraint_rules",
+        ":validation_rules",
         "@com_google_cel_cpp//eval/public:activation",
         "@com_google_cel_cpp//eval/public:cel_expression",
         "@com_google_cel_cpp//eval/public:cel_value",
@@ -43,8 +43,8 @@ cc_library(
 )
 
 cc_library(
-    name = "constraint_rules",
-    hdrs = ["constraint_rules.h"],
+    name = "validation_rules",
+    hdrs = ["validation_rules.h"],
     deps = [
         "@com_github_bufbuild_protovalidate//proto/protovalidate/buf/validate:validate_proto_cc",
         ":proto_field",
@@ -93,18 +93,18 @@ cc_library(
     hdrs = ["field_rules.h"],
     deps = [
         ":cel_rules",
-        ":constraint",
+        ":rules",
         "@com_google_absl//absl/status:statusor",
         "@com_google_protobuf//:protobuf",
     ],
 )
 
 cc_library(
-    name = "constraint",
-    srcs = ["constraints.cc"],
-    hdrs = ["constraints.h"],
+    name = "rules",
+    srcs = ["rules.cc"],
+    hdrs = ["rules.h"],
     deps = [
-        ":cel_constraint_rules",
+        ":cel_validation_rules",
         ":extra_func",
         "@com_github_bufbuild_protovalidate//proto/protovalidate/buf/validate:validate_proto_cc",
         "@com_google_cel_cpp//eval/public:activation",
@@ -119,10 +119,10 @@ cc_library(
 )
 
 cc_test(
-    name = "constraint_test",
-    srcs = ["constraints_test.cc"],
+    name = "rules_test",
+    srcs = ["rules_test.cc"],
     deps = [
-        ":constraint",
+        ":rules",
         "@com_google_cel_cpp//eval/public:activation",
         "@com_google_googletest//:gtest_main",
     ],

@@ -126,7 +126,7 @@ TEST(ValidatorTest, ValidateURI_NotFound) {
   EXPECT_EQ(violations_or.status().code(), absl::StatusCode::kNotFound);
   EXPECT_EQ(
       violations_or.status().message(),
-      "constraints not loaded for message: buf.validate.conformance.cases.StringURI");
+      "rules not loaded for message: buf.validate.conformance.cases.StringURI");
 }
 
 TEST(ValidatorTest, ValidateRelativeURIFailure) {
@@ -408,7 +408,7 @@ TEST(ValidatorTest, ValidateEndsWithSuccess) {
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
 
-TEST(ValidatorTest, MessageConstraint) {
+TEST(ValidatorTest, MessageRule) {
   conformance::cases::custom_rules::MessageExpressions message_expressions;
   message_expressions.mutable_e();
   auto factory_or = ValidatorFactory::New();
@@ -419,13 +419,11 @@ TEST(ValidatorTest, MessageConstraint) {
   auto violations_or = validator.Validate(message_expressions);
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   ASSERT_EQ(violations_or.value().violations_size(), 3);
-  EXPECT_EQ(
-      violations_or.value().violations(0).proto().rule_id(), "message_expression_scalar");
+  EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "message_expression_scalar");
   EXPECT_EQ(violations_or.value().violations(0).proto().message(), "a must be less than b");
   EXPECT_EQ(violations_or.value().violations(1).proto().rule_id(), "message_expression_enum");
   EXPECT_EQ(violations_or.value().violations(1).proto().message(), "c must not equal d");
-  EXPECT_EQ(
-      violations_or.value().violations(2).proto().rule_id(), "message_expression_nested");
+  EXPECT_EQ(violations_or.value().violations(2).proto().rule_id(), "message_expression_nested");
   EXPECT_EQ(violations_or.value().violations(2).proto().message(), "a must be greater than b");
 }
 

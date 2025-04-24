@@ -18,7 +18,7 @@
 #include "google/protobuf/any.pb.h"
 
 namespace buf::validate::internal {
-absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
+absl::StatusOr<std::unique_ptr<FieldValidationRules>> NewFieldRules(
     std::unique_ptr<MessageFactory>& messageFactory,
     bool allowUnknownFields,
     google::protobuf::Arena* arena,
@@ -28,7 +28,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
   if (fieldLvl.ignore() == IGNORE_ALWAYS) {
     return nullptr;
   }
-  absl::StatusOr<std::unique_ptr<FieldConstraintRules>> rules_or;
+  absl::StatusOr<std::unique_ptr<FieldValidationRules>> rules_or;
   switch (fieldLvl.type_case()) {
     case FieldRules::kBool:
       rules_or = NewScalarFieldRules(
@@ -205,7 +205,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
           "google.protobuf.BytesValue");
       break;
     case FieldRules::kEnum: {
-      rules_or = std::make_unique<EnumConstraintRules>(field, fieldLvl);
+      rules_or = std::make_unique<EnumValidationRules>(field, fieldLvl);
       auto status = BuildScalarFieldRules(
           *rules_or.value(),
           messageFactory,
@@ -227,7 +227,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
               google::protobuf::Duration::descriptor()->full_name()) {
         return absl::InvalidArgumentError("duration field validator on non-duration field");
       } else {
-        auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
+        auto result = std::make_unique<FieldValidationRules>(field, fieldLvl);
         auto status = BuildCelRules(
             messageFactory, allowUnknownFields, arena, builder, fieldLvl.duration(), *result);
         if (!status.ok()) {
@@ -243,7 +243,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
               google::protobuf::Timestamp::descriptor()->full_name()) {
         return absl::InvalidArgumentError("timestamp field validator on non-timestamp field");
       } else {
-        auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl);
+        auto result = std::make_unique<FieldValidationRules>(field, fieldLvl);
         auto status = BuildCelRules(
             messageFactory, allowUnknownFields, arena, builder, fieldLvl.timestamp(), *result);
         if (!status.ok()) {
@@ -259,7 +259,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
       } else if (field->is_map()) {
         return absl::InvalidArgumentError("repeated field validator on map field");
       } else {
-        std::unique_ptr<FieldConstraintRules> items;
+        std::unique_ptr<FieldValidationRules> items;
         if (fieldLvl.repeated().has_items()) {
           auto items_or = NewFieldRules(
               messageFactory,
@@ -273,7 +273,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
           }
           items = std::move(items_or).value();
         }
-        auto result = std::make_unique<RepeatedConstraintRules>(field, fieldLvl, std::move(items));
+        auto result = std::make_unique<RepeatedValidationRules>(field, fieldLvl, std::move(items));
         auto status = BuildCelRules(
             messageFactory, allowUnknownFields, arena, builder, fieldLvl.repeated(), *result);
         if (!status.ok()) {
@@ -307,7 +307,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
         if (!valueRulesOr.ok()) {
           return valueRulesOr.status();
         }
-        auto result = std::make_unique<MapConstraintRules>(
+        auto result = std::make_unique<MapValidationRules>(
             field, fieldLvl, std::move(keyRulesOr).value(), std::move(valueRulesOr).value());
         auto status = BuildCelRules(
             messageFactory, allowUnknownFields, arena, builder, fieldLvl.map(), *result);
@@ -323,7 +323,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
           field->message_type()->full_name() != google::protobuf::Any::descriptor()->full_name()) {
         return absl::InvalidArgumentError("any field validator on non-any field");
       } else {
-        auto result = std::make_unique<FieldConstraintRules>(field, fieldLvl, &fieldLvl.any());
+        auto result = std::make_unique<FieldValidationRules>(field, fieldLvl, &fieldLvl.any());
         auto status = BuildCelRules(
             messageFactory, allowUnknownFields, arena, builder, fieldLvl.any(), *result);
         if (!status.ok()) {
@@ -334,7 +334,7 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
       }
       break;
     case FieldRules::TYPE_NOT_SET:
-      rules_or = std::make_unique<FieldConstraintRules>(field, fieldLvl);
+      rules_or = std::make_unique<FieldValidationRules>(field, fieldLvl);
       break;
     default:
       return absl::InvalidArgumentError(
@@ -342,13 +342,13 @@ absl::StatusOr<std::unique_ptr<FieldConstraintRules>> NewFieldRules(
   }
   if (rules_or.ok()) {
     for (int i = 0; i < fieldLvl.cel_size(); i++) {
-      const auto& constraint = fieldLvl.cel(i);
+      const auto& rule = fieldLvl.cel(i);
       FieldPathElement celElement =
           staticFieldPathElement<FieldRules, FieldRules::kCelFieldNumber>();
       celElement.set_index(i);
       FieldPath rulePath;
       *rulePath.mutable_elements()->Add() = celElement;
-      auto status = rules_or.value()->Add(builder, constraint, rulePath, nullptr);
+      auto status = rules_or.value()->Add(builder, rule, rulePath, nullptr);
       if (!status.ok()) {
         return status;
       }

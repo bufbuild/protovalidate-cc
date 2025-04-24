@@ -18,25 +18,24 @@
 #include <string_view>
 #include <utility>
 
-#include "buf/validate/validate.pb.h"
-#include "buf/validate/internal/constraints.h"
-#include "buf/validate/internal/message_rules.h"
 #include "buf/validate/internal/message_factory.h"
+#include "buf/validate/internal/message_rules.h"
+#include "buf/validate/internal/rules.h"
+#include "buf/validate/validate.pb.h"
 #include "eval/public/cel_expression.h"
 #include "google/protobuf/message.h"
 
 namespace buf::validate {
 
-using internal::ConstraintViolation;
 using internal::ProtoField;
+using internal::RuleViolation;
 
 class ValidatorFactory;
 
 /// The ValidationResult class contains information about the validation.
 class ValidationResult {
  public:
-  ValidationResult(std::vector<ConstraintViolation> violations)
-      : violations_{std::move(violations)} {}
+  ValidationResult(std::vector<RuleViolation> violations) : violations_{std::move(violations)} {}
 
   [[nodiscard]] Violations proto() {
     Violations proto{};
@@ -44,20 +43,20 @@ class ValidationResult {
         violations_.begin(),
         violations_.end(),
         RepeatedPtrFieldBackInserter(proto.mutable_violations()),
-        [](ConstraintViolation& violation) { return violation.proto(); });
+        [](RuleViolation& violation) { return violation.proto(); });
     return proto;
   }
 
   [[nodiscard]] bool success() const { return violations_.empty(); }
 
-  [[nodiscard]] const std::vector<ConstraintViolation>& violations() const { return violations_; }
+  [[nodiscard]] const std::vector<RuleViolation>& violations() const { return violations_; }
 
-  [[nodiscard]] ConstraintViolation violations(int i) const { return violations_.at(i); }
+  [[nodiscard]] RuleViolation violations(int i) const { return violations_.at(i); }
 
   [[nodiscard]] int violations_size() const { return violations_.size(); }
 
  private:
-  std::vector<ConstraintViolation> violations_;
+  std::vector<RuleViolation> violations_;
 };
 
 /// A validator is a non-thread safe object that can be used to validate
@@ -91,10 +90,9 @@ class Validator {
       : factory_(factory), arena_(arena), failFast_(failFast) {}
 
   absl::Status ValidateMessage(
-      internal::ConstraintContext& ctx, const google::protobuf::Message& message);
+      internal::RuleContext& ctx, const google::protobuf::Message& message);
 
-  absl::Status ValidateFields(
-      internal::ConstraintContext& ctx, const google::protobuf::Message& message);
+  absl::Status ValidateFields(internal::RuleContext& ctx, const google::protobuf::Message& message);
 };
 
 /// A factory that stores shared state for creating validators.
@@ -118,10 +116,10 @@ class ValidatorFactory {
   ValidatorFactory(ValidatorFactory&&) = delete;
   ValidatorFactory& operator=(ValidatorFactory&&) = delete;
 
-  /// Populates the factory with constraints for the given message type.
+  /// Populates the factory with rules for the given message type.
   absl::Status Add(const google::protobuf::Descriptor* desc);
 
-  /// Disable lazy loading of constraints.
+  /// Disable lazy loading of rules.
   void DisableLazyLoading(bool disable = true) {
     absl::WriterMutexLock lock(&mutex_);
     disableLazyLoading_ = disable;
@@ -129,15 +127,14 @@ class ValidatorFactory {
 
   /// Set message factory and descriptor pool. This is used for re-parsing unknown fields.
   /// The provided messageFactory and descriptorPool must outlive the ValidatorFactory.
-  void SetMessageFactory(google::protobuf::MessageFactory *messageFactory,
-                         const google::protobuf::DescriptorPool *descriptorPool) {
+  void SetMessageFactory(
+      google::protobuf::MessageFactory* messageFactory,
+      const google::protobuf::DescriptorPool* descriptorPool) {
     messageFactory_ = std::make_unique<internal::MessageFactory>(messageFactory, descriptorPool);
   }
 
-  /// Set whether or not unknown constraint fields will be tolerated. Defaults to false.
-  void SetAllowUnknownFields(bool allowUnknownFields) {
-    allowUnknownFields_ = allowUnknownFields;
-  }
+  /// Set whether or not unknown rule fields will be tolerated. Defaults to false.
+  void SetAllowUnknownFields(bool allowUnknownFields) { allowUnknownFields_ = allowUnknownFields; }
 
  private:
   friend class Validator;
@@ -145,7 +142,7 @@ class ValidatorFactory {
   absl::Mutex mutex_;
   std::unique_ptr<internal::MessageFactory> messageFactory_;
   bool allowUnknownFields_;
-  absl::flat_hash_map<const google::protobuf::Descriptor*, internal::Constraints> constraints_
+  absl::flat_hash_map<const google::protobuf::Descriptor*, internal::Rules> rules_
       ABSL_GUARDED_BY(mutex_);
   std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder> builder_
       ABSL_GUARDED_BY(mutex_);
@@ -153,7 +150,7 @@ class ValidatorFactory {
 
   ValidatorFactory() = default;
 
-  const internal::Constraints* GetMessageConstraints(const google::protobuf::Descriptor* desc);
+  const internal::Rules* GetMessageRules(const google::protobuf::Descriptor* desc);
 };
 
 } // namespace buf::validate

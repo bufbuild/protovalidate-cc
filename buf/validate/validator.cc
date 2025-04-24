@@ -17,17 +17,17 @@
 namespace buf::validate {
 
 absl::Status Validator::ValidateMessage(
-    internal::ConstraintContext& ctx, const google::protobuf::Message& message) {
-  const auto* constraints_or = factory_->GetMessageConstraints(message.GetDescriptor());
-  if (constraints_or == nullptr) {
+    internal::RuleContext& ctx, const google::protobuf::Message& message) {
+  const auto* rules_or = factory_->GetMessageRules(message.GetDescriptor());
+  if (rules_or == nullptr) {
     return absl::NotFoundError(
-        absl::StrCat("constraints not loaded for message: ", message.GetDescriptor()->full_name()));
+        absl::StrCat("rules not loaded for message: ", message.GetDescriptor()->full_name()));
   }
-  if (!constraints_or->ok()) {
-    return constraints_or->status();
+  if (!rules_or->ok()) {
+    return rules_or->status();
   }
-  for (const auto& constraint : constraints_or->value()) {
-    auto status = constraint->Validate(ctx, message);
+  for (const auto& rule : rules_or->value()) {
+    auto status = rule->Validate(ctx, message);
     if (ctx.shouldReturn(status)) {
       return status;
     }
@@ -36,7 +36,7 @@ absl::Status Validator::ValidateMessage(
 }
 
 absl::Status Validator::ValidateFields(
-    internal::ConstraintContext& ctx, const google::protobuf::Message& message) {
+    internal::RuleContext& ctx, const google::protobuf::Message& message) {
   // Validate any set fields that are messages.
   std::vector<const google::protobuf::FieldDescriptor*> fields;
   message.GetReflection()->ListFields(message, &fields);
@@ -111,7 +111,7 @@ absl::Status Validator::ValidateFields(
 }
 
 absl::StatusOr<ValidationResult> Validator::Validate(const google::protobuf::Message& message) {
-  internal::ConstraintContext ctx;
+  internal::RuleContext ctx;
   ctx.failFast = failFast_;
   ctx.arena = arena_;
   auto status = ValidateMessage(ctx, message);
@@ -124,7 +124,7 @@ absl::StatusOr<ValidationResult> Validator::Validate(const google::protobuf::Mes
 
 absl::StatusOr<std::unique_ptr<ValidatorFactory>> ValidatorFactory::New() {
   std::unique_ptr<ValidatorFactory> result(new ValidatorFactory());
-  auto builder_or = internal::NewConstraintBuilder(&result->arena_);
+  auto builder_or = internal::NewRuleBuilder(&result->arena_);
   if (!builder_or.ok()) {
     return builder_or.status();
   }
@@ -136,15 +136,16 @@ absl::StatusOr<std::unique_ptr<ValidatorFactory>> ValidatorFactory::New() {
 absl::Status ValidatorFactory::Add(const google::protobuf::Descriptor* desc) {
   {
     absl::WriterMutexLock lock(&mutex_);
-    auto iter = constraints_.find(desc);
-    if (iter != constraints_.end()) {
+    auto iter = rules_.find(desc);
+    if (iter != rules_.end()) {
       return iter->second.status();
     }
-    auto status =
-        constraints_
-            .emplace(
-                desc, internal::NewMessageConstraints(messageFactory_, allowUnknownFields_, &arena_, *builder_, desc))
-            .first->second.status();
+    auto status = rules_
+                      .emplace(
+                          desc,
+                          internal::NewMessageRules(
+                              messageFactory_, allowUnknownFields_, &arena_, *builder_, desc))
+                      .first->second.status();
     if (!status.ok()) {
       return status;
     }
@@ -162,12 +163,11 @@ absl::Status ValidatorFactory::Add(const google::protobuf::Descriptor* desc) {
   return absl::OkStatus();
 }
 
-const internal::Constraints* ValidatorFactory::GetMessageConstraints(
-    const google::protobuf::Descriptor* desc) {
+const internal::Rules* ValidatorFactory::GetMessageRules(const google::protobuf::Descriptor* desc) {
   {
     absl::ReaderMutexLock lock(&mutex_);
-    auto iter = constraints_.find(desc);
-    if (iter != constraints_.end()) {
+    auto iter = rules_.find(desc);
+    if (iter != rules_.end()) {
       return &iter->second;
     }
     if (disableLazyLoading_) {
@@ -175,13 +175,15 @@ const internal::Constraints* ValidatorFactory::GetMessageConstraints(
     }
   }
   absl::WriterMutexLock lock(&mutex_);
-  auto iter = constraints_.find(desc);
-  if (iter != constraints_.end()) {
+  auto iter = rules_.find(desc);
+  if (iter != rules_.end()) {
     return &iter->second;
   }
-  return &constraints_
+  return &rules_
               .emplace(
-                  desc, internal::NewMessageConstraints(messageFactory_, allowUnknownFields_, &arena_, *builder_, desc))
+                  desc,
+                  internal::NewMessageRules(
+                      messageFactory_, allowUnknownFields_, &arena_, *builder_, desc))
               .first->second;
 }
 
