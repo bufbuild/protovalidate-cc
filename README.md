@@ -66,6 +66,8 @@ Remember to always check for the latest version of `protovalidate-cc` on the pro
 
 ### Bazel external repository
 
+#### Workspace
+
 To use `protovalidate-cc` as an external Bazel repository, add the following to the `WORKSPACE` file:
 
 ```bzl
@@ -94,6 +96,45 @@ cc_library(
         "@com_github_bufbuild_protovalidate_cc//buf/validate:validator",
         ...
     ]
+)
+```
+
+#### Bzlmod
+
+To use `protovalidate-cc` as an external dependency for bzlmod, add the following to the `MODULE.bazel`:
+
+```bzl
+module(
+    name = "my-module",
+    version = "1.0",
+)
+
+bazel_dep(name = "cel-cpp", repo_name = "com_google_cel_cpp", version="0.11.0")
+bazel_dep(name = "protovalidate-cc", version = "0.6.0")
+
+# Required because protovalidate-cc's MODULE.bazel file doesn't specify a version
+# for cel-cpp, which causes an error on build.
+git_override(
+  module_name = "cel-cpp",
+  remote = "https://github.com/google/cel-cpp.git",
+  commit = "<commit hash>"
+)
+
+git_override(
+  module_name = "protovalidate-cc",
+  remote = "https://github.com/bufbuild/protovalidate-cc.git",
+  commit = "<commit hash>"
+)
+```
+
+And the following to your `BUILD.bazel`:
+
+```bzl
+
+cc_binary(
+   ...
+   deps = [ ..., "@protovalidate-cc//buf/validate:validator", ...]
+   ...
 )
 ```
 
