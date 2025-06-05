@@ -28,18 +28,6 @@ bazel_dep(name = "googletest", version = "1.16.0.bcr.1", repo_name = "com_google
 
 bazel_dep(name = "abseil-cpp", version = "20240722.0", repo_name = "com_google_absl")
 
-bazel_dep(name = "cel-cpp", repo_name = "com_google_cel_cpp")
-
-archive_override(
-    module_name = "cel-cpp",
-    strip_prefix = "cel-cpp-0.11.0",
-    patches=[
-        "@protovalidate-cc//deps:patches/cel_cpp/0001-Fix-build-on-Windows-MSVC.patch",
-    ],
-    patch_args=["-p1"],
-    urls = [
-        "https://github.com/google/cel-cpp/archive/v0.11.0.tar.gz"
-    ]
-)
+bazel_dep(name = "cel-cpp", version = "0.11.0", repo_name = "com_google_cel_cpp")
 
 bazel_dep(name = "protovalidate", version = "1.0.0-rc.1", repo_name = "com_github_bufbuild_protovalidate")

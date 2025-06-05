@@ -70,6 +70,8 @@
     "https://bcr.bazel.build/modules/buildozer/7.1.2/source.json": "c9028a501d2db85793a6996205c8de120944f50a0d570438fcae0457a5f9d1f8",
     "https://bcr.bazel.build/modules/c-ares/1.15.0/MODULE.bazel": "ba0a78360fdc83f02f437a9e7df0532ad1fbaa59b722f6e715c11effebaa0166",
     "https://bcr.bazel.build/modules/c-ares/1.15.0/source.json": "5e3ed991616c5ec4cc09b0893b29a19232de4a1830eb78c567121bfea87453f7",
+    "https://bcr.bazel.build/modules/cel-cpp/0.11.0/MODULE.bazel": "1015879a50a01ad42d81eba3fa9b94141f73ed62f715ca87939706d4dbbdde15",
+    "https://bcr.bazel.build/modules/cel-cpp/0.11.0/source.json": "269ad902d7dff7114f6c0d050a1f0469813800c5b9f34e591818ab777cd1d954",
     "https://bcr.bazel.build/modules/cel-spec/0.15.0/MODULE.bazel": "e1eed53d233acbdcf024b4b0bc1528116d92c29713251b5154078ab1348cb600",
     "https://bcr.bazel.build/modules/cel-spec/0.23.0/MODULE.bazel": "d72e01a364f846200e46e7ebea3f9a7dc113cd47e849b88a554ee17f39aabcef",
     "https://bcr.bazel.build/modules/cel-spec/0.23.0/source.json": "dad63f29cc40e274340b335803e3ecfa440ff1b92329db73e934d146f2ca5e9d",
