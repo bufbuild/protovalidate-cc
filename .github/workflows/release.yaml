@@ -58,6 +58,7 @@ jobs:
     # Temporary workaround so we can create the release as a draft.
     # https://github.com/bazel-contrib/.github/pull/37
     uses: jchadwick-buf/bazel-contrib.github/.github/workflows/release_ruleset.yaml@0b9072bbf2142c18418820574625f5d9098c5dd3
+    needs: create-release-tag
     with:
       release_files: protovalidate-cc-*.tar.gz
       prerelease: false
