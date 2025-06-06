@@ -110,21 +110,7 @@ module(
 )
 
 bazel_dep(name = "cel-cpp", repo_name = "com_google_cel_cpp", version="0.11.0")
-bazel_dep(name = "protovalidate-cc", version = "0.6.0")
-
-# Required because cel-cpp is not in the BCR.
-git_override(
-  module_name = "cel-cpp",
-  remote = "https://github.com/google/cel-cpp.git",
-  commit = "<commit hash>"
-)
-
-# Required becaquse protovalidate-cc isn't in the BCR, since it depends on cel-cpp.
-git_override(
-  module_name = "protovalidate-cc",
-  remote = "https://github.com/bufbuild/protovalidate-cc.git",
-  commit = "<commit hash>"
-)
+bazel_dep(name = "protovalidate-cc", version = "1.0.0-rc2")
 ```
 
 And the following to your `BUILD.bazel`:

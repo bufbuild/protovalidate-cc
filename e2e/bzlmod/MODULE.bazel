@@ -12,25 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# DO NOT EDIT MODULE.bazel - Edit MODULE.bazel.tmpl instead, then run make generate.
-
-module(
-    name = "protovalidate-cc",
-    version = "0.0.0",
+bazel_dep(name = "protovalidate-cc", version = "0.0.0", dev_dependency = True)
+local_path_override(
+    module_name = "protovalidate-cc",
+    path = "../..",
 )
 
-bazel_dep(name = "re2", version = "2024-07-02.bcr.1", repo_name = "com_googlesource_code_re2")
-
-bazel_dep(name = "protobuf", version = "29.2", repo_name = "com_google_protobuf")
-
-bazel_dep(name = "rules_proto", version = "7.1.0")
-
+bazel_dep(name = "protovalidate", version = "1.0.0-rc.1")
 bazel_dep(name = "rules_buf", version = "0.3.0")
-
-bazel_dep(name = "googletest", version = "1.16.0.bcr.1", repo_name = "com_google_googletest")
-
-bazel_dep(name = "abseil-cpp", version = "20240722.0", repo_name = "com_google_absl")
-
-bazel_dep(name = "cel-cpp", version = "0.11.0", repo_name = "com_google_cel_cpp")
-
-bazel_dep(name = "protovalidate", version = "1.0.0-rc.1", repo_name = "com_github_bufbuild_protovalidate")
+bazel_dep(name = "protobuf", version = "29.2", repo_name = "com_google_protobuf")
+bazel_dep(name = "rules_proto", version = "7.1.0")
