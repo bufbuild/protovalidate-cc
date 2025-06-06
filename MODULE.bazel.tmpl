@@ -14,7 +14,10 @@
 
 # DO NOT EDIT MODULE.bazel - Edit MODULE.bazel.tmpl instead, then run make generate.
 
-module(name = "protovalidate-cc")
+module(
+    name = "protovalidate-cc",
+    version = "0.0.0",
+)
 
 bazel_dep(name = "re2", version = "2024-07-02.bcr.1", repo_name = "com_googlesource_code_re2")
 
