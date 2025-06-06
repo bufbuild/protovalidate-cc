@@ -110,7 +110,7 @@ module(
 )
 
 bazel_dep(name = "cel-cpp", repo_name = "com_google_cel_cpp", version="0.11.0")
-bazel_dep(name = "protovalidate-cc", version = "1.0.0-rc2")
+bazel_dep(name = "protovalidate-cc", version = "1.0.0-rc.2")
 ```
 
 And the following to your `BUILD.bazel`:
