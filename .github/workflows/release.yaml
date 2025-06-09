@@ -40,9 +40,7 @@ jobs:
               sha: commitTag.data.sha,
             });
   release:
-    # Temporary workaround so we can create the release as a draft.
-    # https://github.com/bazel-contrib/.github/pull/37
-    uses: jchadwick-buf/bazel-contrib.github/.github/workflows/release_ruleset.yaml@0b9072bbf2142c18418820574625f5d9098c5dd3
+    uses: bazel-contrib/.github/.github/workflows/release_ruleset.yaml@a841d62420f41a87a601fb331f3c2c2cc088506e
     needs: create-release-tag
     with:
       release_files: protovalidate-cc-*.tar.gz
