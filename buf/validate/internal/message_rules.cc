@@ -53,7 +53,7 @@ Rules NewMessageRules(
       for (const auto& name : msgOneof.fields()) {
         auto fdesc = descriptor->FindFieldByName(name);
         if (fdesc == nullptr) {
-          return absl::FailedPreconditionError("field \"" + name + "\" not found in message " + descriptor->full_name());
+          return absl::FailedPreconditionError(absl::StrCat("field \"", name, "\" not found in message ", descriptor->full_name()));
         }
         fields.push_back(fdesc);
       }

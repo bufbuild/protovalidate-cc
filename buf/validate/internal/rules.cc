@@ -457,13 +457,13 @@ absl::Status MessageOneofValidationRules::Validate(
   if (has_count > 1) {
     Violation violation;
     *violation.mutable_rule_id() = "message.oneof";
-    *violation.mutable_message() = "only one of " + field_names_() + " can be set";
+    *violation.mutable_message() = absl::StrCat("only one of ", field_names_(), " can be set");
     ctx.violations.emplace_back(std::move(violation), absl::nullopt, absl::nullopt);
   }
   if (required_ && has_count == 0) {
     Violation violation;
     *violation.mutable_rule_id() = "message.oneof";
-    *violation.mutable_message() = "one of " + field_names_() + " must be set";
+    *violation.mutable_message() = absl::StrCat("one of ", field_names_(), " must be set");
     ctx.violations.emplace_back(std::move(violation), absl::nullopt, absl::nullopt);
   }
   return absl::OkStatus();
