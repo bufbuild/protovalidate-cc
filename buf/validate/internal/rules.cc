@@ -446,4 +446,33 @@ absl::Status OneofValidationRules::Validate(
   return absl::OkStatus();
 }
 
+absl::Status MessageOneofValidationRules::Validate(
+    RuleContext& ctx, const google::protobuf::Message& message) const {
+  int has_count = 0;
+  for (const auto& fdesc : fields_) {
+    if (message.GetReflection()->HasField(message, fdesc)) {
+      has_count++;
+    }
+  }
+  if (has_count > 1) {
+    Violation violation;
+    *violation.mutable_rule_id() = "message.oneof";
+    *violation.mutable_message() = absl::StrCat("only one of ", field_names_(), " can be set");
+    ctx.violations.emplace_back(std::move(violation), absl::nullopt, absl::nullopt);
+  }
+  if (required_ && has_count == 0) {
+    Violation violation;
+    *violation.mutable_rule_id() = "message.oneof";
+    *violation.mutable_message() = absl::StrCat("one of ", field_names_(), " must be set");
+    ctx.violations.emplace_back(std::move(violation), absl::nullopt, absl::nullopt);
+  }
+  return absl::OkStatus();
+}
+
+std::string MessageOneofValidationRules::field_names_() const {
+  return absl::StrJoin(fields_, ", ", [](std::string* out, const google::protobuf::FieldDescriptor *fdesc) {
+    absl::StrAppend(out, fdesc->name());
+  });
+}
+
 } // namespace buf::validate::internal

@@ -133,6 +133,21 @@ class OneofValidationRules : public ValidationRules {
   bool required_ = false;
 };
 
+class MessageOneofValidationRules : public ValidationRules {
+  using Base = ValidationRules;
+
+public:
+  MessageOneofValidationRules(const std::vector<const google::protobuf::FieldDescriptor*> fields, const bool required)
+      : fields_(fields), required_(required) {}
+
+  absl::Status Validate(RuleContext& ctx, const google::protobuf::Message& message) const override;
+
+private:
+  const std::vector<const google::protobuf::FieldDescriptor*> fields_;
+  bool required_ = false;
+  std::string field_names_() const;
+};
+
 // Creates a new expression builder suitable for creating rules.
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>> NewRuleBuilder(
     google::protobuf::Arena* arena);
