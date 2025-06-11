@@ -470,14 +470,9 @@ absl::Status MessageOneofValidationRules::Validate(
 }
 
 std::string MessageOneofValidationRules::field_names_() const {
-  std::string result;
-  for (const auto& fdesc : fields_) {
-    if (result.size() > 0) {
-      result.append(", ");
-    }
-    result.append(fdesc->name());
-  }
-  return result;
+  return absl::StrJoin(fields_, ", ", [](std::string* out, const google::protobuf::FieldDescriptor *fdesc) {
+    absl::StrAppend(out, fdesc->name());
+  });
 }
 
 } // namespace buf::validate::internal
