@@ -38,7 +38,7 @@
   },
   "protovalidate": {
     "meta": {
-      "version": "1.0.0-rc.1"
+      "version": "1.0.0-rc.2"
     },
     "source": {
       "sha256": "f04ecb455e58172bcd7b011dac4ef35ffbe4f6acf0ec7021433bed4e2289de2b",
