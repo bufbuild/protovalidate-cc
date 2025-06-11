@@ -46,6 +46,19 @@ Rules NewMessageRules(
       return rules_or.status();
     }
     result.emplace_back(std::move(rules_or).value());
+
+    // buf.validate.MessageRules.oneof
+    for (const auto& msgOneof : msgLvl.oneof()) {
+      std::vector<const google::protobuf::FieldDescriptor *> fields;
+      for (const auto& name : msgOneof.fields()) {
+        auto fdesc = descriptor->FindFieldByName(name);
+        if (fdesc == nullptr) {
+          return absl::FailedPreconditionError("field \"" + name + "\" not found in message " + descriptor->full_name());
+        }
+        fields.push_back(fdesc);
+      }
+      result.emplace_back(std::make_unique<MessageOneofValidationRules>(fields, msgOneof.required()));
+    }
   }
 
   for (int i = 0; i < descriptor->field_count(); i++) {
