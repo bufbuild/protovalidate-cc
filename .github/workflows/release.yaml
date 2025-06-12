@@ -40,7 +40,7 @@ jobs:
               sha: commitTag.data.sha,
             });
   release:
-    uses: bazel-contrib/.github/.github/workflows/release_ruleset.yaml@a841d62420f41a87a601fb331f3c2c2cc088506e
+    uses: bazel-contrib/.github/.github/workflows/release_ruleset.yaml@master
     needs: create-release-tag
     with:
       release_files: protovalidate-cc-*.tar.gz
