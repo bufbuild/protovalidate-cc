@@ -13,6 +13,8 @@
 // limitations under the License.
 
 #include "buf/validate/internal/message_rules.h"
+#include <set>
+#include <unordered_set>
 
 #include "buf/validate/internal/field_rules.h"
 
@@ -48,10 +50,19 @@ Rules NewMessageRules(
     result.emplace_back(std::move(rules_or).value());
 
     // buf.validate.MessageRules.oneof
+    std::unordered_set<std::string> seen;     
     for (const auto& msgOneof : msgLvl.oneof()) {
+      if (msgOneof.fields_size() == 0) {
+        return absl::FailedPreconditionError(absl::StrCat("at least one field must be specified in oneof rule for the message ", descriptor->full_name()));
+      }
+      seen.clear();
       std::vector<const google::protobuf::FieldDescriptor *> fields;
       for (const auto& name : msgOneof.fields()) {
-        auto fdesc = descriptor->FindFieldByName(name);
+        if (seen.count(name) > 0) {
+          return absl::FailedPreconditionError(absl::StrCat("duplicate \"", name, "\"  in oneof rule for the message ", descriptor->full_name()));
+        }
+        seen.insert(name);
+        const auto* fdesc = descriptor->FindFieldByName(name);
         if (fdesc == nullptr) {
           return absl::FailedPreconditionError(absl::StrCat("field \"", name, "\" not found in message ", descriptor->full_name()));
         }
