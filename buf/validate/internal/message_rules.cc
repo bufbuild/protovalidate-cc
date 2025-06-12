@@ -13,7 +13,6 @@
 // limitations under the License.
 
 #include "buf/validate/internal/message_rules.h"
-#include <set>
 #include <unordered_set>
 
 #include "buf/validate/internal/field_rules.h"
