@@ -69,7 +69,7 @@ Rules NewMessageRules(
           return absl::FailedPreconditionError(absl::StrCat("field \"", name, "\" not found in message ", descriptor->full_name()));
         }
         fields.push_back(fdesc); 
-        allMsgOneofs.insert(name)      ; 
+        allMsgOneofs.insert(name); 
       }
       result.emplace_back(std::make_unique<MessageOneofValidationRules>(fields, msgOneof.required()));
     }
@@ -81,14 +81,14 @@ Rules NewMessageRules(
       continue;
     }    
     auto fieldLvl = std::ref(field->options().GetExtension(buf::validate::field));
-    if (!fieldLvl.get().has_ignore() && allMsgOneofs.count(field->name()) > 0) {      
-      FieldRules fieldLvlOvr;
-      fieldLvlOvr.CopyFrom(fieldLvl.get());
-      fieldLvlOvr.set_ignore(IGNORE_IF_UNPOPULATED);
-      fieldLvl = fieldLvlOvr;
+    if (!fieldLvl.get().has_ignore() && allMsgOneofs.count(field->name()) > 0) {
+      auto* fieldLvlOvr = google::protobuf::Arena::Create<FieldRules>(arena);
+      fieldLvlOvr->CopyFrom(fieldLvl);
+      fieldLvlOvr->set_ignore(IGNORE_IF_UNPOPULATED);
+      fieldLvl = *fieldLvlOvr;
     }
     auto rules_or =
-        NewFieldRules(messageFactory, allowUnknownFields, arena, builder, field, fieldLvl.get());
+        NewFieldRules(messageFactory, allowUnknownFields, arena, builder, field, fieldLvl);
     if (!rules_or.ok()) {
       return rules_or.status();
     }
