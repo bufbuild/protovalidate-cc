@@ -80,6 +80,11 @@ Rules NewMessageRules(
     if (!field->options().HasExtension(buf::validate::field)) {
       continue;
     }
+    // GetExtension returns a `const <type>&` which cannot be reassigned. We may have to modify
+    // ignore if it the field is part of a MessageOneofRule. 
+    // 
+    // To be able to reassign the modified field rules we use the std::reference_wrapper
+    // and swap the refernce with the modified rules.
     auto fieldLvl = std::ref(field->options().GetExtension(buf::validate::field));
     if (!fieldLvl.get().has_ignore() && allMsgOneofs.count(field->name()) > 0) {      
       FieldRules fieldLvlOvr;
