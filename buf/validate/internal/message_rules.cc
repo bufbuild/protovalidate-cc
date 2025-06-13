@@ -14,8 +14,10 @@
 
 #include "buf/validate/internal/message_rules.h"
 #include <unordered_set>
+#include <vector>
 
 #include "buf/validate/internal/field_rules.h"
+#include "buf/validate/validate.pb.h"
 
 namespace buf::validate::internal {
 
@@ -37,6 +39,7 @@ Rules NewMessageRules(
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
   std::vector<std::unique_ptr<ValidationRules>> result;
+  std::unordered_set<std::string> allMsgOneofs;
   if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
     if (msgLvl.disabled()) {
@@ -65,7 +68,8 @@ Rules NewMessageRules(
         if (fdesc == nullptr) {
           return absl::FailedPreconditionError(absl::StrCat("field \"", name, "\" not found in message ", descriptor->full_name()));
         }
-        fields.push_back(fdesc);
+        fields.push_back(fdesc); 
+        allMsgOneofs.insert(name)      ; 
       }
       result.emplace_back(std::make_unique<MessageOneofValidationRules>(fields, msgOneof.required()));
     }
@@ -76,9 +80,15 @@ Rules NewMessageRules(
     if (!field->options().HasExtension(buf::validate::field)) {
       continue;
     }
-    const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
+    auto fieldLvl = std::ref(field->options().GetExtension(buf::validate::field));
+    if (!fieldLvl.get().has_ignore() && allMsgOneofs.count(field->name()) > 0) {      
+      FieldRules fieldLvlOvr;
+      fieldLvlOvr.CopyFrom(fieldLvl.get());
+      fieldLvlOvr.set_ignore(IGNORE_IF_UNPOPULATED);
+      fieldLvl = fieldLvlOvr;
+    }
     auto rules_or =
-        NewFieldRules(messageFactory, allowUnknownFields, arena, builder, field, fieldLvl);
+        NewFieldRules(messageFactory, allowUnknownFields, arena, builder, field, fieldLvl.get());
     if (!rules_or.ok()) {
       return rules_or.status();
     }
