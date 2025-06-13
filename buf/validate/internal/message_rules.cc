@@ -13,8 +13,11 @@
 // limitations under the License.
 
 #include "buf/validate/internal/message_rules.h"
+#include <unordered_set>
+#include <vector>
 
 #include "buf/validate/internal/field_rules.h"
+#include "buf/validate/validate.pb.h"
 
 namespace buf::validate::internal {
 
@@ -36,6 +39,7 @@ Rules NewMessageRules(
     google::api::expr::runtime::CelExpressionBuilder& builder,
     const google::protobuf::Descriptor* descriptor) {
   std::vector<std::unique_ptr<ValidationRules>> result;
+  std::unordered_set<std::string> allMsgOneofs;
   if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
     if (msgLvl.disabled()) {
@@ -48,14 +52,24 @@ Rules NewMessageRules(
     result.emplace_back(std::move(rules_or).value());
 
     // buf.validate.MessageRules.oneof
+    std::unordered_set<std::string> seen;     
     for (const auto& msgOneof : msgLvl.oneof()) {
+      if (msgOneof.fields_size() == 0) {
+        return absl::FailedPreconditionError(absl::StrCat("at least one field must be specified in oneof rule for the message ", descriptor->full_name()));
+      }
+      seen.clear();
       std::vector<const google::protobuf::FieldDescriptor *> fields;
       for (const auto& name : msgOneof.fields()) {
-        auto fdesc = descriptor->FindFieldByName(name);
+        if (seen.count(name) > 0) {
+          return absl::FailedPreconditionError(absl::StrCat("duplicate \"", name, "\"  in oneof rule for the message ", descriptor->full_name()));
+        }
+        seen.insert(name);
+        const auto* fdesc = descriptor->FindFieldByName(name);
         if (fdesc == nullptr) {
           return absl::FailedPreconditionError(absl::StrCat("field \"", name, "\" not found in message ", descriptor->full_name()));
         }
-        fields.push_back(fdesc);
+        fields.push_back(fdesc); 
+        allMsgOneofs.insert(name); 
       }
       result.emplace_back(std::make_unique<MessageOneofValidationRules>(fields, msgOneof.required()));
     }
@@ -65,8 +79,14 @@ Rules NewMessageRules(
     const google::protobuf::FieldDescriptor* field = descriptor->field(i);
     if (!field->options().HasExtension(buf::validate::field)) {
       continue;
+    }    
+    auto fieldLvl = std::ref(field->options().GetExtension(buf::validate::field));
+    if (!fieldLvl.get().has_ignore() && allMsgOneofs.count(field->name()) > 0) {
+      auto* fieldLvlOvr = google::protobuf::Arena::Create<FieldRules>(arena);
+      fieldLvlOvr->CopyFrom(fieldLvl);
+      fieldLvlOvr->set_ignore(IGNORE_IF_UNPOPULATED);
+      fieldLvl = *fieldLvlOvr;
     }
-    const auto& fieldLvl = field->options().GetExtension(buf::validate::field);
     auto rules_or =
         NewFieldRules(messageFactory, allowUnknownFields, arena, builder, field, fieldLvl);
     if (!rules_or.ok()) {
