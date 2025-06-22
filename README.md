@@ -76,9 +76,9 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 http_archive(
     name = "com_github_bufbuild_protovalidate_cc",
     sha256 = ...,
-    strip_prefix = "protovalidate-cc-{verion}",
+    strip_prefix = "protovalidate-cc-{version}",
     urls = [
-        "https://github.com/bufbuild/protovalidate-cc/archive/v{verion}.tar.gz",
+        "https://github.com/bufbuild/protovalidate-cc/archive/v{version}.tar.gz",
     ],
 )
 
