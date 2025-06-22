@@ -63,7 +63,7 @@ http_archive(
     sha256 = "${SHA256}",
     strip_prefix = "${PREFIX}",
     urls = [
-        "https://github.com/bufbuild/protovalidate-cc/archive/${TAG}.tar.gz",
+        "https://github.com/bufbuild/protovalidate-cc/releases/download/${TAG}/protovalidate-cc-${TAG:1}.tar.gz",
     ],
 )
 \`\`\`
