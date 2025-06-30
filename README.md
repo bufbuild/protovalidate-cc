@@ -101,14 +101,14 @@ Highlights for C++ developers include:
 * The [developer quickstart][quickstart]
 * A [migration guide for protoc-gen-validate][migration-guide] users
 
-## Additional Languages and Repositories
+## Additional languages and repositories
 
 Protovalidate isn't just for C++! You might be interested in sibling repositories for other languages:
 
 - [`protovalidate-go`][pv-go] (Go)
 - [`protovalidate-java`][pv-java] (Java)
 - [`protovalidate-python`][pv-python] (Python)
-- `protovalidate-es` (TypeScript and JavaScript, coming soon!)
+- [`protovalidate-es`][pv-es] (TypeScript and JavaScript)
 
 Additionally, [protovalidate's core repository](https://github.com/bufbuild/protovalidate) provides:
 
@@ -133,6 +133,7 @@ Offered under the [Apache 2 license][license].
 [pv-java]: https://github.com/bufbuild/protovalidate-java
 [pv-python]: https://github.com/bufbuild/protovalidate-python
 [pv-cc]: https://github.com/bufbuild/protovalidate-cc
+[pv-es]: https://github.com/bufbuild/protovalidate-es
 
 [buf-mod]: https://buf.build/bufbuild/protovalidate
 [license]: LICENSE
