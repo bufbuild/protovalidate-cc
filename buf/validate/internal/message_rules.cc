@@ -81,7 +81,7 @@ Rules NewMessageRules(
       continue;
     }    
     auto fieldLvl = std::ref(field->options().GetExtension(buf::validate::field));
-    if (!fieldLvl.get().has_ignore() && allMsgOneofs.count(field->name()) > 0) {
+    if (!fieldLvl.get().has_ignore() && allMsgOneofs.count(std::string(field->name())) > 0) {
       auto* fieldLvlOvr = google::protobuf::Arena::Create<FieldRules>(arena);
       fieldLvlOvr->CopyFrom(fieldLvl);
       fieldLvlOvr->set_ignore(IGNORE_IF_UNPOPULATED);
