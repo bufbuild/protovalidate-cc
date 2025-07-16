@@ -50,43 +50,6 @@ bool isEmptyItem(cel::runtime::CelValue item) {
   }
 }
 
-bool isDefaultItem(cel::runtime::CelValue item, const google::protobuf::FieldDescriptor* field) {
-  using google::protobuf::DynamicMessageFactory;
-  using google::protobuf::FieldDescriptor;
-  using google::protobuf::util::MessageDifferencer;
-  switch (field->cpp_type()) {
-    case FieldDescriptor::CPPTYPE_INT32:
-      return item.IsInt64() && item.Int64OrDie() == field->default_value_int32();
-    case FieldDescriptor::CPPTYPE_INT64:
-      return item.IsInt64() && item.Int64OrDie() == field->default_value_int64();
-    case FieldDescriptor::CPPTYPE_UINT32:
-      return item.IsUint64() && item.Uint64OrDie() == field->default_value_uint32();
-    case FieldDescriptor::CPPTYPE_UINT64:
-      return item.IsUint64() && item.Uint64OrDie() == field->default_value_uint64();
-    case FieldDescriptor::CPPTYPE_DOUBLE:
-      return item.IsDouble() && item.DoubleOrDie() == field->default_value_double();
-    case FieldDescriptor::CPPTYPE_FLOAT:
-      return item.IsDouble() && item.DoubleOrDie() == field->default_value_float();
-    case FieldDescriptor::CPPTYPE_BOOL:
-      return item.IsBool() && item.BoolOrDie() == field->default_value_bool();
-    case FieldDescriptor::CPPTYPE_ENUM:
-      return item.IsInt64() && item.Int64OrDie() == field->default_value_enum()->number();
-    case FieldDescriptor::CPPTYPE_STRING:
-      return item.IsString() && item.StringOrDie().value() == field->default_value_string();
-    case FieldDescriptor::CPPTYPE_MESSAGE:
-      if (item.IsMessage()) {
-        DynamicMessageFactory dmf;
-        const auto* message = item.MessageOrDie();
-        auto* empty = dmf.GetPrototype(message->GetDescriptor())->New();
-        return MessageDifferencer::Equals(*message, *empty);
-      }
-      break;
-    default:
-      break;
-  }
-  return false;
-}
-
 } // namespace
 
 absl::StatusOr<std::unique_ptr<google::api::expr::runtime::CelExpressionBuilder>> NewRuleBuilder(
@@ -204,9 +167,6 @@ absl::Status FieldValidationRules::Validate(
       return status;
     }
 
-    if (ignoreDefault_ && isDefaultItem(result, field_)) {
-      return absl::OkStatus();
-    }
   }
   activation.InsertValue("this", result);
   int pos = ctx.violations.size();
@@ -261,9 +221,6 @@ absl::Status RepeatedValidationRules::Validate(
   for (int i = 0; i < list.size(); i++) {
     auto item = list[i];
     if (itemRules_->getIgnoreEmpty() && isEmptyItem(item)) {
-      continue;
-    }
-    if (itemRules_->getIgnoreDefault() && isDefaultItem(item, field_)) {
       continue;
     }
     cel::runtime::Activation activation;
