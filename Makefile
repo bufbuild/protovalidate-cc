@@ -45,7 +45,7 @@ build: ## Build the project
 .PHONY: conformance
 conformance: $(BIN)/protovalidate-conformance
 	GOBIN=$(abspath $(BIN)) $(GO) install \
-    	github.com/bufbuild/protovalidate/tools/protovalidate-conformance@next
+    	github.com/bufbuild/protovalidate/tools/protovalidate-conformance@$(PROTOVALIDATE_VERSION)
 	$(BAZEL) build -c opt //buf/validate/conformance:runner_main && \
 	$(BIN)/protovalidate-conformance bazel-bin/buf/validate/conformance/runner_main $(ARGS)
 

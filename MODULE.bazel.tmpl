@@ -34,9 +34,3 @@ bazel_dep(name = "abseil-cpp", version = "{{absl.meta.version}}", repo_name = "c
 bazel_dep(name = "cel-cpp", version = "{{cel_cpp.meta.version}}", repo_name = "com_google_cel_cpp")
 
 bazel_dep(name = "protovalidate", version = "{{protovalidate.meta.version}}", repo_name = "com_github_bufbuild_protovalidate")
-
-git_override(
-    module_name = "protovalidate",
-    remote = "https://github.com/bufbuild/protovalidate.git",
-    branch = "next"
-)
