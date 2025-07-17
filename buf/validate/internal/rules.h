@@ -43,10 +43,8 @@ class FieldValidationRules : public CelValidationRules {
         field_(desc),
         mapEntryField_(desc->containing_type()->options().map_entry()),
         ignoreEmpty_(
-            field.ignore() == IGNORE_IF_DEFAULT_VALUE || field.ignore() == IGNORE_IF_UNPOPULATED ||
+            field.ignore() == IGNORE_IF_ZERO_VALUE ||
             (desc->has_presence() && !mapEntryField_)),
-        ignoreDefault_(
-            field.ignore() == IGNORE_IF_DEFAULT_VALUE && (desc->has_presence() && !mapEntryField_)),
         required_(field.required()),
         anyRules_(anyRules) {}
 
@@ -59,14 +57,11 @@ class FieldValidationRules : public CelValidationRules {
 
   [[nodiscard]] bool getIgnoreEmpty() const { return ignoreEmpty_; }
 
-  [[nodiscard]] bool getIgnoreDefault() const { return ignoreDefault_; }
-
  protected:
   const FieldRules& fieldRules_;
   const google::protobuf::FieldDescriptor* field_ = nullptr;
   bool mapEntryField_ = false;
   bool ignoreEmpty_ = false;
-  bool ignoreDefault_ = false;
   bool required_ = false;
   const AnyRules* anyRules_ = nullptr;
 };
