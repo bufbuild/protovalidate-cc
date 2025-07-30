@@ -43,7 +43,7 @@ class ValidationResult {
         violations_.begin(),
         violations_.end(),
         RepeatedPtrFieldBackInserter(proto.mutable_violations()),
-        [](RuleViolation& violation) { return violation.proto(); });
+        [](const RuleViolation& violation) { return violation.proto(); });
     return proto;
   }
 
