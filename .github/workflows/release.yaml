@@ -15,8 +15,9 @@ permissions:
 jobs:
   create-release-tag:
     name: Create release tag
-    runs-on: ubuntu-latest
+    runs-on: runs-on=${{ github.run_id }}/runner=buf-1cpu-linux-x64
     steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2.0.3
       - name: Checkout
         uses: actions/checkout@v4
 

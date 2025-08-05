@@ -13,8 +13,9 @@ permissions:
 jobs:
   conformance:
     name: Conformance Testing
-    runs-on: ubuntu-24.04
+    runs-on: runs-on=${{ github.run_id }}/runner=buf-1cpu-linux-x64
     steps:
+      - uses: runs-on/action@cd2b598b0515d39d78c38a02d529db87d2196d1e # v2.0.3
       - name: Setup Cache
         uses: actions/cache@v4
         with:
