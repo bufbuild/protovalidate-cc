@@ -37,13 +37,13 @@ class ValidationResult {
  public:
   ValidationResult(std::vector<RuleViolation> violations) : violations_{std::move(violations)} {}
 
-  [[nodiscard]] Violations proto() {
+  [[nodiscard]] Violations proto() const {
     Violations proto{};
     std::transform(
         violations_.begin(),
         violations_.end(),
         RepeatedPtrFieldBackInserter(proto.mutable_violations()),
-        [](RuleViolation& violation) { return violation.proto(); });
+        [](const RuleViolation& violation) { return violation.proto(); });
     return proto;
   }
 
