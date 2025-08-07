@@ -42,9 +42,6 @@ Rules NewMessageRules(
   std::unordered_set<std::string> allMsgOneofs;
   if (descriptor->options().HasExtension(buf::validate::message)) {
     const auto& msgLvl = descriptor->options().GetExtension(buf::validate::message);
-    if (msgLvl.disabled()) {
-      return result;
-    }
     auto rules_or = BuildMessageRules(builder, msgLvl);
     if (!rules_or.ok()) {
       return rules_or.status();
@@ -81,10 +78,10 @@ Rules NewMessageRules(
       continue;
     }    
     auto fieldLvl = std::ref(field->options().GetExtension(buf::validate::field));
-    if (!fieldLvl.get().has_ignore() && allMsgOneofs.count(field->name()) > 0) {
+    if (!fieldLvl.get().has_ignore() && allMsgOneofs.count(std::string(field->name())) > 0) {
       auto* fieldLvlOvr = google::protobuf::Arena::Create<FieldRules>(arena);
       fieldLvlOvr->CopyFrom(fieldLvl);
-      fieldLvlOvr->set_ignore(IGNORE_IF_UNPOPULATED);
+      fieldLvlOvr->set_ignore(IGNORE_IF_ZERO_VALUE);
       fieldLvl = *fieldLvlOvr;
     }
     auto rules_or =
