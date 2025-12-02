@@ -39,7 +39,11 @@ absl::Status ProcessRule(
     if (!result.BoolOrDie()) {
       // Add violation with the rule message.
       Violation violation;
-      violation.set_message(expr.rule.message());
+      auto message = expr.rule.message();
+      if (message.empty()) {
+        message = std::string(absl::StrFormat("\"%s\" returned false", expr.rule.expression()));
+      }
+      violation.set_message(message);
       violation.set_rule_id(expr.rule.id());
       if (expr.rulePath.has_value()) {
         *violation.mutable_rule() = *expr.rulePath;
