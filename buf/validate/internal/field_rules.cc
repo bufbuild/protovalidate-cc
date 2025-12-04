@@ -341,6 +341,18 @@ absl::StatusOr<std::unique_ptr<FieldValidationRules>> NewFieldRules(
           absl::StrFormat("unknown field validator type %d", fieldLvl.type_case()));
   }
   if (rules_or.ok()) {
+    for (int i = 0; i < fieldLvl.cel_expression_size(); i++) {
+      const auto& expr = fieldLvl.cel_expression(i);
+      FieldPathElement celElement =
+          staticFieldPathElement<FieldRules, FieldRules::kCelExpressionFieldNumber>();
+      celElement.set_index(i);
+      FieldPath rulePath;
+      *rulePath.mutable_elements()->Add() = celElement;
+      auto status = rules_or.value()->Add(builder, expr, rulePath, nullptr);
+      if (!status.ok()) {
+        return status;
+      }
+    }
     for (int i = 0; i < fieldLvl.cel_size(); i++) {
       const auto& rule = fieldLvl.cel(i);
       FieldPathElement celElement =

@@ -51,6 +51,11 @@ class CelValidationRules : public ValidationRules {
       std::string_view expression,
       absl::optional<FieldPath> rulePath,
       const google::protobuf::FieldDescriptor* ruleField);
+  absl::Status Add(
+      google::api::expr::runtime::CelExpressionBuilder& builder,
+      std::string_view expression,
+      absl::optional<FieldPath> rulePath,
+      const google::protobuf::FieldDescriptor* ruleField);
 
   // Validate all the cel rules given the activation that already has 'this' bound.
   absl::Status ValidateCel(
