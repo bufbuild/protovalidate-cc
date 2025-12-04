@@ -24,6 +24,11 @@ namespace buf::validate::internal {
 absl::StatusOr<std::unique_ptr<MessageValidationRules>> BuildMessageRules(
     google::api::expr::runtime::CelExpressionBuilder& builder, const MessageRules& rules) {
   auto result = std::make_unique<MessageValidationRules>();
+  for (const auto& expr: rules.cel_expression()) {
+    if (auto status = result->Add(builder, expr, absl::nullopt, nullptr); !status.ok()) {
+      return status;
+    }
+  }
   for (const auto& rule : rules.cel()) {
     if (auto status = result->Add(builder, rule, absl::nullopt, nullptr); !status.ok()) {
       return status;

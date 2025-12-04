@@ -125,6 +125,16 @@ absl::Status CelValidationRules::Add(
   return Add(builder, rule, std::move(rulePath), ruleField);
 }
 
+absl::Status CelValidationRules::Add(
+    google::api::expr::runtime::CelExpressionBuilder& builder,
+    std::string_view expression,
+    absl::optional<FieldPath> rulePath,
+    const google::protobuf::FieldDescriptor* ruleField) {
+  Rule rule;
+  *rule.mutable_expression() = expression;
+  return Add(builder, rule, std::move(rulePath), ruleField);
+}
+
 absl::Status CelValidationRules::ValidateCel(
     RuleContext& ctx, google::api::expr::runtime::Activation& activation) const {
   activation.InsertValue("rules", rules_);
