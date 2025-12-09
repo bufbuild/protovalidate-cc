@@ -237,6 +237,22 @@ absl::StatusOr<std::unique_ptr<FieldValidationRules>> NewFieldRules(
         }
       }
       break;
+    case FieldRules::kFieldMask:
+      if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
+          field->message_type()->full_name() !=
+              google::protobuf::FieldMask::descriptor()->full_name()) {
+        return absl::InvalidArgumentError("field_mask field validator on non-field_mask field");
+      } else {
+        auto result = std::make_unique<FieldValidationRules>(field, fieldLvl);
+        auto status = BuildCelRules(
+            messageFactory, allowUnknownFields, arena, builder, fieldLvl.field_mask(), *result);
+        if (!status.ok()) {
+          rules_or = status;
+        } else {
+          rules_or = std::move(result);
+        }
+      }
+      break;
     case FieldRules::kTimestamp:
       if (field->cpp_type() != google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE ||
           field->message_type()->full_name() !=

@@ -26,10 +26,10 @@
   },
   "cel_cpp": {
     "meta": {
-      "version": "0.11.0"
+      "version": "0.14.0"
     },
     "source": {
-      "sha256": "777f6780a3cc72264c3cc3279cc92affbaefb2bdc01aaff88463cca5b6167e1d",
+      "sha256": "0a4f9a1c0bcc83629eb30d1c278883d32dec0f701efcdabd7bebf33fef8dab71",
       "strip_prefix": "cel-cpp-{version}",
       "urls": [
         "https://github.com/google/cel-cpp/archive/v{version}.tar.gz"
@@ -39,7 +39,7 @@
   "protovalidate": {
     "meta": {
       "version": "1.0.0"
-    },
+    },                           
     "source": {
       "sha256": "39a3f262614ffc23e89507f4dbdae535d8d73021713f580733b6a8dfdf06f734",
       "strip_prefix": "protovalidate-{version}",
