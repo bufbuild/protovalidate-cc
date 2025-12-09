@@ -10,8 +10,7 @@ BIN := .tmp/bin
 COPYRIGHT_YEARS := 2023-2025
 LICENSE_IGNORE := -e internal/testdata/
 LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
-# PROTOVALIDATE_VERSION ?= v$(shell <./deps/shared_deps.json jq -j .protovalidate.meta.version)
-PROTOVALIDATE_VERSION ?= 4abe5a0b321404d9c825a6c6ca5e384fd3946018
+PROTOVALIDATE_VERSION ?= v$(shell <./deps/shared_deps.json jq -j .protovalidate.meta.version)
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
 GO ?= go
