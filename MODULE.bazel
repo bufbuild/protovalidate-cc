@@ -31,8 +31,6 @@ bazel_dep(name = "googletest", version = "1.16.0.bcr.1", repo_name = "com_google
 
 bazel_dep(name = "abseil-cpp", version = "20240722.0", repo_name = "com_google_absl")
 
-bazel_dep(name = "cel-cpp", version = "0.14.0", repo_name = "com_google_cel_cpp")
+bazel_dep(name = "cel-cpp", version = "0.11.0", repo_name = "com_google_cel_cpp")
 
-bazel_dep(name = "protovalidate", version = "1.0.0", repo_name = "com_github_bufbuild_protovalidate")
-
-git_override(module_name = "protovalidate", remote = "https://github.com/bufbuild/protovalidate", commit = "4abe5a0b321404d9c825a6c6ca5e384fd3946018")
+bazel_dep(name = "protovalidate", version = "1.1.0", repo_name = "com_github_bufbuild_protovalidate")
