@@ -112,6 +112,7 @@ absl::Status FieldValidationRules::Validate(
             std::move(violation),
             ProtoField{&message, field_},
             ProtoField{&fieldRules_, requiredField});
+        return absl::OkStatus();
       }
     }
   } else if (field_->is_repeated()) {
@@ -132,6 +133,7 @@ absl::Status FieldValidationRules::Validate(
             std::move(violation),
             ProtoField{&message, field_},
             ProtoField{&fieldRules_, requiredField});
+        return absl::OkStatus();
       }
     }
   } else {
