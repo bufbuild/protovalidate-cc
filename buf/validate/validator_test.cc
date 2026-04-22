@@ -80,7 +80,7 @@ TEST(ValidatorTest, ValidateBool) {
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   ASSERT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "bool.const");
-  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value must equal false");
+  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "must equal false");
 }
 
 TEST(ValidatorTest, ValidateStrRepeatedUniqueSuccess) {
@@ -141,7 +141,7 @@ TEST(ValidatorTest, ValidateRelativeURIFailure) {
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "string.uri");
-  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value must be a valid URI");
+  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "must be a valid URI");
   EXPECT_THAT(
       violations_or.value().violations(0).field_value(),
       Optional(FieldValueOf(VariantWith<std::string>("/foo/bar?baz=quux"))));
@@ -202,7 +202,7 @@ TEST(ValidatorTest, ValidateBadURIRefFailure) {
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "string.uri_ref");
   EXPECT_EQ(
-      violations_or.value().violations(0).proto().message(), "value must be a valid URI Reference");
+      violations_or.value().violations(0).proto().message(), "must be a valid URI Reference");
   EXPECT_THAT(
       violations_or.value().violations(0).field_value(),
       Optional(FieldValueOf(VariantWith<std::string>("!@#$%^&*"))));
@@ -251,7 +251,7 @@ TEST(ValidatorTest, ValidateStringContainsFailure) {
   EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "string.contains");
   EXPECT_EQ(
       violations_or.value().violations(0).proto().message(),
-      "value does not contain substring `bar`");
+      "does not contain substring `bar`");
 }
 
 TEST(ValidatorTest, ValidateStringContainsSuccess) {
@@ -279,7 +279,7 @@ TEST(ValidatorTest, ValidateBytesContainsFailure) {
   ASSERT_TRUE(violations_or.ok()) << violations_or.status();
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "bytes.contains");
-  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "value does not contain 626172");
+  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "does not contain 626172");
 }
 
 TEST(ValidatorTest, ValidateBytesContainsSuccess) {
@@ -308,7 +308,7 @@ TEST(ValidatorTest, ValidateStartsWithFailure) {
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "string.prefix");
   EXPECT_EQ(
-      violations_or.value().violations(0).proto().message(), "value does not have prefix `foo`");
+      violations_or.value().violations(0).proto().message(), "does not have prefix `foo`");
 }
 
 TEST(ValidatorTest, ValidateStartsWithSuccess) {
@@ -337,7 +337,7 @@ TEST(ValidatorTest, ValidateEndsWithFailure) {
   EXPECT_EQ(violations_or.value().violations_size(), 1);
   EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "string.suffix");
   EXPECT_EQ(
-      violations_or.value().violations(0).proto().message(), "value does not have suffix `baz`");
+      violations_or.value().violations(0).proto().message(), "does not have suffix `baz`");
 }
 
 TEST(ValidatorTest, ValidateHostnameSuccess) {
