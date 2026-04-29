@@ -8,8 +8,8 @@ MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
 BIN := .tmp/bin
 COPYRIGHT_YEARS := 2023-2025
-LICENSE_IGNORE := -e internal/testdata/
-LICENSE_HEADER_VERSION := 0294fdbe1ce8649ebaf5e87e8cdd588e33730bbb
+LICENSE_IGNORE := -e internal/testdata/ -e .github/ -e .bcr/ -e buf/validate/conformance -e e2e/bzlmod
+LICENSE_HEADER_VERSION := 04ed9c9179fc71d0dab7bf2919fcdc7b0bd9fe60
 PROTOVALIDATE_VERSION ?= v$(shell <./deps/shared_deps.json jq -j .protovalidate.meta.version)
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
