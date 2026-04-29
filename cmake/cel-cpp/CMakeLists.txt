@@ -288,6 +288,7 @@ target_include_directories(cel_cpp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
+target_compile_features(cel_cpp PUBLIC cxx_std_20)
 target_compile_definitions(cel_cpp PRIVATE ANTLR4CPP_USING_ABSEIL)
 add_library(cel_cpp::cel_cpp ALIAS cel_cpp)
 

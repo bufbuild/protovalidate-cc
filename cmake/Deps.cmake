@@ -218,16 +218,11 @@ else()
                 message(FATAL_ERROR "protovalidate-cc: Installation can not be enabled when using vendored re2. Install re2 system-wide, or disable installation using -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF.")
             endif()
             message(STATUS "protovalidate-cc: Fetching re2")
-            set(RE2_PATCHES
-                ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/re2/0001-Add-RE2_INSTALL-option.patch
-            )
-            MakePatchCommand(RE2_PATCH_COMMAND "${RE2_PATCHES}")
             FetchContent_Declare(
                 re2
                 GIT_REPOSITORY "https://github.com/google/re2.git"
-                GIT_TAG "2024-04-01"
+                GIT_TAG "2025-11-05"
                 GIT_SHALLOW TRUE
-                PATCH_COMMAND ${RE2_PATCH_COMMAND}
             )
             set(RE2_INSTALL OFF)
             FetchContent_MakeAvailable(re2)
@@ -284,7 +279,7 @@ FetchContent_Declare(cel_cpp
     URL_HASH SHA256=${PROTOVALIDATE_CC_CEL_CPP_SHA256}
     PATCH_COMMAND ${CEL_CPP_PATCH_COMMAND}
 
-    # THis stops MakeAvailable from trying to add_subdirectory, so we can do it
+    # This stops MakeAvailable from trying to add_subdirectory, so we can do it
     # ourselves after adding the embedded CMakeLists.txt.
     SOURCE_SUBDIR nonexistant
 )
@@ -299,7 +294,7 @@ file(COPY_FILE
 )
 message(STATUS "Added ${cel_cpp_SOURCE_DIR}/CMakeLists.txt")
 add_subdirectory(${cel_cpp_SOURCE_DIR} ${cel_cpp_BINARY_DIR})
-list(APPEND PROTOVALIDATE_CC_EXPORT_TARGETS 
+list(APPEND PROTOVALIDATE_CC_EXPORT_TARGETS
     cel_cpp
     cel_cpp_parser
     cel_cpp_minimal_descriptor_set
