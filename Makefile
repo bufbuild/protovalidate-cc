@@ -7,9 +7,9 @@ MAKEFLAGS += --warn-undefined-variables
 MAKEFLAGS += --no-builtin-rules
 MAKEFLAGS += --no-print-directory
 BIN := .tmp/bin
-COPYRIGHT_YEARS := 2023-2025
-LICENSE_IGNORE := -e internal/testdata/ -e .github/ -e .bcr/ -e buf/validate/conformance -e e2e/bzlmod
-LICENSE_HEADER_VERSION := 04ed9c9179fc71d0dab7bf2919fcdc7b0bd9fe60
+COPYRIGHT_YEARS := 2023-2026
+LICENSE_IGNORE := -e internal/testdata/ -e .github/ -e .bcr/ -e buf/validate/conformance/*.yaml -e e2e/bzlmod/*.yaml
+LICENSE_HEADER_VERSION := 1.69.0
 PROTOVALIDATE_VERSION ?= v$(shell <./deps/shared_deps.json jq -j .protovalidate.meta.version)
 
 # Set to use a different compiler. For example, `GO=go1.18rc1 make test`.
@@ -83,6 +83,6 @@ $(BIN)/buf: $(BIN) Makefile
 
 $(BIN)/license-header: $(BIN) Makefile
 	GOBIN=$(abspath $(@D)) $(GO) install \
-		  github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@$(LICENSE_HEADER_VERSION)
+		  github.com/bufbuild/buf/private/pkg/licenseheader/cmd/license-header@v$(LICENSE_HEADER_VERSION)
 
 $(BIN)/protovalidate-conformance: $(BIN) Makefile
