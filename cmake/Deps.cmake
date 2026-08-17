@@ -1,6 +1,5 @@
 include(FetchContent)
 include(SharedDeps)
-include(MakePatchCommand)
 
 # CMake will warn that this variable is unused if it is set.
 # This no-op prevents that warning.
@@ -191,6 +190,15 @@ else()
 endif()
 get_target_property(PROTOBUF_INCLUDE_DIRECTORIES protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
 list(APPEND PROTOBUF_INCLUDE_DIRECTORIES ${ABSL_INCLUDE_DIRECTORIES})
+# Since v35, protobuf's public headers include utf8_range's utf8_validity.h.
+# libprotobuf links utf8_validity publicly, so the real build picks this up
+# transitively, but try_compile only sees libprotobuf's own include dirs.
+if(TARGET utf8_validity)
+    get_target_property(UTF8_VALIDITY_INCLUDE_DIRECTORIES utf8_validity INTERFACE_INCLUDE_DIRECTORIES)
+    if(UTF8_VALIDITY_INCLUDE_DIRECTORIES)
+        list(APPEND PROTOBUF_INCLUDE_DIRECTORIES ${UTF8_VALIDITY_INCLUDE_DIRECTORIES})
+    endif()
+endif()
 try_compile(PROTOBUF_HAS_CPPSTRINGTYPE
     SOURCE_FROM_CONTENT test_protobuf_has_cppstringtype.cc
                         "#include <google/protobuf/descriptor.h>\n\
@@ -269,15 +277,10 @@ FetchContent_MakeAvailable(cel_spec)
 # https://cmake.org/cmake/help/latest/module/FetchContent.html#variable:FETCHCONTENT_SOURCE_DIR_%3CuppercaseName%3E
 SharedDeps_GetSourceValue(PROTOVALIDATE_CC_CEL_CPP_URLS "cel_cpp" "urls" "${SHARED_DEPS}")
 SharedDeps_GetSourceValue(PROTOVALIDATE_CC_CEL_CPP_SHA256 "cel_cpp" "sha256" "${SHARED_DEPS}")
-set(CEL_CPP_PATCHES
-    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0001-Fix-build-on-Windows-MSVC.patch
-)
-MakePatchCommand(CEL_CPP_PATCH_COMMAND "${CEL_CPP_PATCHES}")
 message(STATUS "protovalidate-cc: Fetching cel-cpp")
 FetchContent_Declare(cel_cpp
     URL ${PROTOVALIDATE_CC_CEL_CPP_URLS}
     URL_HASH SHA256=${PROTOVALIDATE_CC_CEL_CPP_SHA256}
-    PATCH_COMMAND ${CEL_CPP_PATCH_COMMAND}
 
     # This stops MakeAvailable from trying to add_subdirectory, so we can do it
     # ourselves after adding the embedded CMakeLists.txt.

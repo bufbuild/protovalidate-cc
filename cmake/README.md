@@ -6,8 +6,7 @@ system-wide.
 
 protovalidate-cc is known to build successfully on macOS, Linux and Windows,
 with GCC, Clang or MSVC. Please note that Windows support is still preliminary;
-some Windows functionality hasn't been validated, and protovalidate-cc supplies
-downstream patches to dependencies for Windows support.
+some Windows functionality hasn't been validated.
 
 (Please note that Windows support is currently limited to building with CMake.)
 
@@ -47,9 +46,9 @@ When built with CMake, protovalidate-cc has the following dependencies:
 
 | Dependency                                                 | Known Compatible Version | Flag to Disable System Version               |
 | ---------------------------------------------------------- | ------------------------ | -------------------------------------------- |
-| [Abseil](https://abseil.io/)                               | 20240722                 | `-DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE`     |
-| [Protocol Buffers](https://protobuf.dev/)                  | v29.2                    | `-DCMAKE_DISABLE_FIND_PACKAGE_Protobuf=TRUE` |
-| [re2](https://github.com/google/re2)                       | 2024-02-01               | `-DCMAKE_DISABLE_FIND_PACKAGE_re2=TRUE`      |
+| [Abseil](https://abseil.io/)                               | 20260107.1               | `-DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE`     |
+| [Protocol Buffers](https://protobuf.dev/)                  | v35.1                    | `-DCMAKE_DISABLE_FIND_PACKAGE_Protobuf=TRUE` |
+| [re2](https://github.com/google/re2)                       | 2025-11-05               | `-DCMAKE_DISABLE_FIND_PACKAGE_re2=TRUE`      |
 | [ANTLR 4](https://www.antlr.org/)                          | (Always vendored)        |                                              |
 | [googleapis](https://github.com/googleapis/googleapis.git) | (Always vendored)        |                                              |
 | [cel-cpp](https://github.com/google/cel-cpp)               | (Always vendored)        |                                              |
@@ -95,8 +94,6 @@ In addition to these dependencies, there are some build-time dependencies:
 - Git, for getting the protovalidate-cc version
 
 - Java 11, for running the ANTLR 4 compiler
-
-- GNU patch 2.7 or Darwin patch 2.0, for applying Git patches
 
 ## Embedding
 

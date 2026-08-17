@@ -2,6 +2,16 @@ find_package(Threads REQUIRED)
 
 option(CEL_CPP_ENABLE_TESTS "Enable cel-cpp unit tests" OFF)
 
+if(MSVC)
+    # MSVC rejects several of cel-cpp's `ABSL_CONST_INIT` aggregates (it does
+    # not consider their designated initializers to be constant initializers).
+    # Defining the keyword away downgrades them to ordinary dynamic
+    # initialization, which is what these translation units effectively get on
+    # MSVC anyway. This only applies to cel-cpp's own sources; protovalidate-cc
+    # and its other dependencies still get the real keyword.
+    add_compile_definitions(_ALLOW_KEYWORD_MACROS constinit=)
+endif()
+
 # Generate ANTLR4 parser for CEL
 set(CEL_CPP_GRAMMAR_FILE ${CMAKE_CURRENT_SOURCE_DIR}/parser/internal/Cel.g4)
 set(CEL_CPP_PARSER_GEN_DIR ${CMAKE_CURRENT_BINARY_DIR}/gen/cel_cpp_parser)
