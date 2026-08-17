@@ -53,6 +53,7 @@ MAP_RULES_TO_FIELD_NUMBER(RepeatedRules, FieldRules::kRepeatedFieldNumber)
 MAP_RULES_TO_FIELD_NUMBER(MapRules, FieldRules::kMapFieldNumber)
 MAP_RULES_TO_FIELD_NUMBER(AnyRules, FieldRules::kAnyFieldNumber)
 MAP_RULES_TO_FIELD_NUMBER(DurationRules, FieldRules::kDurationFieldNumber)
+MAP_RULES_TO_FIELD_NUMBER(FieldMaskRules, FieldRules::kFieldMaskFieldNumber)
 MAP_RULES_TO_FIELD_NUMBER(TimestampRules, FieldRules::kTimestampFieldNumber)
 
 #undef MAP_RULES_TO_FIELD_NUMBER
