@@ -295,6 +295,61 @@ TEST(ValidatorTest, ValidateBytesContainsSuccess) {
   EXPECT_EQ(violations_or.value().violations_size(), 0);
 }
 
+TEST(ValidatorTest, ValidateBytesContainsEmpty) {
+  conformance::cases::BytesContains bytes_contains;
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator.Validate(bytes_contains);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "bytes.contains");
+  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "does not contain 626172");
+}
+
+TEST(ValidatorTest, ValidateBytesPrefixEmpty) {
+  conformance::cases::BytesPrefix bytes_prefix;
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator.Validate(bytes_prefix);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "bytes.prefix");
+  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "does not have prefix 99");
+}
+
+TEST(ValidatorTest, ValidateBytesSuffixEmpty) {
+  conformance::cases::BytesSuffix bytes_suffix;
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator.Validate(bytes_suffix);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 1);
+  EXPECT_EQ(violations_or.value().violations(0).proto().rule_id(), "bytes.suffix");
+  EXPECT_EQ(violations_or.value().violations(0).proto().message(), "does not have suffix 62757a7a");
+}
+
+TEST(ValidatorTest, ValidateBytesContainsEmbeddedNul) {
+  conformance::cases::BytesContains bytes_contains;
+  bytes_contains.set_val(std::string("foo\0bar", 7));
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  auto violations_or = validator.Validate(bytes_contains);
+  ASSERT_TRUE(violations_or.ok()) << violations_or.status();
+  EXPECT_EQ(violations_or.value().violations_size(), 0);
+}
+
 TEST(ValidatorTest, ValidateStartsWithFailure) {
   conformance::cases::StringPrefix str_starts_with;
   str_starts_with.set_val("ffoobar");
