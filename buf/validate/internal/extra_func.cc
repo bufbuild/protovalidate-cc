@@ -145,7 +145,7 @@ cel::CelValue contains(
         arena, absl::StatusCode::kInvalidArgument, "does not contain the right value");
     return cel::CelValue::CreateError(error);
   }
-  bool result = absl::StrContains(lhs.value().data(), rhs.BytesOrDie().value());
+  bool result = absl::StrContains(lhs.value(), rhs.BytesOrDie().value());
   return cel::CelValue::CreateBool(result);
 }
 
@@ -156,7 +156,7 @@ cel::CelValue startsWith(
         arena, absl::StatusCode::kInvalidArgument, "doesnt start with the right thing");
     return cel::CelValue::CreateError(error);
   }
-  bool result = absl::StartsWith(lhs.value().data(), rhs.BytesOrDie().value());
+  bool result = absl::StartsWith(lhs.value(), rhs.BytesOrDie().value());
   return cel::CelValue::CreateBool(result);
 }
 
@@ -167,7 +167,7 @@ cel::CelValue endsWith(
         arena, absl::StatusCode::kInvalidArgument, "doesnt end with the right thing");
     return cel::CelValue::CreateError(error);
   }
-  bool result = absl::EndsWith(lhs.value().data(), rhs.BytesOrDie().value());
+  bool result = absl::EndsWith(lhs.value(), rhs.BytesOrDie().value());
   return cel::CelValue::CreateBool(result);
 }
 
