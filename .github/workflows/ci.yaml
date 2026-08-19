@@ -14,15 +14,16 @@ jobs:
   test:
     strategy:
       matrix:
-        os: [ubuntu-24.04, macos-latest]
+        os:
+          - ubuntu-24.04
+          - macos-15
+          - windows-2025
     name: Unit tests
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Cache
-        uses: actions/cache@v6
+      - uses: bazel-contrib/setup-bazel@0.19.0
         with:
-          path: ~/.cache/bazel
-          key: ${{ runner.os }}-build-cache
+          disk-cache: true
       - name: Checkout code
         uses: actions/checkout@v7
         with:
@@ -37,3 +38,18 @@ jobs:
           cache: true
       - name: Execute tests
         run: make test
+  lint:
+    name: Lint
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - name: Install go
+        uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: true
+      - name: Check generated files
+        run: make checkgenerate

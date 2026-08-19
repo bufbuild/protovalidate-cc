@@ -1,0 +1,14 @@
+diff --git a/bazel/private/proto_library_rule.bzl b/bazel/private/proto_library_rule.bzl
+--- a/bazel/private/proto_library_rule.bzl
++++ b/bazel/private/proto_library_rule.bzl
+@@ -138,7 +138,9 @@ def _symlink_to_virtual_imports(ctx, srcs, import_prefix, strip_import_prefix):
+     Returns:
+           A pair proto_path, directs_sources.
+     """
+-    virtual_imports = _join("_virtual_imports", ctx.label.name)
++    # Keep the import-visible suffix intact while shortening the Bazel-only
++    # directory component that otherwise repeats the full proto_library name.
++    virtual_imports = _join("_virtual_imports", "%x" % hash(ctx.label.name))
+     proto_path = _join(ctx.label.package, virtual_imports)
+ 
+     if ctx.label.workspace_name == "":
