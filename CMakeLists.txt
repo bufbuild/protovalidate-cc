@@ -18,17 +18,14 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 else()
     # Only set C++ standard when not being embedded.
     #
-    # This is deliberately 17 even though protovalidate-cc itself needs C++20.
-    # It is the floor for dependencies that do not opt in, and it has to stay
-    # below 20 because protobuf does not compile under MSVC at C++20 or later
-    # (protocolbuffers/protobuf#21310 -- closed as inactive by a stale bot
-    # rather than fixed, and last confirmed reproducing on protobuf v32.1).
-    # Targets that genuinely need C++20 raise it individually with
-    # target_compile_features(... cxx_std_20), which takes precedence over this
-    # default, so the differing values are not in conflict.
+    # This mirrors the Bazel build, which compiles everything at C++17 (see
+    # --cxxopt=-std=c++17 in //.bazelrc). Keep the two in sync: if the Bazel
+    # standard changes, change this to match.
     #
-    # Keeping the default at 17 also lets protovalidate-cc be embedded in a
-    # project that is still on C++17. Verify Windows CI before raising it.
+    # The one exception is cel-cpp under MSVC, which needs C++20; it raises
+    # that per-target so that protobuf stays at C++17, since protobuf does not
+    # compile under MSVC at C++20 or later (protocolbuffers/protobuf#21310).
+    # See the comment in cmake/cel-cpp/CMakeLists.txt.
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -85,9 +82,11 @@ set(PROTOVALIDATE_CC_TEST_SOURCES
 list(FILTER PROTOVALIDATE_CC_TEST_SOURCES INCLUDE REGEX ".*_test\\.cc$")
 list(FILTER PROTOVALIDATE_CC_CORE_SOURCES EXCLUDE REGEX ".*_test\\.cc$")
 add_library(protovalidate_cc ${PROTOVALIDATE_CC_CORE_SOURCES} ${PROTOVALIDATE_CC_CORE_HEADERS})
-# Our own sources need C++20, so opt in above the C++17 project default set
-# near the top of this file. PUBLIC so consumers are compiled at C++20 too.
-target_compile_features(protovalidate_cc PUBLIC cxx_std_20)
+# C++17, matching --cxxopt=-std=c++17 in //.bazelrc. Declared as a PUBLIC
+# feature rather than left to CMAKE_CXX_STANDARD so the floor still applies
+# when protovalidate-cc is embedded in a project that sets a lower standard.
+# On MSVC, linking cel_cpp raises this to C++20; see cmake/cel-cpp/CMakeLists.txt.
+target_compile_features(protovalidate_cc PUBLIC cxx_std_17)
 target_link_libraries(protovalidate_cc PUBLIC ${PROTOVALIDATE_LIBS})
 target_include_directories(protovalidate_cc PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

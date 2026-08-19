@@ -298,9 +298,17 @@ target_include_directories(cel_cpp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
-# cel-cpp needs C++20; opt in above the C++17 default that the top-level
-# CMakeLists sets for protobuf's benefit. See the comment there.
-target_compile_features(cel_cpp PUBLIC cxx_std_20)
+# Mirror cel-cpp's own .bazelrc, which builds at C++17 everywhere except MSVC
+# (build:msvc uses -std:c++20). This is PUBLIC because cel-cpp's headers are
+# compiled under the same standard in consumers, so on MSVC protovalidate_cc
+# and anything linking it are raised to C++20 as well. It is deliberately
+# per-target rather than a global default so that protobuf stays at C++17,
+# which it requires under MSVC (protocolbuffers/protobuf#21310).
+if(MSVC)
+    target_compile_features(cel_cpp PUBLIC cxx_std_20)
+else()
+    target_compile_features(cel_cpp PUBLIC cxx_std_17)
+endif()
 target_compile_definitions(cel_cpp PRIVATE ANTLR4CPP_USING_ABSEIL)
 add_library(cel_cpp::cel_cpp ALIAS cel_cpp)
 
