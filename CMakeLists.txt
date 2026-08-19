@@ -16,16 +16,8 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     option(PROTOVALIDATE_CC_ENABLE_TESTS "Enable protovalidate-cc unit tests" OFF)
     option(PROTOVALIDATE_CC_ENABLE_CONFORMANCE "Build conformance runner" OFF)
 else()
-    # Only set C++ standard when not being embedded.
-    #
-    # This mirrors the Bazel build, which compiles everything at C++17 (see
-    # --cxxopt=-std=c++17 in //.bazelrc). Keep the two in sync: if the Bazel
-    # standard changes, change this to match.
-    #
-    # The one exception is cel-cpp under MSVC, which needs C++20; it raises
-    # that per-target so that protobuf stays at C++17, since protobuf does not
-    # compile under MSVC at C++20 or later (protocolbuffers/protobuf#21310).
-    # See the comment in cmake/cel-cpp/CMakeLists.txt.
+    # Only set C++ standard when not being embedded. Matches the Bazel build
+    # (--cxxopt=-std=c++17 in //.bazelrc).
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -82,10 +74,7 @@ set(PROTOVALIDATE_CC_TEST_SOURCES
 list(FILTER PROTOVALIDATE_CC_TEST_SOURCES INCLUDE REGEX ".*_test\\.cc$")
 list(FILTER PROTOVALIDATE_CC_CORE_SOURCES EXCLUDE REGEX ".*_test\\.cc$")
 add_library(protovalidate_cc ${PROTOVALIDATE_CC_CORE_SOURCES} ${PROTOVALIDATE_CC_CORE_HEADERS})
-# C++17, matching --cxxopt=-std=c++17 in //.bazelrc. Declared as a PUBLIC
-# feature rather than left to CMAKE_CXX_STANDARD so the floor still applies
-# when protovalidate-cc is embedded in a project that sets a lower standard.
-# On MSVC, linking cel_cpp raises this to C++20; see cmake/cel-cpp/CMakeLists.txt.
+# Matches //.bazelrc.
 target_compile_features(protovalidate_cc PUBLIC cxx_std_17)
 target_link_libraries(protovalidate_cc PUBLIC ${PROTOVALIDATE_LIBS})
 target_include_directories(protovalidate_cc PUBLIC
