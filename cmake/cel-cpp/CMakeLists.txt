@@ -298,6 +298,8 @@ target_include_directories(cel_cpp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:include>
 )
+# cel-cpp needs C++20; opt in above the C++17 default that the top-level
+# CMakeLists sets for protobuf's benefit. See the comment there.
 target_compile_features(cel_cpp PUBLIC cxx_std_20)
 target_compile_definitions(cel_cpp PRIVATE ANTLR4CPP_USING_ABSEIL)
 add_library(cel_cpp::cel_cpp ALIAS cel_cpp)

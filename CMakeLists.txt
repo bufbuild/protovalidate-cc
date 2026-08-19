@@ -16,7 +16,19 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     option(PROTOVALIDATE_CC_ENABLE_TESTS "Enable protovalidate-cc unit tests" OFF)
     option(PROTOVALIDATE_CC_ENABLE_CONFORMANCE "Build conformance runner" OFF)
 else()
-    # Only set C++ standard when not being embedded
+    # Only set C++ standard when not being embedded.
+    #
+    # This is deliberately 17 even though protovalidate-cc itself needs C++20.
+    # It is the floor for dependencies that do not opt in, and it has to stay
+    # below 20 because protobuf does not compile under MSVC at C++20 or later
+    # (protocolbuffers/protobuf#21310 -- closed as inactive by a stale bot
+    # rather than fixed, and last confirmed reproducing on protobuf v32.1).
+    # Targets that genuinely need C++20 raise it individually with
+    # target_compile_features(... cxx_std_20), which takes precedence over this
+    # default, so the differing values are not in conflict.
+    #
+    # Keeping the default at 17 also lets protovalidate-cc be embedded in a
+    # project that is still on C++17. Verify Windows CI before raising it.
     set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -73,6 +85,8 @@ set(PROTOVALIDATE_CC_TEST_SOURCES
 list(FILTER PROTOVALIDATE_CC_TEST_SOURCES INCLUDE REGEX ".*_test\\.cc$")
 list(FILTER PROTOVALIDATE_CC_CORE_SOURCES EXCLUDE REGEX ".*_test\\.cc$")
 add_library(protovalidate_cc ${PROTOVALIDATE_CC_CORE_SOURCES} ${PROTOVALIDATE_CC_CORE_HEADERS})
+# Our own sources need C++20, so opt in above the C++17 project default set
+# near the top of this file. PUBLIC so consumers are compiled at C++20 too.
 target_compile_features(protovalidate_cc PUBLIC cxx_std_20)
 target_link_libraries(protovalidate_cc PUBLIC ${PROTOVALIDATE_LIBS})
 target_include_directories(protovalidate_cc PUBLIC
