@@ -16,8 +16,9 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     option(PROTOVALIDATE_CC_ENABLE_TESTS "Enable protovalidate-cc unit tests" OFF)
     option(PROTOVALIDATE_CC_ENABLE_CONFORMANCE "Build conformance runner" OFF)
 else()
-    # Only set C++ standard when not being embedded
-    set(CMAKE_CXX_STANDARD 20)
+    # Only set C++ standard when not being embedded. Matches the Bazel build
+    # (--cxxopt=-std=c++17 in //.bazelrc).
+    set(CMAKE_CXX_STANDARD 17)
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
     # Standalone: set appropriate defaults for system-wide installation
@@ -73,6 +74,7 @@ set(PROTOVALIDATE_CC_TEST_SOURCES
 list(FILTER PROTOVALIDATE_CC_TEST_SOURCES INCLUDE REGEX ".*_test\\.cc$")
 list(FILTER PROTOVALIDATE_CC_CORE_SOURCES EXCLUDE REGEX ".*_test\\.cc$")
 add_library(protovalidate_cc ${PROTOVALIDATE_CC_CORE_SOURCES} ${PROTOVALIDATE_CC_CORE_HEADERS})
+# Matches //.bazelrc.
 target_compile_features(protovalidate_cc PUBLIC cxx_std_17)
 target_link_libraries(protovalidate_cc PUBLIC ${PROTOVALIDATE_LIBS})
 target_include_directories(protovalidate_cc PUBLIC

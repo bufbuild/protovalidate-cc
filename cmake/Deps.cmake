@@ -1,6 +1,5 @@
 include(FetchContent)
 include(SharedDeps)
-include(MakePatchCommand)
 
 # CMake will warn that this variable is unused if it is set.
 # This no-op prevents that warning.
@@ -92,8 +91,8 @@ if(TARGET absl::base)
 else()
     find_package(absl CONFIG)
     if(absl_FOUND)
-        if(absl_VERSION LESS 20240722)
-            message(FATAL_ERROR "protovalidate-cc: cel-cpp is known to need absl 20240722 or higher (found: ${absl_VERSION}). Please update absl, or to use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
+        if(absl_VERSION LESS 20260107)
+            message(FATAL_ERROR "protovalidate-cc: cel-cpp is known to need absl 20260107 or higher (found: ${absl_VERSION}). Please update absl, or to use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
         endif()
         message(STATUS "protovalidate-cc: Using external absl ${absl_VERSION}")
         set(protobuf_ABSL_PROVIDER "package")
@@ -134,7 +133,7 @@ try_compile(ABSL_CAN_MOVE_ASSIGN_STATUS
     NO_CACHE
 )
 if(NOT ABSL_CAN_MOVE_ASSIGN_STATUS)
-    message(FATAL_ERROR "protovalidate-cc: Abseil seems to be too old (absl::Status is not nothrow-move-assignable). Please make sure your copy of absl is up-to-date enough (cel-cpp is known to need at least 20240722). To use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
+    message(FATAL_ERROR "protovalidate-cc: Abseil seems to be too old (absl::Status is not nothrow-move-assignable). Please make sure your copy of absl is up-to-date enough (cel-cpp is known to need at least 20260107). To use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
 endif()
 
 # Protobuf
@@ -191,6 +190,15 @@ else()
 endif()
 get_target_property(PROTOBUF_INCLUDE_DIRECTORIES protobuf::libprotobuf INTERFACE_INCLUDE_DIRECTORIES)
 list(APPEND PROTOBUF_INCLUDE_DIRECTORIES ${ABSL_INCLUDE_DIRECTORIES})
+# Since v35, protobuf's public headers include utf8_range's utf8_validity.h.
+# libprotobuf links utf8_validity publicly, so the real build picks this up
+# transitively, but try_compile only sees libprotobuf's own include dirs.
+if(TARGET utf8_validity)
+    get_target_property(UTF8_VALIDITY_INCLUDE_DIRECTORIES utf8_validity INTERFACE_INCLUDE_DIRECTORIES)
+    if(UTF8_VALIDITY_INCLUDE_DIRECTORIES)
+        list(APPEND PROTOBUF_INCLUDE_DIRECTORIES ${UTF8_VALIDITY_INCLUDE_DIRECTORIES})
+    endif()
+endif()
 try_compile(PROTOBUF_HAS_CPPSTRINGTYPE
     SOURCE_FROM_CONTENT test_protobuf_has_cppstringtype.cc
                         "#include <google/protobuf/descriptor.h>\n\
@@ -218,16 +226,11 @@ else()
                 message(FATAL_ERROR "protovalidate-cc: Installation can not be enabled when using vendored re2. Install re2 system-wide, or disable installation using -DPROTOVALIDATE_CC_ENABLE_INSTALL=OFF.")
             endif()
             message(STATUS "protovalidate-cc: Fetching re2")
-            set(RE2_PATCHES
-                ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/re2/0001-Add-RE2_INSTALL-option.patch
-            )
-            MakePatchCommand(RE2_PATCH_COMMAND "${RE2_PATCHES}")
             FetchContent_Declare(
                 re2
                 GIT_REPOSITORY "https://github.com/google/re2.git"
-                GIT_TAG "2024-04-01"
+                GIT_TAG "2025-11-05"
                 GIT_SHALLOW TRUE
-                PATCH_COMMAND ${RE2_PATCH_COMMAND}
             )
             set(RE2_INSTALL OFF)
             FetchContent_MakeAvailable(re2)
@@ -274,17 +277,12 @@ FetchContent_MakeAvailable(cel_spec)
 # https://cmake.org/cmake/help/latest/module/FetchContent.html#variable:FETCHCONTENT_SOURCE_DIR_%3CuppercaseName%3E
 SharedDeps_GetSourceValue(PROTOVALIDATE_CC_CEL_CPP_URLS "cel_cpp" "urls" "${SHARED_DEPS}")
 SharedDeps_GetSourceValue(PROTOVALIDATE_CC_CEL_CPP_SHA256 "cel_cpp" "sha256" "${SHARED_DEPS}")
-set(CEL_CPP_PATCHES
-    ${CMAKE_CURRENT_SOURCE_DIR}/deps/patches/cel_cpp/0001-Fix-build-on-Windows-MSVC.patch
-)
-MakePatchCommand(CEL_CPP_PATCH_COMMAND "${CEL_CPP_PATCHES}")
 message(STATUS "protovalidate-cc: Fetching cel-cpp")
 FetchContent_Declare(cel_cpp
     URL ${PROTOVALIDATE_CC_CEL_CPP_URLS}
     URL_HASH SHA256=${PROTOVALIDATE_CC_CEL_CPP_SHA256}
-    PATCH_COMMAND ${CEL_CPP_PATCH_COMMAND}
 
-    # THis stops MakeAvailable from trying to add_subdirectory, so we can do it
+    # This stops MakeAvailable from trying to add_subdirectory, so we can do it
     # ourselves after adding the embedded CMakeLists.txt.
     SOURCE_SUBDIR nonexistant
 )
@@ -299,7 +297,7 @@ file(COPY_FILE
 )
 message(STATUS "Added ${cel_cpp_SOURCE_DIR}/CMakeLists.txt")
 add_subdirectory(${cel_cpp_SOURCE_DIR} ${cel_cpp_BINARY_DIR})
-list(APPEND PROTOVALIDATE_CC_EXPORT_TARGETS 
+list(APPEND PROTOVALIDATE_CC_EXPORT_TARGETS
     cel_cpp
     cel_cpp_parser
     cel_cpp_minimal_descriptor_set

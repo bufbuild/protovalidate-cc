@@ -2,6 +2,7 @@ common --enable_bzlmod --noenable_workspace
 
 build --experimental_proto_descriptor_sets_include_source_info
 
+# Target C++ version - update CMakeLists.txt when updating this
 build --cxxopt=-std=c++17 --host_cxxopt=-std=c++17
 build --cxxopt=-fsized-deallocation
 

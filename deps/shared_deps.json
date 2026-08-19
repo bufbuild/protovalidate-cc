@@ -1,47 +1,42 @@
 {
   "absl": {
     "meta": {
-      "version": "20240722.0"
+      "version": "20260107.1"
     },
     "source": {
-      "sha256": "f50e5ac311a81382da7fa75b97310e4b9006474f9560ac46f54a9967f07d4ae3",
+      "sha256": "4314e2a7cbac89cac25a2f2322870f343d81579756ceff7f431803c2c9090195",
       "strip_prefix": "abseil-cpp-{version}",
-      "urls": [
-        "https://github.com/abseil/abseil-cpp/archive/{version}.tar.gz"
-      ]
+      "urls": ["https://github.com/abseil/abseil-cpp/archive/{version}.tar.gz"]
     }
   },
   "protobuf": {
     "meta": {
-      "version": "29.2"
+      "version": "35.1"
     },
     "source": {
-      "sha256": "63150aba23f7a90fd7d87bdf514e459dd5fe7023fdde01b56ac53335df64d4bd",
+      "sha256": "22775f9376938295efa2d59a59bde4cd075a42df5a9b4d27aa9b99fa6a413bd2",
       "strip_prefix": "protobuf-{version}",
       "urls": [
-        "https://mirror.bazel.build/github.com/protocolbuffers/protobuf/archive/v{version}.tar.gz",
         "https://github.com/protocolbuffers/protobuf/archive/v{version}.tar.gz"
       ]
     }
   },
   "cel_cpp": {
     "meta": {
-      "version": "0.11.0"
+      "version": "0.15.0"
     },
     "source": {
-      "sha256": "777f6780a3cc72264c3cc3279cc92affbaefb2bdc01aaff88463cca5b6167e1d",
+      "sha256": "095e560911ce84cefb886ad9540ca961fd6d7879de441a864e877e6e5f132b02",
       "strip_prefix": "cel-cpp-{version}",
-      "urls": [
-        "https://github.com/google/cel-cpp/archive/v{version}.tar.gz"
-      ]
+      "urls": ["https://github.com/google/cel-cpp/archive/v{version}.tar.gz"]
     }
   },
   "protovalidate": {
     "meta": {
-      "version": "1.2.0"
+      "version": "1.2.2"
     },
     "source": {
-      "sha256": "9aee9beede94edc62fa472a58c964741f11e1a0ab7472f12cfb98381c2f502fd",
+      "sha256": "94a5df7b3f33fe8153c2b8f753bfcbe2968773553cccea800d3228e0d938e9b2",
       "strip_prefix": "protovalidate-{version}",
       "urls": [
         "https://github.com/bufbuild/protovalidate/releases/download/v{version}/protovalidate-{version}.tar.gz"
