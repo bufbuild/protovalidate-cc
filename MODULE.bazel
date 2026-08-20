@@ -23,6 +23,15 @@ bazel_dep(name = "re2", version = "2025-11-05.bcr.1", repo_name = "com_googlesou
 
 bazel_dep(name = "protobuf", version = "35.1", repo_name = "com_google_protobuf")
 
+# protobuf uses the proto_library target name as its virtual import directory,
+# which can make generated source paths exceed MSVC's MAX_PATH. This works around by
+# hashing the file similar to how cc_library deals with it.
+single_version_override(
+    module_name = "protobuf",
+    patches = ["//bazel:protobuf-short-virtual-imports.patch"],
+    patch_strip = 1,
+)
+
 bazel_dep(name = "rules_proto", version = "7.1.0")
 
 bazel_dep(name = "rules_buf", version = "0.3.0")
@@ -32,5 +41,8 @@ bazel_dep(name = "googletest", version = "1.17.0.bcr.2", repo_name = "com_google
 bazel_dep(name = "abseil-cpp", version = "20260107.1", repo_name = "com_google_absl")
 
 bazel_dep(name = "cel-cpp", version = "0.15.0", repo_name = "com_google_cel_cpp")
+
+# TODO: Remove when updating cel-cpp to 0.16+
+bazel_dep(name = "antlr4-cpp-runtime", version = "4.13.2.bcr.2")
 
 bazel_dep(name = "protovalidate", version = "1.2.2", repo_name = "com_github_bufbuild_protovalidate")

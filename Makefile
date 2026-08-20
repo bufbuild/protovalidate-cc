@@ -35,7 +35,7 @@ clean: ## Delete intermediate build artifacts
 generate: generate-bzlmod generate-license ## Regenerate code and license headers
 
 .PHONY: test
-test: generate ## Run all unit tests
+test: ## Run all unit tests
 	$(BAZEL) test --test_output=errors //...
 
 .PHONY: build
