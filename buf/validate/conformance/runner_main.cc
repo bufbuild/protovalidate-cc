@@ -12,14 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#ifdef _WIN32
+#include <fcntl.h>
+#endif
+
+#include <iostream>
+
 #include "buf/validate/conformance/harness/harness.pb.h"
 #include "buf/validate/conformance/runner.h"
 
+#ifdef _WIN32
+#include "google/protobuf/io/io_win32.h"
+#endif
+
 int main(int argc, char** argv) {
+#ifdef _WIN32
+  // The request and response are binary protobuf over stdin/stdout,
+  // but Windows defaults the streams to text mode.
+  google::protobuf::io::win32::setmode(STDIN_FILENO, _O_BINARY);
+  google::protobuf::io::win32::setmode(STDOUT_FILENO, _O_BINARY);
+#endif
   google::protobuf::DescriptorPool descriptorPool{
       google::protobuf::DescriptorPool::generated_pool()};
   buf::validate::conformance::harness::TestConformanceRequest request;
-  request.ParseFromIstream(&std::cin);
+  if (!request.ParseFromIstream(&std::cin)) {
+    std::cerr << "failed to parse conformance request from stdin" << std::endl;
+    return 1;
+  }
   for (const auto& file : request.fdset().file()) {
     descriptorPool.BuildFile(file);
   }
