@@ -34,6 +34,21 @@ _dependencies = {
     "com_google_absl": shared_dep(
         name="absl",
     ),
+    # protobuf's WORKSPACE deps register absl under the bzlmod repo name
+    # "abseil-cpp", while cel-cpp uses "com_google_absl". Provide the same
+    # version under both names so the include paths can't mix absl versions.
+    "abseil-cpp": shared_dep(
+        name="absl",
+    ),
+    # rules_python's py_repositories() registers bazel_skylib 1.7.0, which is
+    # too old for protobuf v35's BUILD files. Register the version protobuf
+    # itself pins so the right one wins regardless of load order.
+    "bazel_skylib": dict(
+        sha256="3b5b49006181f5f8ff626ef8ddceaa95e9bb8ad294f7b5d7b11ea9f7ddaf8c59",
+        urls=[
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.9.0/bazel-skylib-1.9.0.tar.gz",
+        ],
+    ),
     # These extra dependencies are needed by protobuf.
     # This may be alleviated somewhat by protobuf v30.
     # https://github.com/protocolbuffers/protobuf/issues/17200
@@ -68,10 +83,10 @@ _dependencies = {
         ],
     ),
     "rules_buf": dict(
-        sha256="523a4e06f0746661e092d083757263a249fedca535bd6dd819a8c50de074731a",
-        strip_prefix="rules_buf-0.1.1",
+        sha256="1ebeb843f09a62bd04de9b408c43a0759775c9cf9c063a7b386d70cee7f70c8b",
+        strip_prefix="rules_buf-0.3.0",
         urls=[
-            "https://github.com/bufbuild/rules_buf/archive/refs/tags/v0.1.1.zip",
+            "https://github.com/bufbuild/rules_buf/archive/refs/tags/v0.3.0.zip",
         ],
     ),
     # cel-cpp v0.11.0 doesn't build correctly in WORKSPACE mode, this is a quick
@@ -100,10 +115,6 @@ cc_library(
     ),
     "com_google_cel_cpp": shared_dep(
         name="cel_cpp",
-        patches=[
-            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0001-Fix-build-on-Windows-MSVC.patch",
-        ],
-        patch_args=["-p1"],
     ),
     "com_github_bufbuild_protovalidate": shared_dep(
         name="protovalidate",

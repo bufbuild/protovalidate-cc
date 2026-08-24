@@ -61,6 +61,8 @@ Remember to always check for the latest version of `protovalidate-cc` on the pro
 
 ### Bazel external repository
 
+Bazel 8.6 or newer is required.
+
 #### Workspace
 
 To use `protovalidate-cc` as an external Bazel repository, add the following to the `WORKSPACE` file:
@@ -104,7 +106,6 @@ module(
     version = "1.0",
 )
 
-bazel_dep(name = "cel-cpp", repo_name = "com_google_cel_cpp", version="0.11.0")
 bazel_dep(name = "protovalidate-cc", version = "1.0.0-rc.2")
 ```
 

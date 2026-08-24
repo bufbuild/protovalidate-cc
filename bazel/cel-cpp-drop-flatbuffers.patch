@@ -1,0 +1,14 @@
+--- a/MODULE.bazel
++++ b/MODULE.bazel
+@@ -58,11 +58,6 @@
+     repo_name = "com_googlesource_code_re2",
+ )
+ bazel_dep(
+-    name = "flatbuffers",
+-    version = "25.9.23",
+-    repo_name = "com_github_google_flatbuffers",
+-)
+-bazel_dep(
+     name = "cel-spec",
+     version = "0.25.1",
+     repo_name = "com_google_cel_spec",

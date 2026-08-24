@@ -14,4 +14,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-exports_files(["protobuf-short-virtual-imports.patch"])
+exports_files([
+    "cel-cpp-drop-flatbuffers.patch",
+    "protobuf-short-virtual-imports.patch",
+])

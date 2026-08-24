@@ -208,6 +208,7 @@ file(GLOB CEL_CPP_CORE_SOURCES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
     extensions/protobuf/internal/*.cc
     internal/*.cc
     parser/*.cc
+    parser/internal/*.cc
     runtime/*.cc
     runtime/internal/*.cc
     runtime/standard/*.cc
@@ -232,11 +233,15 @@ set(CEL_CPP_TESTING_SOURCES
 # Remove all testing library sources from the core sources
 list(REMOVE_ITEM CEL_CPP_CORE_SOURCES ${CEL_CPP_TESTING_SOURCES})
 
+# Only used by tests and the conformance runner; depends on the rules_cc
+# runfiles library, which is not available in the CMake build.
+list(REMOVE_ITEM CEL_CPP_CORE_SOURCES internal/runfiles.cc)
+
 # Collect test source files
 set(CEL_CPP_TEST_SOURCES ${CEL_CPP_CORE_SOURCES})
 list(FILTER CEL_CPP_TEST_SOURCES INCLUDE REGEX ".*_test\\.cc$")
 list(FILTER CEL_CPP_CORE_SOURCES EXCLUDE REGEX ".*_test\\.cc$")
-list(FILTER CEL_CPP_CORE_SOURCES EXCLUDE REGEX ".*_benchmarks\\.cc$")
+list(FILTER CEL_CPP_CORE_SOURCES EXCLUDE REGEX ".*_benchmarks?\\.cc$")
 
 # Remove some tests that don't seem to work right.
 list(REMOVE_ITEM CEL_CPP_TEST_SOURCES
