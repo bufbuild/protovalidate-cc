@@ -12,6 +12,14 @@ load("//bazel:deps.bzl", "protovalidate_cc_dependencies")
 
 protovalidate_cc_dependencies()
 
+load("@bazel_features//:deps.bzl", "bazel_features_deps")
+
+bazel_features_deps()
+
+load("@rules_cc//cc:extensions.bzl", "compatibility_proxy_repo")
+
+compatibility_proxy_repo()
+
 load("@rules_java//java:rules_java_deps.bzl", "rules_java_dependencies")
 
 rules_java_dependencies()

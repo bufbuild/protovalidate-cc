@@ -359,7 +359,7 @@
     },
     "@@rules_android+//bzlmod_extensions:apksig.bzl%apksig_extension": {
       "general": {
-        "bzlTransitiveDigest": "c6mHv2L0P+tWDe7lh/mpzTEedvukBq17Gr9gP16UdxU=",
+        "bzlTransitiveDigest": "By9qVNN7G4oL1vYOJXye7Dp/CbR2ar9oxAW8WXAVcVw=",
         "usagesDigest": "zr/niBQ/s2fHozWAsg4vI70wAxcuFjG+QtM15qGkq9o=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -384,7 +384,7 @@
     },
     "@@rules_android+//bzlmod_extensions:com_android_dex.bzl%com_android_dex_extension": {
       "general": {
-        "bzlTransitiveDigest": "BbM3I4LvjudqQ6/IwaP/LaJXdj2EPfqPleTjiFG4Lg0=",
+        "bzlTransitiveDigest": "rvWbJQc8jInfIAaXIMhSOqUlwM9HVeLey6q0ISvg08Y=",
         "usagesDigest": "c1Y/KGGjUYCyd8zNIVTUh1bynVXRFz6xGKaSCBpQANM=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -491,7 +491,7 @@
     },
     "@@rules_rust+//crate_universe:extension.bzl%crate": {
       "general": {
-        "bzlTransitiveDigest": "FBbVoOZZ3+ipM4Udek1kX4owEzX8H9qIxqU6uQg0F6o=",
+        "bzlTransitiveDigest": "YXsTxpn6h6E8u6Hj5xcjsMu9OyxFFpLEkkq6VMaSi64=",
         "usagesDigest": "3M03XhIi/1oRPtWHXCs5R9YQ+nQb9Yb2k0xdzczdmnk=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
@@ -866,7 +866,7 @@
     },
     "@@rules_rust+//crate_universe/private:internal_extensions.bzl%cu_nr": {
       "general": {
-        "bzlTransitiveDigest": "W48rYAI1FQ3/TjxvFyeX+ls8ilLeIN6X0mtZZVSH4lE=",
+        "bzlTransitiveDigest": "TXx6PXmWhrMl/CYN8iRYbC5BwNx2Y5B9YqQXB/av4sI=",
         "usagesDigest": "tG3p3Nb5XxC7vWY/bcKdb//g0HoAxpxxH3F5/jBVlk4=",
         "recordedFileInputs": {},
         "recordedDirentsInputs": {},
