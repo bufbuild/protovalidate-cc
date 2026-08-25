@@ -17,8 +17,12 @@ if(NOT CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
     option(PROTOVALIDATE_CC_ENABLE_CONFORMANCE "Build conformance runner" OFF)
 else()
     # Only set C++ standard when not being embedded. Matches the Bazel build
-    # (--cxxopt=-std=c++17 in //.bazelrc).
-    set(CMAKE_CXX_STANDARD 17)
+    # settings from .bazelrc, c++20 on MXVC, c++17 otherwise.
+    if(MSVC)
+        set(CMAKE_CXX_STANDARD 20)
+    else()
+        set(CMAKE_CXX_STANDARD 17)
+    endif()
     set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
     # Standalone: set appropriate defaults for system-wide installation
@@ -75,7 +79,11 @@ list(FILTER PROTOVALIDATE_CC_TEST_SOURCES INCLUDE REGEX ".*_test\\.cc$")
 list(FILTER PROTOVALIDATE_CC_CORE_SOURCES EXCLUDE REGEX ".*_test\\.cc$")
 add_library(protovalidate_cc ${PROTOVALIDATE_CC_CORE_SOURCES} ${PROTOVALIDATE_CC_CORE_HEADERS})
 # Matches //.bazelrc.
-target_compile_features(protovalidate_cc PUBLIC cxx_std_17)
+if(MSVC)
+    target_compile_features(protovalidate_cc PUBLIC cxx_std_20)
+else()
+    target_compile_features(protovalidate_cc PUBLIC cxx_std_17)
+endif()
 target_link_libraries(protovalidate_cc PUBLIC ${PROTOVALIDATE_LIBS})
 target_include_directories(protovalidate_cc PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

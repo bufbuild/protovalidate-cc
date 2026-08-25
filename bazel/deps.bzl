@@ -28,33 +28,64 @@ def shared_dep(name, **kwargs):
     dep = {k: format_values(v, shared_deps[name]["meta"]) for k, v in shared_deps[name]["source"].items()}
     return dict(dep, **kwargs)
 
+_re2 = dict(
+    sha256="87f6029d2f6de8aa023654240a03ada90e876ce9a4676e258dd01ea4c26ffd67",
+    strip_prefix="re2-2025-11-05",
+    urls=[
+        "https://github.com/google/re2/archive/refs/tags/2025-11-05.tar.gz",
+    ],
+)
+
 _dependencies = {
-    # cel-cpp needs a newer version of absl, otherwise it will fail to build in
-    # a very strange manner.
+    # Some archives are registered under both their legacy WORKSPACE repo names
+    # and their bzlmod module names, since BUILD files in the dependency graph
+    # reference them by either name.
     "com_google_absl": shared_dep(
         name="absl",
     ),
-    # These extra dependencies are needed by protobuf.
-    # This may be alleviated somewhat by protobuf v30.
-    # https://github.com/protocolbuffers/protobuf/issues/17200
-    "rules_cc": dict(
-        sha256="abc605dd850f813bb37004b77db20106a19311a96b2da1c92b789da529d28fe1",
-        strip_prefix="rules_cc-0.0.17",
+    "abseil-cpp": shared_dep(
+        name="absl",
+    ),
+    "com_googlesource_code_re2": _re2,
+    "re2": _re2,
+    "bazel_features": dict(
+        sha256="c26b4e69cf02fea24511a108d158188b9d8174426311aac59ce803a78d107648",
+        strip_prefix="bazel_features-1.43.0",
         urls=[
-            "https://github.com/bazelbuild/rules_cc/releases/download/0.0.17/rules_cc-0.0.17.tar.gz"
+            "https://github.com/bazel-contrib/bazel_features/releases/download/v1.43.0/bazel_features-v1.43.0.tar.gz",
+        ],
+    ),
+    "bazel_skylib": dict(
+        sha256="3b5b49006181f5f8ff626ef8ddceaa95e9bb8ad294f7b5d7b11ea9f7ddaf8c59",
+        urls=[
+            "https://github.com/bazelbuild/bazel-skylib/releases/download/1.9.0/bazel-skylib-1.9.0.tar.gz",
+        ],
+    ),
+    "com_google_googletest": dict(
+        sha256="65fab701d9829d38cb77c14acdc431d2108bfdbf8979e40eb8ae567edf10b27c",
+        strip_prefix="googletest-1.17.0",
+        urls=[
+            "https://github.com/google/googletest/archive/refs/tags/v1.17.0.tar.gz",
+        ],
+    ),
+    "rules_cc": dict(
+        sha256="1de5b47721fce0af0dd453b3071228fdfc44bd18199826b3f0b03b423aae9f65",
+        strip_prefix="rules_cc-0.2.18",
+        urls=[
+            "https://github.com/bazelbuild/rules_cc/releases/download/0.2.18/rules_cc-0.2.18.tar.gz",
         ],
     ),
     "rules_java": dict(
-        sha256="b0b8b7b2cfbf575112acf716ec788847929f322efa5c34195eb12a43d1df7e5c",
+        sha256="6ef26d4f978e8b4cf5ce1d47532d70cb62cd18431227a1c8007c8f7843243c06",
         urls=[
-            "https://github.com/bazelbuild/rules_java/releases/download/8.7.2/rules_java-8.7.2.tar.gz"
+            "https://github.com/bazelbuild/rules_java/releases/download/9.3.0/rules_java-9.3.0.tar.gz",
         ],
     ),
     "rules_python": dict(
-        sha256="9c6e26911a79fbf510a8f06d8eedb40f412023cf7fa6d1461def27116bff022c",
-        strip_prefix="rules_python-1.1.0",
+        sha256="2f5c284fbb4e86045c2632d3573fc006facbca5d1fa02976e89dc0cd5488b590",
+        strip_prefix="rules_python-1.6.3",
         urls=[
-            "https://github.com/bazelbuild/rules_python/releases/download/1.1.0/rules_python-1.1.0.tar.gz",
+            "https://github.com/bazelbuild/rules_python/releases/download/1.6.3/rules_python-1.6.3.tar.gz",
         ],
     ),
     "com_google_protobuf": shared_dep(
@@ -68,14 +99,13 @@ _dependencies = {
         ],
     ),
     "rules_buf": dict(
-        sha256="523a4e06f0746661e092d083757263a249fedca535bd6dd819a8c50de074731a",
-        strip_prefix="rules_buf-0.1.1",
+        sha256="1ebeb843f09a62bd04de9b408c43a0759775c9cf9c063a7b386d70cee7f70c8b",
+        strip_prefix="rules_buf-0.3.0",
         urls=[
-            "https://github.com/bufbuild/rules_buf/archive/refs/tags/v0.1.1.zip",
+            "https://github.com/bufbuild/rules_buf/archive/refs/tags/v0.3.0.zip",
         ],
     ),
-    # cel-cpp v0.11.0 doesn't build correctly in WORKSPACE mode, this is a quick
-    # workaround.
+    # Upstream antlr4 has no Bazel build.
     "antlr4-cpp-runtime": dict(
         build_file_content="""
 package(default_visibility = ["//visibility:public"])
@@ -100,10 +130,6 @@ cc_library(
     ),
     "com_google_cel_cpp": shared_dep(
         name="cel_cpp",
-        patches=[
-            "@com_github_bufbuild_protovalidate_cc//deps:patches/cel_cpp/0001-Fix-build-on-Windows-MSVC.patch",
-        ],
-        patch_args=["-p1"],
     ),
     "com_github_bufbuild_protovalidate": shared_dep(
         name="protovalidate",

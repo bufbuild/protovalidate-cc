@@ -91,8 +91,8 @@ if(TARGET absl::base)
 else()
     find_package(absl CONFIG)
     if(absl_FOUND)
-        if(absl_VERSION LESS 20260107)
-            message(FATAL_ERROR "protovalidate-cc: cel-cpp is known to need absl 20260107 or higher (found: ${absl_VERSION}). Please update absl, or to use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
+        if(absl_VERSION LESS 20260526)
+            message(FATAL_ERROR "protovalidate-cc: cel-cpp is known to need absl 20260526 or higher (found: ${absl_VERSION}). Please update absl, or to use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
         endif()
         message(STATUS "protovalidate-cc: Using external absl ${absl_VERSION}")
         set(protobuf_ABSL_PROVIDER "package")
@@ -133,7 +133,7 @@ try_compile(ABSL_CAN_MOVE_ASSIGN_STATUS
     NO_CACHE
 )
 if(NOT ABSL_CAN_MOVE_ASSIGN_STATUS)
-    message(FATAL_ERROR "protovalidate-cc: Abseil seems to be too old (absl::Status is not nothrow-move-assignable). Please make sure your copy of absl is up-to-date enough (cel-cpp is known to need at least 20260107). To use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
+    message(FATAL_ERROR "protovalidate-cc: Abseil seems to be too old (absl::Status is not nothrow-move-assignable). Please make sure your copy of absl is up-to-date enough (cel-cpp is known to need at least 20260526). To use a vendored copy of absl instead, re-run the configuration with -DCMAKE_DISABLE_FIND_PACKAGE_absl=TRUE.")
 endif()
 
 # Protobuf

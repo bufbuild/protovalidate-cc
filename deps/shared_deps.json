@@ -1,10 +1,10 @@
 {
   "absl": {
     "meta": {
-      "version": "20260107.1"
+      "version": "20260526.0"
     },
     "source": {
-      "sha256": "4314e2a7cbac89cac25a2f2322870f343d81579756ceff7f431803c2c9090195",
+      "sha256": "6e1aee535473414164bf83e4ebc40240dec71a4701f8a642d906e95bea1aea0c",
       "strip_prefix": "abseil-cpp-{version}",
       "urls": ["https://github.com/abseil/abseil-cpp/archive/{version}.tar.gz"]
     }
@@ -23,12 +23,12 @@
   },
   "cel_cpp": {
     "meta": {
-      "version": "0.15.0"
+      "version": "0.16.1"
     },
     "source": {
-      "sha256": "095e560911ce84cefb886ad9540ca961fd6d7879de441a864e877e6e5f132b02",
+      "sha256": "6857282c68184e42c22cdb6cab33043ae53dfb87ba99127ded5f59431666f33d",
       "strip_prefix": "cel-cpp-{version}",
-      "urls": ["https://github.com/google/cel-cpp/archive/v{version}.tar.gz"]
+      "urls": ["https://github.com/cel-expr/cel-cpp/archive/refs/tags/v{version}.tar.gz"]
     }
   },
   "protovalidate": {
