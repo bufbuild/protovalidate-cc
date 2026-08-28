@@ -1,7 +1,7 @@
 bcr_test_module:
   module_path: "e2e/bzlmod"
   matrix:
-    # debian11 is the oldest Linux platform with GCC 10+, required by abseil-cpp.
+    # debian11 is the oldest Linux platform supported by the latest abseil-cpp.
     platform: [ "debian11", "macos" ]
     # TODO: Add 9.x after updating cel-cpp and removing backport patch
     # for 9.x support.
