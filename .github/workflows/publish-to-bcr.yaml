@@ -8,6 +8,9 @@ on:
       tag_name:
         description: 'Tag name for release (e.g. "v1.0.0")'
         required: true
+      templates_ref:
+        description: 'Git ref to read .bcr templates from instead of the tag (e.g. "main")'
+        required: false
 
 permissions:
   id-token: write
@@ -20,6 +23,7 @@ jobs:
     with:
       draft: false
       tag_name: ${{ inputs.tag_name || github.ref_name }}
+      templates_ref: ${{ inputs.templates_ref }}
       registry_fork: bufbuild/bazel-central-registry
     secrets:
       publish_token: ${{ secrets.BCR_PUBLISH_TOKEN }}
