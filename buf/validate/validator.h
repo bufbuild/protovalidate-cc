@@ -14,10 +14,13 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
 #include <string_view>
 #include <utility>
 
+#include "absl/base/thread_annotations.h"
+#include "absl/synchronization/mutex.h"
 #include "buf/validate/internal/message_factory.h"
 #include "buf/validate/internal/message_rules.h"
 #include "buf/validate/internal/rules.h"
@@ -62,8 +65,8 @@ class ValidationResult {
 /// A validator is a non-thread safe object that can be used to validate
 /// google.protobuf.Message objects.
 ///
-/// Validators are created through a ValidatorFactory, which is thread safe and
-/// used to share cached state between validators.
+/// Validators are created through a ValidatorFactory, which is thread-safe by default
+/// and used to share cached state between validators.
 class Validator {
  public:
   /// Validate a message.
@@ -97,7 +100,7 @@ class Validator {
 
 /// A factory that stores shared state for creating validators.
 ///
-/// ValidatorFactory is thread-safe and can be used to create multiple
+/// ValidatorFactory is thread-safe by default and can be used to create multiple
 /// Validator objects, which are not thread-safe. Generally there should be
 /// one factory per process, and one validator created per ~request.
 class ValidatorFactory {
@@ -119,9 +122,18 @@ class ValidatorFactory {
   /// Populates the factory with rules for the given message type.
   absl::Status Add(const google::protobuf::Descriptor* desc);
 
+  /// Enable or disable internal synchronization. Enabled by default.
+  /// When disabled, the factory and all validators created from it must not be
+  /// accessed concurrently, including validators created before this call.
+  /// Only change this setting when no other thread is accessing the factory or
+  /// any of its validators. Synchronize any transfer between threads externally.
+  void SetSynchronizationEnabled(bool enable) {
+    synchronizationEnabled_.store(enable, std::memory_order_relaxed);
+  }
+
   /// Disable lazy loading of rules.
   void DisableLazyLoading(bool disable = true) {
-    absl::WriterMutexLock lock(&mutex_);
+    absl::MutexLockMaybe lock(GetMutex());
     disableLazyLoading_ = disable;
   }
 
@@ -140,6 +152,7 @@ class ValidatorFactory {
   friend class Validator;
   google::protobuf::Arena arena_;
   absl::Mutex mutex_;
+  std::atomic<bool> synchronizationEnabled_{true};
   std::unique_ptr<internal::MessageFactory> messageFactory_;
   bool allowUnknownFields_;
   absl::flat_hash_map<const google::protobuf::Descriptor*, internal::Rules> rules_
@@ -149,6 +162,10 @@ class ValidatorFactory {
   bool disableLazyLoading_ ABSL_GUARDED_BY(mutex_) = false;
 
   ValidatorFactory() = default;
+
+  absl::Mutex* GetMutex() ABSL_LOCK_RETURNED(mutex_) {
+    return synchronizationEnabled_.load(std::memory_order_relaxed) ? &mutex_ : nullptr;
+  }
 
   const internal::Rules* GetMessageRules(const google::protobuf::Descriptor* desc);
 };
