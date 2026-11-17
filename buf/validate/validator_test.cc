@@ -482,5 +482,100 @@ TEST(ValidatorTest, MessageRule) {
   EXPECT_EQ(violations_or.value().violations(2).proto().message(), "a must be greater than b");
 }
 
+class ValidatorFactoryTest : public testing::TestWithParam<bool> {
+ public:
+  void SetUp() override {
+    auto factory_or = ValidatorFactory::New();
+    ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+    factory_ = std::move(factory_or).value();
+    factory_->SetSynchronizationEnabled(GetParam());
+  }
+
+ protected:
+  std::unique_ptr<ValidatorFactory> factory_;
+};
+
+TEST_P(ValidatorFactoryTest, ValidateWithLazyLoading) {
+  conformance::cases::BoolConstFalse message;
+  google::protobuf::Arena arena;
+  auto validator = factory_->NewValidator(&arena, false);
+  auto result = validator.Validate(message);
+  ASSERT_TRUE(result.ok()) << result.status();
+  EXPECT_TRUE(result->success());
+
+  message.set_val(true);
+  result = validator.Validate(message);
+  ASSERT_TRUE(result.ok()) << result.status();
+  ASSERT_EQ(result->violations_size(), 1);
+  EXPECT_EQ(result->violations(0).proto().rule_id(), "bool.const");
+}
+
+TEST_P(ValidatorFactoryTest, PreloadRules) {
+  factory_->DisableLazyLoading();
+  const auto* descriptor = conformance::cases::custom_rules::MessageExpressions::descriptor();
+  const auto status = factory_->Add(descriptor);
+  ASSERT_TRUE(status.ok()) << status;
+  EXPECT_TRUE(factory_->Add(descriptor).ok());
+
+  conformance::cases::custom_rules::MessageExpressions message;
+  message.mutable_e();
+  google::protobuf::Arena arena;
+  auto validator = factory_->NewValidator(&arena, false);
+  const auto result = validator.Validate(message);
+  ASSERT_TRUE(result.ok()) << result.status();
+  EXPECT_EQ(result->violations_size(), 3);
+}
+
+TEST_P(ValidatorFactoryTest, DisableLazyLoading) {
+  factory_->DisableLazyLoading();
+  conformance::cases::BoolConstFalse message;
+  google::protobuf::Arena arena;
+  auto validator = factory_->NewValidator(&arena, false);
+  auto result = validator.Validate(message);
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.status().code(), absl::StatusCode::kNotFound);
+
+  factory_->DisableLazyLoading(false);
+  result = validator.Validate(message);
+  ASSERT_TRUE(result.ok()) << result.status();
+  EXPECT_TRUE(result->success());
+
+  factory_->DisableLazyLoading();
+  result = validator.Validate(message);
+  ASSERT_TRUE(result.ok()) << result.status();
+  EXPECT_TRUE(result->success());
+}
+
+TEST_P(ValidatorFactoryTest, FailFast) {
+  conformance::cases::custom_rules::MessageExpressions message;
+  message.mutable_e();
+  google::protobuf::Arena arena;
+  auto validator = factory_->NewValidator(&arena, true);
+  const auto result = validator.Validate(message);
+  ASSERT_TRUE(result.ok()) << result.status();
+  ASSERT_EQ(result->violations_size(), 1);
+  EXPECT_EQ(result->violations(0).proto().rule_id(), "message_expression_scalar");
+}
+
+INSTANTIATE_TEST_SUITE_P(SynchronizationModes, ValidatorFactoryTest, testing::Bool());
+
+TEST(ValidatorTest, ChangeSynchronizationWithExistingValidators) {
+  auto factory_or = ValidatorFactory::New();
+  ASSERT_TRUE(factory_or.ok()) << factory_or.status();
+  auto factory = std::move(factory_or).value();
+  google::protobuf::Arena arena;
+  auto validator = factory->NewValidator(&arena, false);
+  conformance::cases::BoolConstFalse message;
+  message.set_val(true);
+
+  for (const bool enabled : {false, true, false, true}) {
+    factory->SetSynchronizationEnabled(enabled);
+    const auto result = validator.Validate(message);
+    ASSERT_TRUE(result.ok()) << result.status();
+    ASSERT_EQ(result->violations_size(), 1);
+    EXPECT_EQ(result->violations(0).proto().rule_id(), "bool.const");
+  }
+}
+
 } // namespace
 } // namespace buf::validate

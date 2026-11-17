@@ -14,7 +14,30 @@
 
 #include "buf/validate/validator.h"
 
+#include <optional>
+
 namespace buf::validate {
+namespace {
+
+// The shared-lock counterpart of absl::MutexLockMaybe.
+class ABSL_SCOPED_LOCKABLE ReaderMutexLockMaybe {
+ public:
+  explicit ReaderMutexLockMaybe(absl::Mutex* mutex) ABSL_SHARED_LOCK_FUNCTION(mutex) {
+    if (mutex != nullptr) {
+      lock_.emplace(*mutex);
+    }
+  }
+
+  ReaderMutexLockMaybe(const ReaderMutexLockMaybe&) = delete;
+  ReaderMutexLockMaybe& operator=(const ReaderMutexLockMaybe&) = delete;
+
+  ~ReaderMutexLockMaybe() ABSL_UNLOCK_FUNCTION() = default;
+
+ private:
+  std::optional<absl::ReaderMutexLock> lock_;
+};
+
+} // namespace
 
 absl::Status Validator::ValidateMessage(
     internal::RuleContext& ctx, const google::protobuf::Message& message) {
@@ -128,14 +151,14 @@ absl::StatusOr<std::unique_ptr<ValidatorFactory>> ValidatorFactory::New() {
   if (!builder_or.ok()) {
     return builder_or.status();
   }
-  absl::MutexLock lock(&result->mutex_);
+  absl::MutexLockMaybe lock(result->GetMutex());
   result->builder_ = std::move(builder_or).value();
   return result;
 }
 
 absl::Status ValidatorFactory::Add(const google::protobuf::Descriptor* desc) {
   {
-    absl::WriterMutexLock lock(&mutex_);
+    absl::MutexLockMaybe lock(GetMutex());
     auto iter = rules_.find(desc);
     if (iter != rules_.end()) {
       return iter->second.status();
@@ -165,7 +188,7 @@ absl::Status ValidatorFactory::Add(const google::protobuf::Descriptor* desc) {
 
 const internal::Rules* ValidatorFactory::GetMessageRules(const google::protobuf::Descriptor* desc) {
   {
-    absl::ReaderMutexLock lock(&mutex_);
+    ReaderMutexLockMaybe lock(GetMutex());
     auto iter = rules_.find(desc);
     if (iter != rules_.end()) {
       return &iter->second;
@@ -174,7 +197,7 @@ const internal::Rules* ValidatorFactory::GetMessageRules(const google::protobuf:
       return nullptr;
     }
   }
-  absl::WriterMutexLock lock(&mutex_);
+  absl::MutexLockMaybe lock(GetMutex());
   auto iter = rules_.find(desc);
   if (iter != rules_.end()) {
     return &iter->second;
